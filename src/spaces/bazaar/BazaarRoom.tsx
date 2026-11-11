@@ -10,7 +10,9 @@ import {CONNECTORS, STATUS_RU, FLOW_RU} from './connectors';
 import {OnlineShops} from './OnlineShops';
 import {CryptoPay, WalletChip, AgentWalletCard} from './CryptoPay';
 import {useWallet} from './wallet';
-import {AlignLeft, AlignCenter, AlignRight} from 'lucide-react';
+// Alignment icon: a window frame with the content block on the left, centre or right.
+const AlignIcon = ({a}: {a: 'left' | 'center' | 'right'}) => <svg viewBox="0 0 20 16" width="18" height="15" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6">
+  <rect x="1" y="1" width="18" height="14" rx="3"/><rect x={a === 'left' ? 3.5 : a === 'center' ? 6.5 : 9.5} y="3.5" width="7" height="9" rx="1.5" fill="currentColor" stroke="none"/></svg>;
 import {html} from '../shop/export';
 import {payUri, units, txUrl} from '../shop/chain';
 import './bazaar.css';
@@ -147,10 +149,11 @@ export function BazaarRoom({onClose}: {onClose: () => void}) {
   const found = q.trim() ? bazaar.search(q) : [];
   return <div className={'bz-room al-' + align + (solid ? ' bz-solid' : '')} data-testid="bazaar-room" onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={e => { e.preventDefault(); e.stopPropagation(); setDrag(false); void take(e.dataTransfer.files); }}>
     <header className="bz-top">
-      <div className="bz-title"><b>🧺 Базар <span className="bz-align" role="group" aria-label="Выравнивание">{([['left', AlignLeft, 'Прижать влево'], ['center', AlignCenter, 'По центру'], ['right', AlignRight, 'Прижать вправо']] as const).map(([k, I, t]) =>
-        <button key={k} type="button" aria-pressed={align === k} title={t} onClick={() => setAlign(k)} data-testid={'bz-align-' + k}><I size={14} strokeWidth={2}/></button>)}</span></b><small>здесь вы покупаете: лавки из присланных прайс-листов и каталоги сервисов</small></div>
+      <div className="bz-title"><b>🧺 Базар</b><small>здесь вы покупаете: лавки из присланных прайс-листов и каталоги сервисов</small></div>
       <nav className="bz-tabs">{([['stalls', '🏪 Лавки'], ['online', '🛒 Магазины онлайн'], ['crypto', '💸 Платить криптой'], ['orders', '🧾 Мои покупки'], ['connect', '🔌 Подключения'], ['agent', '🤖 Агент и лимиты']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={tab === k} data-testid={'bz-tab-' + k} onClick={() => { setTab(k); if (k === 'stalls') setOpen(null); }}>{l}{k === 'orders' && st.orders.length ? ` (${st.orders.length})` : ''}</button>)}</nav>
       <WalletChip/>
+      <button type="button" className="bz-bgtoggle bz-alignbtn" data-testid="bz-align" title={{left: 'Прижато влево — нажмите: по центру', center: 'По центру — нажмите: вправо', right: 'Прижато вправо — нажмите: влево'}[align]}
+        onClick={() => setAlign(align === 'left' ? 'center' : align === 'center' ? 'right' : 'left')}><AlignIcon a={align}/></button>
       <button type="button" className="bz-bgtoggle" title={solid ? 'Показать облака за окном' : 'Спокойный фон'} onClick={() => { const v = !solid; setSolid(v); try { localStorage.setItem('bz.solid', v ? '1' : '0'); } catch { /* */ } }}>{solid ? '☁' : '◐'}</button>
       <button type="button" className="bz-x" onClick={onClose} aria-label="Закрыть">×</button>
     </header>
