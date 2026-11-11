@@ -12,7 +12,12 @@ type Buy = {invoice: string; product: string; amount: string; at: number; status
 const API = '/api/bitrefill';
 const KEY = 'bz.bitrefill.v1', ORD = 'bz.bitrefill.orders.v1';
 const KINDS: {id: Kind; ru: string; icon: string; color: string}[] = [{id: 'topups', ru: 'Пополнить телефон', icon: '📱', color: '#2f8fd8'}, {id: 'gift-cards', ru: 'Подарочные карты', icon: '🎁', color: '#e0508f'}, {id: 'esims', ru: 'eSIM для поездок', icon: '📶', color: '#14a3a8'}];
-const PRESETS: Record<Kind, string[]> = {topups: ['Magti', 'Geocell', 'Silknet', 'Beeline', 'Ucom', 'Azercell', 'Kcell', 'Turkcell'], 'gift-cards': ['Amazon', 'Steam', 'Netflix', 'Spotify', 'Apple', 'Google Play', 'Uber', 'Airbnb'], esims: ['Turkey', 'Georgia', 'Europe', 'USA', 'UAE', 'Thailand', 'Global']};
+const PRESETS: Record<Kind, string[]> = {topups: ['Magti', 'Silknet', 'Beeline'], 'gift-cards': ['Amazon', 'Steam', 'Netflix', 'Spotify', 'Apple', 'Google Play', 'Uber', 'Airbnb'], esims: ['Turkey', 'Georgia', 'Europe', 'USA', 'UAE', 'Thailand', 'Global']};
+// Starting presets per country (before sign-in). After sign-in they are replaced by what Bitrefill really sells in that country.
+const TOPUP: Record<string, string[]> = {GE: ['Magti', 'Silknet', 'Beeline'], AM: ['Ucom', 'Beeline', 'Viva'], AZ: ['Azercell', 'Bakcell', 'Nar'], KZ: ['Kcell', 'Beeline', 'Tele2', 'Altel', 'Activ'],
+  TR: ['Turkcell', 'Vodafone', 'Turk Telekom'], US: ['T-Mobile', 'AT&T', 'Verizon', 'Lyca Mobile', 'Cricket'], DE: ['Vodafone', 'Telekom', 'O2', 'Lyca Mobile'], AE: ['Etisalat', 'du', 'Virgin Mobile']};
+// Labels that differ from what Bitrefill calls the product (Geocell is a Silknet brand since 2018).
+const ALIAS: Record<string, string> = {Geocell: 'Silknet'};
 const COUNTRIES = ['GE', 'AM', 'AZ', 'KZ', 'TR', 'US', 'DE', 'AE'];
 const CNAME: Record<string, string> = {GE: 'Georgia', AM: 'Armenia', AZ: 'Azerbaijan', KZ: 'Kazakhstan', TR: 'Turkey', US: 'United States', DE: 'Germany', AE: 'United Arab Emirates'};
 const hex = (s: string) => '0x' + Array.from(new TextEncoder().encode(s), b => b.toString(16).padStart(2, '0')).join('');
@@ -35,6 +40,8 @@ export function BitrefillPanel() {
   const [items, setItems] = useState<Prod[]>([]); const [sel, setSel] = useState<Prod | null>(null); const [pkg, setPkg] = useState<Pkg | null>(null); const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(''); const [msg, setMsg] = useState(''); const [raw, setRaw] = useState<any>(null); const [orders, setOrdersS] = useState<Buy[]>(loadOrd);
   const setOrders = (v: Buy[]) => { setOrdersS(v); saveOrd(v); };
+  const [live, setLive] = useState<Record<string, string[]>>({});
+  const presets = live[kind + cc] || (kind === 'topups' ? TOPUP[cc] || PRESETS.topups : PRESETS[kind]);
   const valid = tok && w.address && tok.address.toLowerCase() === w.address.toLowerCase();
   const H = (): Record<string, string> => (valid ? {'X-Access-Token': tok!.token} : {});
   const post = async (op: string, b: any) => { const r = await fetch(`${API}?op=${op}`, {method: 'POST', headers: {'content-type': 'application/json', ...H()}, body: JSON.stringify(b)}); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.error || 'HTTP ' + r.status), {j}); return j; };
@@ -102,7 +109,16 @@ export function BitrefillPanel() {
         if (j.delivery_status === 'all_delivered' || codes.length) { setMsg('✓ Готово — смотрите «Мои покупки Bitrefill» ниже.'); return; } } catch { /* keep polling */ }
     }
   };
-  useEffect(() => { if (!valid && tok && w.checked && !w.address) { /* wallet changed */ } }, [w.address]);
+  // When the country or tab changes (and we are signed in), ask Bitrefill what it sells there and turn the names into presets.
+  useEffect(() => {
+    if (!valid || kind === 'gift-cards') return; const key = 'bz.bitrefill.p.' + kind + cc;
+    try { const c = JSON.parse(sessionStorage.getItem(key) || 'null'); if (c) { setLive(v => ({...v, [kind + cc]: c})); return; } } catch { /* */ }
+    let alive = true;
+    (async () => { for (const t of [CNAME[cc] || cc, '']) { try { const j = await get(`op=search&kind=${kind}&q=${encodeURIComponent(t)}&country=${cc}`); const names = arr(j).map((p: any) => String(p.name || p.slug || ''))
+      .map(n => n.replace(new RegExp('\\s*(' + (CNAME[cc] || cc) + '|USA|PIN|Bundle|Top ?up|eSIM)\\b.*$', 'i'), '').trim()).filter(Boolean); const uniq = [...new Set(names)].slice(0, 10);
+      if (uniq.length) { if (alive) setLive(v => ({...v, [kind + cc]: uniq})); sessionStorage.setItem(key, JSON.stringify(uniq)); return; } } catch { /* next */ } } })();
+    return () => { alive = false; };
+  }, [kind, cc, valid]);
 
   return <div className="bf" data-testid="bitrefill">
     <div className="bf-head">
@@ -110,12 +126,12 @@ export function BitrefillPanel() {
       {valid ? <span className="bf-on">● вход выполнен</span> : <button type="button" className="bz-btn acc" disabled={busy === 'connect'} onClick={() => void connect()} data-testid="bf-connect">{busy === 'connect' ? 'Подтвердите в кошельке…' : w.address ? 'Войти в Bitrefill кошельком' : 'Войти через Coinbase'}</button>}
     </div>
     <div className="mp-pkgs bz-groups">{KINDS.map(k => <button key={k.id} type="button" aria-pressed={kind === k.id} style={{'--pc': k.color} as React.CSSProperties} className="bz-prov mp-pkg" onClick={() => { setKind(k.id); setItems([]); setSel(null); }}>
-      <span className="bz-prov-glow"/><b>{k.icon} {k.ru}</b><small>{PRESETS[k.id].slice(0, 3).join(' · ')}</small></button>)}</div>
+      <span className="bz-prov-glow"/><b>{k.icon} {k.ru}</b><small>{(k.id === 'topups' ? TOPUP[cc] || PRESETS.topups : PRESETS[k.id]).slice(0, 3).join(' · ')}</small></button>)}</div>
     <div className="mp-top">
-      <select className="bf-cc" value={cc} onChange={e => setCc(e.target.value)} aria-label="Страна">{COUNTRIES.map(c => <option key={c}>{c}</option>)}</select>
+      <select className="bf-cc" value={cc} onChange={e => { setCc(e.target.value); setItems([]); setSel(null); setMsg(''); }} aria-label="Страна">{COUNTRIES.map(c => <option key={c}>{c}</option>)}</select>
       <div className="mp-bar" onClick={e => { if (e.target === e.currentTarget) (e.currentTarget.querySelector('input') as HTMLInputElement)?.focus(); }}>
         <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && void search()} placeholder="оператор, бренд…" style={{width: `min(60%, ${Math.max(140, q.length * 8.6 + 40)}px)`}} data-testid="bf-q"/>
-        <div className="mp-presets">{PRESETS[kind].map(x => <button key={x} type="button" disabled={!!busy} onClick={() => { setQ(x); void search(x); }}>{x}</button>)}</div>
+        <div className="mp-presets">{presets.map(x => <button key={x} type="button" disabled={!!busy} onClick={() => { const t = ALIAS[x] || x; setQ(t); void search(t); }}>{x}</button>)}</div>
         <button type="button" className="mp-ask" disabled={!!busy || !q.trim()} onClick={() => void search()} aria-label="Найти">{busy === 'search' ? '…' : '→'}</button>
       </div>
     </div>
