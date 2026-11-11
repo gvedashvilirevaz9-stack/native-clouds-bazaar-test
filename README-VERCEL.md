@@ -86,3 +86,8 @@ https://<app>.vercel.app/api/mcp?key=<MCP_TOKEN>
 `https://<домен>/api/x/travala?op=callback`, просьбу добавить домен в список разрешённых для OAuth Travel MCP
 (scopes mcp:read mcp:book mcp:pay mcp:cancel). Заодно попросить agent_id для 10% cbBTC-ребейта разработчику.
 Тест: бронь с бесплатной отменой → сразу отмена (песочницы у Travala нет).
+
+## Принцип Базара: только агрегатор
+Native Clouds не принимает и не хранит деньги покупателей, не пополняет балансы у поставщиков и не перепродаёт.
+Покупатель платит поставщику напрямую своим кошельком (как Bitrefill через x402). Доход — только партнёрские бонусы.
+Письма партнёрам (Bitrefill, CoinGate/GIFQ, Coinsbee, Travala): `partners/PARTNER-LETTERS.md`.
