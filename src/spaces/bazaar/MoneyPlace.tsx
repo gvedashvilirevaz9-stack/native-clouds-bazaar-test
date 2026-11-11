@@ -66,6 +66,16 @@ export function MoneyPlace() {
   const strip = useRef<HTMLDivElement>(null);
   const slide = (d: number) => strip.current?.scrollBy({left: d * Math.max(320, strip.current.clientWidth * 0.8), behavior: 'smooth'});
   useEffect(() => { strip.current?.scrollTo({left: 0, behavior: 'smooth'}); }, [feed.length]);
+  // No scrollbars: edges fade out where there is more to see (like iOS), arrows appear only where you can go.
+  const [edge, setEdge] = useState({l: false, r: false});
+  useEffect(() => {
+    const el = strip.current; if (!el) return;
+    const mark = (n: HTMLElement) => { n.classList.toggle('fade-t', n.scrollTop > 4); n.classList.toggle('fade-b', n.scrollTop + n.clientHeight < n.scrollHeight - 4); };
+    const upd = () => { setEdge({l: el.scrollLeft > 4, r: el.scrollLeft + el.clientWidth < el.scrollWidth - 4}); el.querySelectorAll<HTMLElement>('.mp-card').forEach(mark); };
+    const onCard = (e: Event) => { const t = e.target as HTMLElement; if (t.classList?.contains('mp-card')) mark(t); };
+    upd(); const t = setTimeout(upd, 400); el.addEventListener('scroll', upd, {passive: true}); el.addEventListener('scroll', onCard, {capture: true, passive: true}); window.addEventListener('resize', upd);
+    return () => { clearTimeout(t); el.removeEventListener('scroll', upd); el.removeEventListener('scroll', onCard, {capture: true} as any); window.removeEventListener('resize', upd); };
+  }, [feed]);
   const cards = feed.flatMap(e => e.items.map((r, i) => ({r, key: e.id + i, ask: e.ask, at: e.at, first: i === 0})));
   return <div className="mp" data-testid="mp">
     <div className="bz-step"><span>1</span>Что вам нужно <small>{meta?.you.city ? `город по IP: ${meta.you.city}` : 'пакеты сервисов'}</small></div>
@@ -83,7 +93,7 @@ export function MoneyPlace() {
     {hint && <p className="bz-note">{hint}</p>}
     {busy && <p className="bz-note">⏳ {busy}…</p>}
     {feed.length > 0 && <div className="bz-step"><span>✦</span>Лента <small>новые сверху · хранится в этом браузере</small><button type="button" className="bz-link" onClick={() => setFeed([])}>очистить</button></div>}
-    {cards.length > 0 && <div className="mp-stripwrap">
+    {cards.length > 0 && <div className={'mp-stripwrap' + (edge.l ? ' can-l' : '') + (edge.r ? ' can-r' : '')}>
       <button type="button" className="mp-arr l" onClick={() => slide(-1)} aria-label="Новее">‹</button>
       <div className="mp-strip" ref={strip} data-testid="mp-strip">{cards.map(c => <div key={c.key} className={'mp-col' + (c.first ? ' first' : '')}>
         <span className="mp-col-tag">{c.first ? c.ask + ' · ' : ''}{new Date(c.at).toLocaleTimeString('ru', {hour: '2-digit', minute: '2-digit'})}</span><MoneyCard r={c.r}/></div>)}</div>

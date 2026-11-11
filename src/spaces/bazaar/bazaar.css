@@ -314,3 +314,17 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .mp-arr.l{left:-6px}.mp-arr.r{right:-6px}.mp-arr:hover{background:#fff}
 @media (max-width:820px){.bz-mkwrap{padding-right:0;padding-top:40px}.bz-eye{top:-4px}
   .mp-strip{flex-direction:column;overflow:visible}.mp-col{flex:none;height:auto;min-height:0}.mp-col .mp-card{overflow:visible}.mp-arr{display:none}}
+/* No scrollbars anywhere in the Bazaar: fades + floating chevrons instead */
+.bz-room,.bz-room *{scrollbar-width:none}
+.bz-room::-webkit-scrollbar,.bz-room *::-webkit-scrollbar{display:none;width:0;height:0}
+.mp-strip{padding-bottom:6px}
+.mp-stripwrap{--fl:0px;--fr:0px}
+.mp-stripwrap.can-l{--fl:70px}.mp-stripwrap.can-r{--fr:70px}
+.mp-strip{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl),#000 calc(100% - var(--fr)),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl),#000 calc(100% - var(--fr)),transparent 100%);transition:-webkit-mask-image .3s}
+.mp-card{--ft:0px;--fb:0px;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%)}
+.mp-card.fade-t{--ft:36px}.mp-card.fade-b{--fb:56px}
+.mp-arr{opacity:0;pointer-events:none;transition:opacity .25s,transform .2s;background:#ffffff59;border-color:#ffffff99;box-shadow:0 6px 18px #1e3a5a1f;color:#203d4b;font-size:24px}
+.mp-stripwrap.can-l .mp-arr.l,.mp-stripwrap.can-r .mp-arr.r{opacity:.75;pointer-events:auto}
+.mp-stripwrap:hover.can-l .mp-arr.l,.mp-stripwrap:hover.can-r .mp-arr.r{opacity:1}.mp-arr:hover{transform:scale(1.08);background:#ffffffcc}
+.mp-arr.l{left:6px}.mp-arr.r{right:6px}
+@media (max-width:820px){.mp-strip{-webkit-mask-image:none;mask-image:none}.mp-card{-webkit-mask-image:none;mask-image:none}}
