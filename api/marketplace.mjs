@@ -44,7 +44,7 @@ export default async function handler(req, res) {
           image: http(i.image), provider: i.provider || x.provider, url: http(i.buy?.url) || http(i.url), buyType: i.buy?.type || null, buyLabel: i.buy?.label || null, rating: i.rating || null, country: i.sourceCountry || x.country || null}))})),
       nav: (s.sections || []).filter(x => x.kind === 'nodes').flatMap(x => x.items.map(i => i.title)),
       directories: (s.directories || []).map(d => ({cc: d.cc, slot: d.slot, name: d.name, url: http(d.url)})).filter(d => d.url),
-      sources: (r.sources || []).map(x => ({name: x.name, cc: x.cc || null, ok: !!x.ok, count: x.count ?? null, ms: x.ms ?? null, transport: x.transport || null})),
+      sources: (r.sources || []).map(x => ({name: x.name, cc: x.cc || null, ok: !!x.ok, count: x.count ?? null, ms: x.ms ?? null, transport: x.transport || null, error: x.error ? String(x.error).slice(0, 120) : null})),
       tookMs: r.tookMs,
     });
   } catch (e) { return res.status(500).json({error: 'MARKET_ERROR', message: String(e?.message || e).slice(0, 200)}); }

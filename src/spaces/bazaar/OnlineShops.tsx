@@ -48,11 +48,13 @@ const engineOf = (s: Store): Engine => s.engine || 'shopify';
 const API: Record<Engine, string> = {shopify: '/api/shop-search', woo: '/api/woo-search'};
 
 // Where the Bazaar can look for goods. "on" = works now without keys; the rest are shown honestly as not yet possible.
+// Map pin (teardrop) and globe, drawn inline so they match the glass style.
+export const Pin = ({size = 18}: {size?: number}) => <svg className="bz-pin" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true"><path d="M12 22.5s-7.5-7.6-7.5-13A7.5 7.5 0 0 1 19.5 9.5c0 5.4-7.5 13-7.5 13z" fill="currentColor"/><circle cx="12" cy="9.6" r="2.8" fill="#fff"/></svg>;
+export const Globe = ({size = 18}: {size?: number}) => <svg className="bz-pin" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></svg>;
 const PROVIDERS: {id: string; name: string; sub: string; color: string; on: boolean}[] = [
   {id: 'all', name: 'Везде', sub: 'Shopify + WooCommerce сразу', color: '#2f8fd8', on: true},
   {id: 'shopify', name: 'Shopify', sub: 'все магазины на Shopify', color: '#5fae3e', on: true},
   {id: 'woo', name: 'WooCommerce', sub: '82 проверенных магазина', color: '#9a63d6', on: true},
-  {id: 'market', name: '📍 Marketplace', sub: 'по стране и городу: магазины, еда, места', color: '#e0503a', on: true},
   {id: 'files', name: 'Прайс-листы', sub: 'файлы Native Clouds', color: '#d98a2f', on: true},
   {id: 'amazon', name: 'Amazon', sub: 'только через платных посредников', color: '#999', on: false},
   {id: 'ebay', name: 'eBay', sub: 'нужен ключ разработчика', color: '#999', on: false},
@@ -105,6 +107,8 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
   const [dirs, setDirs] = useState<{cc: string | null; name: string; url: string}[]>([]); const [srcInfo, setSrcInfo] = useState('');
   useEffect(() => { if (src !== 'market' || meta) return; fetch('/api/marketplace?meta=1').then(r => r.json()).then((m: MarketMeta) => { setMeta(m); if (!cc) setCc(m.you.supported && m.you.cc ? m.you.cc : 'GE'); }).catch(() => setNotes(['Marketplace работает на сайте Vercel (нужен сервер /api).'])); }, [src]);
   const country = meta?.countries.find(c => c.cc === cc);
+  const pick = (id: Source) => { setSrc(id); setFav(null); setBlocks([]); setDone(false); setNotes([]); setDirs([]); setSrcInfo(''); };
+  useEffect(() => { if (meta) return; fetch('/api/marketplace?meta=1').then(r => r.json()).then((m: MarketMeta) => { setMeta(m); setCc(c => c || (m.you.supported && m.you.cc ? m.you.cc : 'GE')); }).catch(() => undefined); }, []);
   const catEn = CATS.find(c => c.ru === cat)?.en || '';
   const shown = favs.filter(f => src === 'all' || engineOf(f) === src);
 
@@ -154,13 +158,20 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
       items: b.items.map((i, k) => ({id: 'p' + k, title: i.title, price: i.price, image: i.image, url: i.url, pay: {kind: 'link' as const, url: i.url}}))});
   };
   const price = (i: Item) => !i.price || !Number(i.price) ? ((i as any).priceLabel || ((i as any).kind === 'store' ? '📍 на карте' : 'цена у продавца')) : i.currency && i.currency !== 'USD' ? `${Number(i.price).toLocaleString()} ${i.currency}` : `$${Number(i.price).toFixed(2)}`;
+  const glyph = (t: string) => (t.match(/\p{Extended_Pictographic}/u) || ['🛍'])[0];
   const empty = done && !notes.length && blocks.every(b => !b.items.length);
 
   return <div className="bz-sec bz-online" data-testid="bz-online">
-    <div className="bz-providers" role="tablist" aria-label="Где искать">{PROVIDERS.map(p => <button key={p.id} type="button" role="tab" disabled={!p.on} data-testid={'bz-prov-' + p.id}
-      aria-pressed={p.id === src} style={{'--pc': p.color} as React.CSSProperties} className={'bz-prov' + (p.on ? '' : ' off')}
-      onClick={() => { if (p.id === 'files') { onFiles?.(); return; } setSrc(p.id as Source); setFav(null); setBlocks([]); setDone(false); setNotes([]); setDirs([]); setSrcInfo(''); }}>
-      <span className="bz-prov-glow"/><b>{p.name}</b><small>{p.sub}</small>{!p.on && <i>скоро</i>}</button>)}</div>
+    <div className="bz-markets">
+      <section className={'bz-mk' + (src !== 'market' ? ' on' : '')}><h4><Globe/> Global Marketplace <small>весь интернет</small></h4>
+        <div className="bz-providers" role="tablist" aria-label="Global Marketplace">{PROVIDERS.map(p => <button key={p.id} type="button" role="tab" disabled={!p.on} data-testid={'bz-prov-' + p.id}
+          aria-pressed={p.id === src} style={{'--pc': p.color} as React.CSSProperties} className={'bz-prov' + (p.on ? '' : ' off')}
+          onClick={() => { if (p.id === 'files') { onFiles?.(); return; } pick(p.id as Source); }}>
+          <span className="bz-prov-glow"/><b>{p.name}</b><small>{p.sub}</small>{!p.on && <i>скоро</i>}</button>)}</div></section>
+      <section className={'bz-mk local' + (src === 'market' ? ' on' : '')}><h4><Pin/> Local Marketplace <small>в вашей стране</small></h4>
+        <button type="button" role="tab" data-testid="bz-prov-market" aria-pressed={src === 'market'} style={{'--pc': '#e0503a'} as React.CSSProperties} className="bz-prov bz-prov-local" onClick={() => pick('market')}>
+          <span className="bz-prov-glow"/><span className="bz-prov-pin"><Pin size={34}/></span><b>{meta && cc ? `${FLAG[cc] || ''} ${meta.countries.find(c => c.cc === cc)?.name || ''}` : 'Рядом'}</b><small>магазины, еда, места и услуги по стране и городу</small></button></section>
+    </div>
 
     <div className="bz-step"><span>1</span>Категория</div>
     <div className="bz-cats" data-testid="bz-cats">
@@ -197,7 +208,7 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
     {blocks.filter(b => b.items.length).map((b, bi) => <div key={b.key} className="bz-storeblock">
       <div className="bz-storehead"><b>{b.title}</b>{b.sub && <small>{b.sub}</small>}<button type="button" className="bz-btn" onClick={() => toBazaar(b)}>＋ Сохранить как лавку</button></div>
       <div className="bz-cards">{b.items.map((i, k) => <button type="button" key={k} className="bz-card" onClick={() => setView({b: bi, k})} data-testid="bz-online-card">
-        <span className="bz-card-img">{i.image && <img src={sized(i.image, 400)} alt="" loading="lazy" decoding="async"/>}{(i.images?.length || 0) > 1 && <em className="bz-card-n">{i.images!.length} фото</em>}</span>
+        <span className={'bz-card-img' + (i.image ? '' : ' art t' + (k % 5))}>{i.image ? <img src={sized(i.image, 400)} alt="" loading="lazy" decoding="async"/> : (i as any).kind === 'store' ? <span className="bz-glyph pin"><Pin size={46}/></span> : <span className="bz-glyph">{glyph(b.title)}</span>}{(i.images?.length || 0) > 1 && <em className="bz-card-n">{i.images!.length} фото</em>}</span>
         <b>{i.title}</b><span className="bz-card-p">{price(i)}{i.compareAt && <s> {price({...i, price: i.compareAt})}</s>}{i.available === false ? ' · нет в наличии' : ''}</span>{i.seller && <small className="bz-card-s">{i.seller}</small>}<small>Смотреть ⤢</small>
       </button>)}</div>
     </div>)}
