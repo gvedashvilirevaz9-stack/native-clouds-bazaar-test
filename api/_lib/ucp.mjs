@@ -26,11 +26,12 @@ const money = (p) => p && p.amount != null ? {amount: (Number(p.amount) / 100).t
 export async function globalSearch(source, q, {limit = 20, country, maxPrice} = {}) {
   const s = SOURCES[source]; if (!s) throw new Error('UNKNOWN_SOURCE');
   const filters = {available: true}; if (country) filters.ships_to = {country}; if (maxPrice) filters.price = {max: Math.round(Number(maxPrice) * 100)};
-  const out = await mcpCall(s.url, 'search_catalog', {meta: {'ucp-agent': {profile: PROFILE}}, catalog: {query: String(q).slice(0, 200), filters, pagination: {limit: Math.min(50, Math.max(1, +limit || 20))}}});
+  const meta = source === 'shopify' ? {'ucp-agent': {profile: PROFILE}} : null; // Channel3 docs: meta may be null, its own profile is used
+  const out = await mcpCall(s.url, 'search_catalog', {meta, catalog: {query: String(q).slice(0, 200), filters, pagination: {limit: Math.min(50, Math.max(1, +limit || 20))}}});
   const items = (out.products || []).map(p => {
     const v = (p.variants || [])[0] || {}; const seller = v.seller || {}; const price = money(v.price) || money(p.price_range?.min);
     return {title: p.title, price: price?.amount || null, currency: price?.currency || null, image: (p.media || []).find(m => m.type === 'image')?.url || null,
-      url: p.url || v.checkout_url || seller.url || null, store: seller.name || seller.domain || null, storeDomain: seller.domain || null, rating: p.rating?.value ?? null,
+      url: p.url || v.url || v.checkout_url || seller.url || null, store: seller.name || seller.domain || null, storeDomain: seller.domain || null, rating: p.rating?.value ?? null,
       sellers: new Set((p.variants || []).map(x => x.seller?.domain).filter(Boolean)).size || 1};
   });
   return {source, sourceName: s.name, total: out.pagination?.total_count ?? null, items};
