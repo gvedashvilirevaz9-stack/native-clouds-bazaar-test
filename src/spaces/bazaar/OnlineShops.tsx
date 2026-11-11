@@ -12,11 +12,12 @@ const STORES: {domain: string; name: string; icon: string; ru: string; hint: str
   {domain: 'colourpop.com', name: 'ColourPop', icon: '💄', ru: 'косметика', hint: 'lipstick'},
 ];
 // Stores search in English; a few everyday words are translated so "диван" just works.
-const RU: Record<string, string> = {диван: 'sofa', диваны: 'sofa', кровать: 'bed', стол: 'table', стул: 'chair', кресло: 'chair', кастрюля: 'pot', кастрюли: 'pot', сковорода: 'pan', сковородка: 'pan', нож: 'knife', посуда: 'cookware',
+const RU: Record<string, string> = {мужчина: 'men', мужчины: 'men', мужской: 'men', мужские: 'men', мужская: 'men', мен: 'men', женщина: 'women', женский: 'women', женские: 'women', женская: 'women', детский: 'kids', детские: 'kids', дети: 'kids', игрушки: 'toys', игрушка: 'toy', машинки: 'cars', машинка: 'car', свитер: 'sweater', свитера: 'sweater', платье: 'dress', сумка: 'bag', часы: 'watch', очки: 'glasses', кофе: 'coffee', чай: 'tea', диван: 'sofa', диваны: 'sofa', кровать: 'bed', стол: 'table', стул: 'chair', кресло: 'chair', кастрюля: 'pot', кастрюли: 'pot', сковорода: 'pan', сковородка: 'pan', нож: 'knife', посуда: 'cookware',
   кроссовки: 'sneakers', обувь: 'shoes', ботинки: 'boots', носки: 'socks', худи: 'hoodie', футболка: 'shirt', штаны: 'pants', шорты: 'shorts', куртка: 'jacket', простыни: 'sheets', подушка: 'pillow', одеяло: 'comforter', полотенце: 'towel', помада: 'lipstick', тени: 'eyeshadow'};
 // A store's own search is loose ("toy cars" brings shoes). Keep only items whose title has every word (car = cars).
 const stem = (w: string) => w.replace(/(es|s)$/, '');
-const fits = (title: string, q: string) => { const t = title.toLowerCase(); return q.split(/\s+/).filter(w => w.length > 1).every(w => t.includes(stem(w))); };
+// Score = how many query words are in the title. Matches go first; a store whose results match nothing is hidden (lipstick for "men").
+const score = (title: string, q: string) => { const t = title.toLowerCase(); return q.split(/\s+/).filter(w => w.length > 1).reduce((a, w) => a + (t.includes(stem(w)) ? 1 : 0), 0); };
 const toEn = (q: string) => q.toLowerCase().split(/\s+/).map(w => RU[w] || w).join(' ').trim();
 
 type Item = {title: string; price: string | null; available: boolean | null; image: string | null; url: string; vendor: string | null; store: string; seller?: string | null; currency?: string | null};
@@ -38,7 +39,8 @@ export function OnlineShops() {
     const list = own.trim() ? [own.trim()] : pick === 'all' ? STORES.map(s => s.domain) : [pick];
     const res = await Promise.all(list.map(async d => { try { const r = await fetch(`/api/shop-search?store=${encodeURIComponent(d)}&q=${encodeURIComponent(query)}`); const j = await r.json(); return j; } catch { return {store: d, error: 'OFFLINE', items: []}; } }));
     const out: Item[] = []; const n: string[] = [];
-    for (const r of res) { if (r.error) n.push(r.error === 'OFFLINE' ? 'Поиск по магазинам работает на сайте Vercel (нужен сервер /api).' : `${r.store}: магазин не открыл поиск`); for (const i of r.items || []) if (i.price && Number(i.price) > 0 && fits(i.title, query)) out.push({...i, store: r.store}); }
+    for (const r of res) { if (r.error) n.push(r.error === 'OFFLINE' ? 'Поиск по магазинам работает на сайте Vercel (нужен сервер /api).' : `${r.store}: магазин не открыл поиск`); const its = (r.items || []).filter((i: any) => i.price && Number(i.price) > 0).map((i: any) => ({...i, store: r.store, _s: score(i.title, query)}));
+      if (its.some((i: any) => i._s > 0)) out.push(...its.sort((a: any, b: any) => b._s - a._s)); }
     setItems(out); setNotes([...new Set(n)]); setBusy(false); setDone(true);
   };
   const toBazaar = (store: string) => {
