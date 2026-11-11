@@ -1,6 +1,7 @@
 // "Магазины онлайн": search real Shopify stores from the Bazaar page. No tokens: the site's own
 // /api/shop-search asks the store's public search. Works on the deployed site (Vercel), not offline.
 import {useEffect, useState} from 'react';
+import {Eye as LEye, EyeOff as LEyeOff} from 'lucide-react';
 import type React from 'react';
 import {bazaar} from './store';
 import {ProductView, sized, osmTile, type Product} from './ProductView';
@@ -52,16 +53,8 @@ const API: Record<Engine, string> = {shopify: '/api/shop-search', woo: '/api/woo
 // Map pin (teardrop) and globe, drawn inline so they match the glass style.
 export const Pin = ({size = 18}: {size?: number}) => <svg className="bz-pin" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true"><path d="M12 22.5s-7.5-7.6-7.5-13A7.5 7.5 0 0 1 19.5 9.5c0 5.4-7.5 13-7.5 13z" fill="currentColor"/><circle cx="12" cy="9.6" r="2.8" fill="#fff"/></svg>;
 export const Spark = ({size = 18}: {size?: number}) => <svg className="bz-pin" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true"><path d="M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7z" fill="currentColor"/><circle cx="19" cy="18" r="2.2" fill="currentColor"/></svg>;
-/** A glass "eye in the sky": open = panel shown, closed = panel folded. */
-export const Eye = ({open}: {open: boolean}) => <svg viewBox="0 0 64 40" width="46" height="30" aria-hidden="true">
-  <defs><radialGradient id="bzIris" cx="45%" cy="40%" r="60%"><stop offset="0" stopColor="#bfe6ff"/><stop offset=".55" stopColor="#3f8fe0"/><stop offset="1" stopColor="#1d3f7a"/></radialGradient>
-    <linearGradient id="bzLid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".95"/><stop offset="1" stopColor="#dcecff" stopOpacity=".75"/></linearGradient></defs>
-  {open ? <g><path d="M4 20C14 6 50 6 60 20C50 34 14 34 4 20Z" fill="url(#bzLid)" stroke="#203d4b" strokeOpacity=".55" strokeWidth="1.6"/>
-    <circle cx="32" cy="20" r="10" fill="url(#bzIris)"/><circle cx="32" cy="20" r="4.2" fill="#0d2040"/><circle cx="28.5" cy="16.5" r="2.4" fill="#fff" opacity=".9"/>
-    {[10, 20, 32, 44, 54].map((x, i) => <path key={i} d={`M${x} ${x === 32 ? 7.5 : x < 32 ? 10 + (20 - x) / 6 : 10 + (x - 44) / 6} l${(x - 32) / 8} -5`} stroke="#203d4b" strokeOpacity=".5" strokeWidth="1.6" strokeLinecap="round"/>)}</g>
-  : <g><path d="M4 18C14 30 50 30 60 18" fill="none" stroke="#203d4b" strokeOpacity=".6" strokeWidth="2" strokeLinecap="round"/>
-    {[12, 22, 32, 42, 52].map((x, i) => <path key={i} d={`M${x} ${x === 32 ? 26 : 24.5} l${(x - 32) / 9} 5`} stroke="#203d4b" strokeOpacity=".5" strokeWidth="1.6" strokeLinecap="round"/>)}</g>}
-</svg>;
+/** Eye toggle: a clean line icon (Lucide) inside a crystal glass tile. */
+export const Eye = ({open}: {open: boolean}) => open ? <LEye size={22} strokeWidth={1.7} aria-hidden="true"/> : <LEyeOff size={22} strokeWidth={1.7} aria-hidden="true"/>;
 export const Globe = ({size = 18}: {size?: number}) => <svg className="bz-pin" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></svg>;
 const PROVIDERS: {id: string; name: string; sub: string; color: string; on: boolean}[] = [
   {id: 'all', name: 'Везде', sub: 'Shopify + WooCommerce сразу', color: '#2f8fd8', on: true},

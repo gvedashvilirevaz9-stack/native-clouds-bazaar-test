@@ -350,3 +350,12 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
   .mp-strip{flex:1;height:auto;padding:0 4px;align-items:stretch}
   .mp-col{height:auto;min-height:0}
 }
+/* Eye toggle: crystal glass tile with a crisp line icon (replaces the floating circle) */
+.bz-eye{width:48px;height:48px;top:2px;right:6px;border-radius:15px;animation:none;filter:none;color:#1f4a6e;
+  background:linear-gradient(155deg,#ffffffd9 0%,#ffffff70 45%,#dcecff66 100%);border:1px solid #ffffffee;
+  box-shadow:inset 0 1px 0 #fff,inset 0 -8px 16px #9cc8f033,0 8px 22px #1e3a5a26;backdrop-filter:blur(14px) saturate(1.4);transition:transform .15s,box-shadow .2s,color .2s}
+.bz-eye::before{content:"";position:absolute;inset:3px 3px 50% 3px;border-radius:12px 12px 8px 8px;background:linear-gradient(180deg,#ffffffcc,#ffffff00);pointer-events:none}
+.bz-eye svg{position:relative;filter:drop-shadow(0 1px 1px #ffffffaa)}
+.bz-eye:hover{transform:translateY(-1px);box-shadow:inset 0 1px 0 #fff,inset 0 -8px 16px #9cc8f044,0 12px 28px #1e3a5a33;color:#0f3a63}
+.bz-eye.shut{opacity:1;color:#5a7584}
+.bz-mkwrap.folded .bz-eye{top:0}
