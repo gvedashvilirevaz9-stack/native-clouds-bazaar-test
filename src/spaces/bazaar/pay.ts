@@ -2,6 +2,7 @@
 // recognises the payment (order number in the amount) and the hash proves it.
 import {payWithWallet, findPayment, lookupTx, head, units, fmt, codeOf} from '../shop/chain';
 import {bazaar, type Order} from './store';
+import {payUsdc, walletState} from './wallet';
 
 /** The buyer's browser wallet (Coinbase Wallet, MetaMask… — any EIP-1193) sends USDC on Base. The wallet always asks the person. */
 export async function payGroup(orderId: string, i: number, byAgent = false) {
@@ -10,7 +11,8 @@ export async function payGroup(orderId: string, i: number, byAgent = false) {
   if (g.paid) return {already: true, tx: g.paid.tx};
   if (byAgent) { const m = bazaar.agentMay(o, g); if (!m.ok) throw new Error(m.reason); }
   if (o.startBlock == null) { try { const h = await head(); bazaar.patchOrder(o.id, x => { x.startBlock = h - 30; }); } catch { /* offline */ } }
-  const tx = await payWithWallet(g.to, units(g.amount));
+  // Signed in with Coinbase → pay from that address. Otherwise a browser wallet if there is one, else Coinbase.
+  const tx = walletState().address || !(globalThis as any).ethereum ? await payUsdc(g.to, units(g.amount)) : await payWithWallet(g.to, units(g.amount));
   bazaar.patchOrder(o.id, x => { x.groups[i].sent = {tx, at: Date.now(), byAgent}; });
   return {tx};
 }

@@ -7,15 +7,17 @@ import {parseCartridge} from './cartridge';
 import {payGroup, checkGroup, confirmHash, orderPaid} from './pay';
 import {CONNECTORS, STATUS_RU, FLOW_RU} from './connectors';
 import {OnlineShops} from './OnlineShops';
+import {CryptoPay, WalletChip, AgentWalletCard} from './CryptoPay';
+import {useWallet} from './wallet';
 import {html} from '../shop/export';
 import {payUri, units, txUrl} from '../shop/chain';
 import './bazaar.css';
 
-type Tab = 'stalls' | 'online' | 'orders' | 'connect' | 'agent';
+type Tab = 'stalls' | 'online' | 'crypto' | 'orders' | 'connect' | 'agent';
 export const bazaarNav: {tab: Tab; stall: string | null; order: string | null} = {tab: 'online', stall: null, order: null};
 const short = (a: string) => a.slice(0, 6) + '…' + a.slice(-4);
 function qr(text: string) { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createDataURL(5, 2); }
-const ERR: Record<string, string> = {NOT_A_PRICELIST: 'В файле нет прайс-листа. Нужен HTML из «Моего магазина» или products.json.', NO_WALLET: 'Кошелёк в браузере не найден (Coinbase Wallet, MetaMask). Оплатите по QR.',
+const ERR: Record<string, string> = {NOT_A_PRICELIST: 'В файле нет прайс-листа. Нужен HTML из «Моего магазина» или products.json.', NO_WALLET: 'Кошелёк в браузере не найден (Coinbase Wallet, MetaMask). Оплатите по QR.', WALLET_OTHER_ADDRESS: 'В кошельке выбран другой адрес, не тот, с которым вы вошли. Переключите адрес или войдите заново.', WALLET_NOT_CONNECTED: 'Кошелёк не подключён.',
   TX_NOT_FOUND: 'Транзакция не найдена в сети Base.', TX_FAILED: 'Транзакция не прошла.', TX_NOT_TO_THIS_SELLER: 'В этой транзакции нет USDC на адрес этого продавца.', HASH_INVALID: 'Хеш — это 0x и 64 символа.'};
 const errText = (e: any) => { const m = String(e?.message || e); return ERR[m.split(':')[0]] || m; };
 
@@ -51,7 +53,7 @@ function ItemRow({i, onBuy}: {i: CatalogItem; onBuy: () => void}) {
 function OrderPanel({o}: {o: Order}) {
   const [busy, setBusy] = useState(''); const [msg, setMsg] = useState(''); const [hash, setHash] = useState<Record<number, string>>({});
   const run = async (k: string, f: () => Promise<any>, ok?: string) => { setBusy(k); setMsg(''); try { const r = await f(); setMsg(ok || (r ? '✓ Готово' : 'Пока не видно. Подождите минуту и проверьте снова.')); } catch (e) { setMsg(errText(e)); } setBusy(''); };
-  const text = bazaar.message(o); const c = o.contact || {}; const paid = orderPaid(o);
+  const text = bazaar.message(o); const c = o.contact || {}; const paid = orderPaid(o); const w = useWallet();
   return <div className="bz-order" data-testid="bz-order">
     <h3>Заказ <span className="bz-code">#{o.code}</span> · {o.stallName}</h3>
     {o.items.map(i => <div key={i.id} className="bz-line"><span>{i.title} ×{i.qty}</span><b>{(Number(i.price) * i.qty).toString()} USDC</b></div>)}
@@ -63,13 +65,13 @@ function OrderPanel({o}: {o: Order}) {
           <code title={g.to}>→ {g.seller ? g.seller + ' · ' : ''}{short(g.to)}</code>
           {g.paid ? <span className="bz-ok">✓ Оплачено · <a href={txUrl(g.paid.tx)} target="_blank" rel="noreferrer">{short(g.paid.tx)}</a>{!g.paid.exact && ' (без номера заказа — отправьте продавцу хеш)'}</span> : <>
             <div className="bz-row">
-              {(window as any).ethereum && <button type="button" className="bz-btn acc" disabled={!!busy} data-testid="bz-wallet" onClick={() => run('w' + i, () => payGroup(o.id, i), 'Отправлено. Проверяю через несколько секунд…').then(() => setTimeout(() => void run('c' + i, () => checkGroup(o.id, i)), 6000))}>Оплатить кошельком</button>}
+              <button type="button" className="bz-btn acc" disabled={!!busy} data-testid="bz-wallet" onClick={() => run('w' + i, () => payGroup(o.id, i), 'Отправлено. Проверяю через несколько секунд…').then(() => setTimeout(() => void run('c' + i, () => checkGroup(o.id, i)), 6000))}>{w.address ? `Оплатить с Coinbase · ${short(w.address)}` : 'Оплатить с Coinbase'}</button>
               <a className="bz-btn" href={payUri(g.to, units(g.amount))}>Открыть в кошельке</a>
               <button type="button" className="bz-btn" disabled={!!busy} data-testid="bz-check" onClick={() => void run('c' + i, () => checkGroup(o.id, i))}>{busy === 'c' + i ? 'Ищу…' : 'Проверить оплату'}</button>
             </div>
             <div className="bz-row"><input placeholder="Уже оплатили? Вставьте хеш 0x…" value={hash[i] || ''} onChange={e => setHash({...hash, [i]: e.target.value.trim()})} data-testid="bz-hash"/>
               <button type="button" className="bz-btn" disabled={!hash[i] || !!busy} data-testid="bz-hash-ok" onClick={() => void run('h' + i, () => confirmHash(o.id, i, hash[i]))}>Подтвердить</button></div>
-            <small>Только USDC в сети Base. Платите с личного кошелька (Coinbase Wallet, MetaMask): биржа может округлить сумму.{g.amount !== g.total ? ` Последние цифры (${String(o.code).padStart(4, '0')}) — номер заказа.` : ''}</small>
+            <small>Только USDC в сети Base. Платите с личного кошелька (Coinbase, MetaMask) — не с биржи: биржа может округлить сумму.{g.amount !== g.total ? ` Последние цифры (${String(o.code).padStart(4, '0')}) — номер заказа.` : ''}</small>
           </>}
         </div></> : <div className="bz-pay-b"><b>{g.total} USDC · {g.route === 'x402' ? 'оплата агентом (x402)' : 'оплата у продавца'}</b>{g.url && <a className="bz-btn" href={g.url} target="_blank" rel="noreferrer">Открыть ↗</a>}
           <small>{g.route === 'x402' ? 'Этот товар оплачивает агентский кошелёк по протоколу x402 — модуль в плане (см. «Подключения»). После оплаты агент передаёт хеш: bazaar.confirm.' : 'Оплата завершается на странице продавца.'}</small></div>}
@@ -115,7 +117,7 @@ function AgentLimits() {
   const st = useBazaar(); const p = st.policy; const spent = bazaar.agentSpentToday();
   return <div className="bz-sec" data-testid="bz-agent">
     <h2>Агент и лимиты</h2>
-    <p className="bz-note">Агент не получает ключей и не держит деньги. Он может только попросить кошелёк браузера заплатить — и только в этих рамках. Сам кошелёк всё равно спросит вас. Агентский кошелёк для x402 (платит без вас) — следующий модуль; лимиты ниже станут его правилами.</p>
+    <p className="bz-note">Два разных кошелька. <b>Ваш Coinbase</b>: агент может только подготовить оплату заказа в этих рамках — подтверждаете всё равно вы в кошельке. <b>Кошелёк агента</b> (ниже): отдельный адрес для x402-сервисов, платит сам, но только в лимитах сервера.</p>
     <label className="bz-check"><input type="checkbox" checked={p.enabled} onChange={e => bazaar.setPolicy({enabled: e.target.checked})} data-testid="bz-agent-on"/> Разрешить агенту запускать оплату</label>
     <div className="bz-grid2">
       <label>Максимум за один заказ, USDC<input value={p.perOrderMax} onChange={e => bazaar.setPolicy({perOrderMax: e.target.value.replace(/[^\d.]/g, '') || '0'})}/></label>
@@ -123,8 +125,9 @@ function AgentLimits() {
       <label>Спрашивать меня в портале выше, USDC<input value={p.needConfirmAbove} onChange={e => bazaar.setPolicy({needConfirmAbove: e.target.value.replace(/[^\d.]/g, '') || '0'})}/></label>
     </div>
     <label className="bz-check"><input type="checkbox" checked={p.routes.evm} onChange={e => bazaar.setPolicy({routes: {...p.routes, evm: e.target.checked}})}/> Оплата USDC на адрес продавца</label>
-    <label className="bz-check"><input type="checkbox" checked={p.routes.x402} disabled onChange={() => undefined}/> x402 (агентский кошелёк) — модуль в плане</label>
+    <label className="bz-check"><input type="checkbox" checked={p.routes.x402} disabled onChange={() => undefined}/> x402 — платит кошелёк агента (лимиты задаёт сервер, см. ниже)</label>
     <div><b>Только эти лавки</b> (пусто = любые):<div className="bz-chips">{st.stalls.map(s => <label key={s.key} className="bz-check"><input type="checkbox" checked={p.onlyStalls.includes(s.key)} onChange={e => bazaar.setPolicy({onlyStalls: e.target.checked ? [...p.onlyStalls, s.key] : p.onlyStalls.filter(k => k !== s.key)})}/> {bazaar.name(s)}</label>)}</div></div>
+    <AgentWalletCard/>
     <p className="bz-note">Агент потратил сегодня: <b>{(Number(spent) / 1e6).toString()} USDC</b> из {p.perDayMax}.</p>
   </div>;
 }
@@ -141,7 +144,8 @@ export function BazaarRoom({onClose}: {onClose: () => void}) {
   return <div className={'bz-room' + (solid ? ' bz-solid' : '')} data-testid="bazaar-room" onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={e => { e.preventDefault(); e.stopPropagation(); setDrag(false); void take(e.dataTransfer.files); }}>
     <header className="bz-top">
       <div className="bz-title"><b>🧺 Базар</b><small>здесь вы покупаете: лавки из присланных прайс-листов и каталоги сервисов</small></div>
-      <nav className="bz-tabs">{([['stalls', '🏪 Лавки'], ['online', '🛒 Магазины онлайн'], ['orders', '🧾 Мои покупки'], ['connect', '🔌 Подключения'], ['agent', '🤖 Агент и лимиты']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={tab === k} data-testid={'bz-tab-' + k} onClick={() => { setTab(k); if (k === 'stalls') setOpen(null); }}>{l}{k === 'orders' && st.orders.length ? ` (${st.orders.length})` : ''}</button>)}</nav>
+      <nav className="bz-tabs">{([['stalls', '🏪 Лавки'], ['online', '🛒 Магазины онлайн'], ['crypto', '💸 Платить криптой'], ['orders', '🧾 Мои покупки'], ['connect', '🔌 Подключения'], ['agent', '🤖 Агент и лимиты']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={tab === k} data-testid={'bz-tab-' + k} onClick={() => { setTab(k); if (k === 'stalls') setOpen(null); }}>{l}{k === 'orders' && st.orders.length ? ` (${st.orders.length})` : ''}</button>)}</nav>
+      <WalletChip/>
       <button type="button" className="bz-bgtoggle" title={solid ? 'Показать облака за окном' : 'Спокойный фон'} onClick={() => { const v = !solid; setSolid(v); try { localStorage.setItem('bz.solid', v ? '1' : '0'); } catch { /* */ } }}>{solid ? '☁' : '◐'}</button>
       <button type="button" className="bz-x" onClick={onClose} aria-label="Закрыть">×</button>
     </header>
@@ -173,6 +177,7 @@ export function BazaarRoom({onClose}: {onClose: () => void}) {
         {st.orders.length ? st.orders.slice().reverse().map(o => <div key={o.id} className="bz-ord-row"><button type="button" className="bz-link" onClick={() => { setOpen(o.stall); setOrderId(o.id); setTab('stalls'); }}>#{o.code} · {o.stallName}</button>
           <span>{o.items.map(i => i.title).join(', ').slice(0, 80)}</span><b>{o.groups.reduce((a, g) => a + Number(g.total), 0)} USDC</b><span>{orderPaid(o) ? '✓ оплачено' : 'ждёт оплаты'}</span><small>{new Date(o.created).toLocaleString()}</small></div>) : <p className="bz-note">Пока ничего.</p>}</div>}
       {tab === 'online' && <OnlineShops onFiles={() => { setTab('stalls'); setOpen(null); }}/>}
+      {tab === 'crypto' && <CryptoPay/>}
       {tab === 'connect' && <Connections/>}
       {tab === 'agent' && <AgentLimits/>}
     </div>

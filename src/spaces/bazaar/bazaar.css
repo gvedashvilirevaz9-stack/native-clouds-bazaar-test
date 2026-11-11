@@ -207,3 +207,22 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bz-card-img img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
 .bz-card-img{overflow:hidden}
 .bz-pv-thumbs button{padding:0;overflow:hidden}.bz-pv-thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+/* Coinbase sign-in + "Платить криптой" */
+.bz-cb{display:inline-flex;align-items:center;gap:8px;border:1px solid #ffffffaa;background:#0052ff;color:#fff;border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 4px 14px #0052ff40}
+.bz-cb:disabled{opacity:.7;cursor:wait}.bz-cb.on{background:#ffffffcc;color:#0b2a5c;cursor:default;box-shadow:none;border-color:#0052ff55}
+.bz-cb b{font-weight:600;color:#0052ff}.bz-cb-dot{width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 3px #0052ff}.bz-cb.on .bz-cb-dot{background:#0052ff;box-shadow:inset 0 0 0 3px #fff,0 0 0 1px #0052ff}
+.bz-card{background:#ffffff8c;border:1px solid #ffffffcc;border-radius:16px;padding:16px 18px;margin:14px 0;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 24px #1e3a5a14}
+.bz-card h3{margin:0;font-size:16px}
+.bz-mywallet{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;border-color:#0052ff44;background:linear-gradient(135deg,#ffffffcc,#e6eeffcc)}
+.bz-mywallet>div:first-child{display:flex;flex-direction:column;gap:2px;min-width:240px}.bz-mywallet>small{flex-basis:100%}
+.bz-addr{font-size:17px}.bz-addr a{color:#0b2a5c;text-decoration:none;font-family:ui-monospace,monospace}.bz-bal{font-size:24px;font-weight:700;color:#0052ff}.bz-bal small{font-size:13px;color:#456;font-weight:500}
+.bz-ways{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:6px 0 16px}
+.bz-ways>div{background:#ffffff66;border:1px solid #ffffffaa;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}.bz-ways small{opacity:.8}
+.bz-svcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.bz-svc{background:#ffffff80;border:1px solid #ffffffcc;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.bz-svc.w-here{border-color:#0052ff66;box-shadow:0 0 0 2px #0052ff22}
+.bz-svc-h{display:flex;align-items:center;gap:8px}.bz-svc-h b{flex:1}.bz-svc-i{font-size:20px}
+.bz-svc-f{display:flex;flex-wrap:wrap;gap:6px 12px;opacity:.85}.bz-svc-f a{margin-left:auto}
+.bz-kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:14px}.bz-kv span{opacity:.7}
+.bz-steps{margin:8px 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.bz-crypto details summary{cursor:pointer;font-weight:600}
