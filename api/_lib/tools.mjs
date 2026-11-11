@@ -4,12 +4,27 @@ import {fetchPriceList, searchItems} from './pricelist.mjs';
 import {shopifyConfigured, shopifySearch, shopifyPublicSearch} from './shopify.mjs';
 import {agentConfig, probe, pay} from './x402.mjs';
 import {globalSearch} from './ucp.mjs';
+import marketplace from '../marketplace.mjs';
+import money from '../money.mjs';
+// Run one of our own API handlers in-process (same answer the Bazaar page gets).
+const callApi = (h, query) => new Promise((resolve) => { const res = {statusCode: 200, setHeader() {}, status(c) { this.statusCode = c; return this; }, json(o) { resolve(o); return this; }};
+  Promise.resolve(h({query: Object.fromEntries(Object.entries(query).filter(([, v]) => v != null && v !== '').map(([k, v]) => [k, String(v)])), headers: {}}, res)).catch(e => resolve({error: String(e?.message || e)})); });
 
 const O = (properties, required = []) => ({type: 'object', properties, required});
 const str = (description) => ({type: 'string', description});
 const catalogs = () => (process.env.CATALOG_URLS || '').split(/[\s,]+/).filter(u => /^https:\/\//.test(u));
 
 export const TOOLS = {
+  local_marketplace_search: {
+    description: 'Local Marketplace: shops, food, delivery (Wolt), places on the map and local classifieds in one country/city. Countries: GE, AM, AZ, KZ, CN, TR. Russian queries work (пицца, игрушки, аптека, iPhone 15). Returns sections with items (title, price, url, image, lat/lon).',
+    inputSchema: O({q: str('what to find, e.g. "пицца", "аптека", "игрушки"'), country: str('GE | AM | AZ | KZ | CN | TR'), city: str('city in English, e.g. Batumi, Yerevan, Baku, Almaty (optional)'), scope: {type: 'string', enum: ['local', 'local+world', 'world']}}, ['q', 'country']),
+    run: (a) => callApi(marketplace, a),
+  },
+  agent_services: {
+    description: 'Agent Marketplace (information services as cards): weather, currency rates, news, crypto prices, fear&greed, holidays, air quality, sun times, flights, places, what to watch… Ask in words (q) or call one service (service + its params) or a whole package (package: morning|money|travel|evening|crypto). Information only, no payments.',
+    inputSchema: O({q: str('question in words, e.g. "погода в Батуми", "курс доллара"'), service: str('service id, e.g. weather, fx, news, crypto_price (optional)'), package: str('morning | money | travel | evening | crypto (optional)'), city: str('city (optional)'), country: str('ISO country (optional)')}),
+    run: (a) => callApi(money, a.q || a.service || a.package ? a : {meta: '1'}),
+  },
   status: {
     description: 'What this Bazaar server can do right now: networks, configured catalogs, Shopify store, agent test wallet and its limits. Call first.',
     inputSchema: O({}),

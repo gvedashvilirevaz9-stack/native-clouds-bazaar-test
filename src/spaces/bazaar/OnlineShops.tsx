@@ -4,9 +4,10 @@ import {useEffect, useState} from 'react';
 import type React from 'react';
 import {bazaar} from './store';
 import {ProductView, sized, osmTile, type Product} from './ProductView';
+import {MoneyPlace} from './MoneyPlace';
 
 type Engine = 'shopify' | 'woo';
-type Source = 'all' | Engine | 'market';
+type Source = 'all' | Engine | 'market' | 'money';
 // The owner's Marketplace (archive): search by country / city / scope through /api/marketplace.
 type Country = {cc: string; name: string; capital: string; currency: string; market: string; cities: {en: string; ru: string}[]};
 type MarketMeta = {countries: Country[]; you: {cc: string | null; supported: boolean; city: string | null; name: string | null}};
@@ -50,6 +51,7 @@ const API: Record<Engine, string> = {shopify: '/api/shop-search', woo: '/api/woo
 // Where the Bazaar can look for goods. "on" = works now without keys; the rest are shown honestly as not yet possible.
 // Map pin (teardrop) and globe, drawn inline so they match the glass style.
 export const Pin = ({size = 18}: {size?: number}) => <svg className="bz-pin" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true"><path d="M12 22.5s-7.5-7.6-7.5-13A7.5 7.5 0 0 1 19.5 9.5c0 5.4-7.5 13-7.5 13z" fill="currentColor"/><circle cx="12" cy="9.6" r="2.8" fill="#fff"/></svg>;
+export const Spark = ({size = 18}: {size?: number}) => <svg className="bz-pin" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true"><path d="M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7z" fill="currentColor"/><circle cx="19" cy="18" r="2.2" fill="currentColor"/></svg>;
 export const Globe = ({size = 18}: {size?: number}) => <svg className="bz-pin" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></svg>;
 const PROVIDERS: {id: string; name: string; sub: string; color: string; on: boolean}[] = [
   {id: 'all', name: 'Везде', sub: 'Shopify + WooCommerce сразу', color: '#2f8fd8', on: true},
@@ -163,7 +165,7 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
 
   return <div className="bz-sec bz-online" data-testid="bz-online">
     <div className="bz-markets">
-      <section className={'bz-mk' + (src !== 'market' ? ' on' : '')}><h4><Globe/> Global Marketplace <small>весь интернет</small></h4>
+      <section className={'bz-mk' + (src !== 'market' && src !== 'money' ? ' on' : '')}><h4><Globe/> Global Marketplace <small>весь интернет</small></h4>
         <div className="bz-providers" role="tablist" aria-label="Global Marketplace">{PROVIDERS.map(p => <button key={p.id} type="button" role="tab" disabled={!p.on} data-testid={'bz-prov-' + p.id}
           aria-pressed={p.id === src} style={{'--pc': p.color} as React.CSSProperties} className={'bz-prov' + (p.on ? '' : ' off')}
           onClick={() => { if (p.id === 'files') { onFiles?.(); return; } pick(p.id as Source); }}>
@@ -171,7 +173,11 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
       <section className={'bz-mk local' + (src === 'market' ? ' on' : '')}><h4><Pin/> Local Marketplace <small>в вашей стране</small></h4>
         <button type="button" role="tab" data-testid="bz-prov-market" aria-pressed={src === 'market'} style={{'--pc': '#e0503a'} as React.CSSProperties} className="bz-prov bz-prov-local" onClick={() => pick('market')}>
           <span className="bz-prov-glow"/><span className="bz-prov-pin"><Pin size={34}/></span><b>{meta && cc ? `${FLAG[cc] || ''} ${meta.countries.find(c => c.cc === cc)?.name || ''}` : 'Рядом'}</b><small>магазины, еда, места и услуги по стране и городу</small></button></section>
+      <section className={'bz-mk agent' + (src === 'money' ? ' on' : '')}><h4><Spark/> Agent Marketplace <small>информация и сервисы</small></h4>
+        <button type="button" role="tab" data-testid="bz-prov-money" aria-pressed={src === 'money'} style={{'--pc': '#7a5af5'} as React.CSSProperties} className="bz-prov bz-prov-local" onClick={() => pick('money')}>
+          <span className="bz-prov-glow"/><span className="bz-prov-pin agent"><Spark size={34}/></span><b>Погода, деньги, новости</b><small>курсы, крипта, поездки, вечер — карточками; агент тоже спрашивает (MCP)</small></button></section>
     </div>
+    {src === 'money' ? <MoneyPlace/> : <>
 
     <div className="bz-step"><span>1</span>Категория</div>
     <div className="bz-cats" data-testid="bz-cats">
@@ -213,6 +219,7 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
       </button>)}</div>
     </div>)}
     {dirs.length > 0 && <div className="bz-dirs" data-testid="bz-market-dirs"><b>Искать там же на площадках:</b>{dirs.map(d => <a key={d.url} className="bz-btn" href={d.url} target="_blank" rel="noreferrer">{FLAG[d.cc || ''] || '🌍'} {d.name} ↗</a>)}</div>}
+    </>}
     {view && (() => { const list = blocks.filter(b => b.items.length)[view.b]?.items || []; const it = list[view.k]; if (!it) return null;
       return <ProductView p={it} idx={view.k} total={list.length} onClose={() => setView(null)} onPrev={view.k > 0 ? () => setView({...view, k: view.k - 1}) : undefined} onNext={view.k < list.length - 1 ? () => setView({...view, k: view.k + 1}) : undefined}
         onSave={x => bazaar.saveFavorite({title: x.title, price: x.price, image: x.image, url: x.url, text: x.description?.slice(0, 300), pay: {kind: 'link', url: x.url}})}/>; })()}

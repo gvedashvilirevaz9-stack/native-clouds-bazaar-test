@@ -1,0 +1,532 @@
+[
+  {
+    "id": "morning",
+    "ru": "Утро",
+    "en": "Morning",
+    "icon": "🌅",
+    "question": "С чего начнём утро: погода, новости, курс, крипта — или собрать всё утро одной карточкой?",
+    "options": [
+      {
+        "serviceId": "weather",
+        "label": "Погода",
+        "desc": "сейчас и на 3 дня",
+        "params": {}
+      },
+      {
+        "serviceId": "news",
+        "label": "Новости",
+        "desc": "главное в мире или по теме",
+        "params": {}
+      },
+      {
+        "serviceId": "fx",
+        "label": "Курс доллара",
+        "desc": "USD → лари (NBG)",
+        "params": {}
+      },
+      {
+        "serviceId": "crypto_price",
+        "label": "Крипта",
+        "desc": "BTC и ETH",
+        "params": {}
+      },
+      {
+        "serviceId": "air_quality",
+        "label": "Воздух",
+        "desc": "AQI и PM2.5",
+        "params": {}
+      },
+      {
+        "serviceId": "sun_times",
+        "label": "Солнце",
+        "desc": "восход и закат",
+        "params": {}
+      },
+      {
+        "serviceId": "holidays",
+        "label": "Праздники",
+        "desc": "ближайший выходной",
+        "params": {}
+      },
+      {
+        "serviceId": "on_this_day",
+        "label": "В этот день",
+        "desc": "факт из истории",
+        "params": {}
+      },
+      {
+        "serviceId": "quote_of_day",
+        "label": "Цитата дня",
+        "desc": "для настроения",
+        "params": {}
+      },
+      {
+        "serviceId": "morning_brief",
+        "label": "Собрать всё утро",
+        "desc": "одна карточка: погода, рынок, газ, новости по интересам, портфель",
+        "params": {}
+      }
+    ],
+    "chips": [
+      {
+        "id": "weather",
+        "label": "☀ Погода",
+        "run": [
+          "weather"
+        ]
+      },
+      {
+        "id": "news",
+        "label": "📰 Новости",
+        "run": [
+          "news"
+        ]
+      },
+      {
+        "id": "money",
+        "label": "💱 Курс и крипта",
+        "run": [
+          "fx",
+          "crypto_price"
+        ]
+      },
+      {
+        "id": "all",
+        "label": "🌅 Всё утро",
+        "run": [
+          "morning_brief"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "money",
+    "ru": "Работа / Деньги",
+    "en": "Work / Money",
+    "icon": "💼",
+    "question": "Что нужно: курс валют, акции и индексы, новости бизнеса или прогнозы рынков?",
+    "options": [
+      {
+        "serviceId": "fx",
+        "label": "Курс валют",
+        "desc": "любые пары, лари по NBG",
+        "params": {}
+      },
+      {
+        "serviceId": "stocks",
+        "label": "Акции и индексы",
+        "desc": "S&P 500, Nasdaq, золото",
+        "params": {}
+      },
+      {
+        "serviceId": "news",
+        "label": "Новости бизнеса",
+        "desc": "BBC, CNBC, Guardian",
+        "params": {
+          "topic": "finance"
+        }
+      },
+      {
+        "serviceId": "polymarket",
+        "label": "Прогнозы рынков",
+        "desc": "вероятности Polymarket",
+        "params": {}
+      },
+      {
+        "serviceId": "crypto_price",
+        "label": "Крипта",
+        "desc": "цены",
+        "params": {}
+      },
+      {
+        "serviceId": "time",
+        "label": "Время в городе",
+        "desc": "для созвонов",
+        "params": {}
+      },
+      {
+        "serviceId": "holidays",
+        "label": "Праздники",
+        "desc": "выходные дни страны",
+        "params": {}
+      }
+    ],
+    "chips": [
+      {
+        "id": "fx",
+        "label": "💱 Курс",
+        "run": [
+          "fx"
+        ]
+      },
+      {
+        "id": "stocks",
+        "label": "📈 Рынки",
+        "run": [
+          "stocks"
+        ]
+      },
+      {
+        "id": "biz",
+        "label": "📰 Бизнес-новости",
+        "run": [
+          [
+            "news",
+            {
+              "topic": "finance"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "pm",
+        "label": "🎲 Прогнозы",
+        "run": [
+          "polymarket"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "travel",
+    "ru": "В дороге",
+    "en": "On the road",
+    "icon": "🧳",
+    "question": "Куда едем? Билеты на самолёт, поезд, маршрут по городу, что рядом или справка о стране?",
+    "options": [
+      {
+        "serviceId": "flights",
+        "label": "Авиабилеты",
+        "desc": "дешёвые и быстрые рейсы (Kiwi)",
+        "params": {}
+      },
+      {
+        "serviceId": "trains",
+        "label": "Поезда",
+        "desc": "маршруты и расписание",
+        "params": {}
+      },
+      {
+        "serviceId": "route",
+        "label": "Маршрут A → B",
+        "desc": "км и время",
+        "params": {}
+      },
+      {
+        "serviceId": "places",
+        "label": "Что рядом",
+        "desc": "кафе, аптеки, банкоматы",
+        "params": {}
+      },
+      {
+        "serviceId": "weather",
+        "label": "Погода там",
+        "desc": "на 3 дня",
+        "params": {}
+      },
+      {
+        "serviceId": "country_info",
+        "label": "Справка о стране",
+        "desc": "валюта, розетки, экстренные номера",
+        "params": {}
+      },
+      {
+        "serviceId": "time",
+        "label": "Местное время",
+        "desc": "часовой пояс",
+        "params": {}
+      },
+      {
+        "serviceId": "fx",
+        "label": "Курс местной валюты",
+        "desc": "по NBG / ЕЦБ",
+        "params": {}
+      }
+    ],
+    "chips": [
+      {
+        "id": "fly",
+        "label": "✈ Самолёт",
+        "ask": "Откуда, куда и когда летим? Например: «Тбилиси Стамбул 15 ноября»."
+      },
+      {
+        "id": "train",
+        "label": "🚆 Поезд",
+        "ask": "Откуда и куда едем поездом? Например: «поезд Тбилиси Батуми»."
+      },
+      {
+        "id": "near",
+        "label": "📍 Кафе рядом",
+        "run": [
+          [
+            "places",
+            {
+              "type": "cafe"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "country",
+        "label": "ℹ Справка о стране",
+        "ask": "Какая страна? Например: «справка Турция»."
+      }
+    ]
+  },
+  {
+    "id": "evening",
+    "ru": "Вечер / Отдых",
+    "en": "Evening / Leisure",
+    "icon": "🌙",
+    "question": "Что интереснее: посмотреть, поиграть, сходить в кафе, музыка, спорт?",
+    "options": [
+      {
+        "serviceId": "tv_tonight",
+        "label": "Сериалы сегодня",
+        "desc": "новые эпизоды с рейтингом",
+        "params": {}
+      },
+      {
+        "serviceId": "what_to_watch",
+        "label": "Что посмотреть",
+        "desc": "подборка лучших фильмов/сериалов",
+        "params": {}
+      },
+      {
+        "serviceId": "places",
+        "label": "Кафе и рестораны",
+        "desc": "рядом с тобой",
+        "params": {
+          "type": "restaurant"
+        }
+      },
+      {
+        "serviceId": "music_charts",
+        "label": "Музыка",
+        "desc": "чарт Deezer",
+        "params": {}
+      },
+      {
+        "serviceId": "radio",
+        "label": "Радио",
+        "desc": "онлайн-станции",
+        "params": {}
+      },
+      {
+        "serviceId": "sports",
+        "label": "Спорт",
+        "desc": "матчи и счёт",
+        "params": {}
+      },
+      {
+        "serviceId": "events",
+        "label": "События",
+        "desc": "концерты, кино, фестивали",
+        "params": {}
+      },
+      {
+        "serviceId": "recipe",
+        "label": "Приготовить",
+        "desc": "рецепт на ужин",
+        "params": {}
+      },
+      {
+        "serviceId": "book",
+        "label": "Книга",
+        "desc": "поиск книги",
+        "params": {}
+      },
+      {
+        "serviceId": "chess_puzzle",
+        "label": "Поиграть",
+        "desc": "шахматная задача дня",
+        "params": {}
+      },
+      {
+        "serviceId": "joke",
+        "label": "Шутка",
+        "desc": "на английском",
+        "params": {}
+      }
+    ],
+    "chips": [
+      {
+        "id": "watch",
+        "label": "🎬 Посмотреть",
+        "run": [
+          "what_to_watch",
+          "tv_tonight"
+        ]
+      },
+      {
+        "id": "play",
+        "label": "♟ Поиграть",
+        "run": [
+          "chess_puzzle"
+        ]
+      },
+      {
+        "id": "cafe",
+        "label": "☕ В кафе",
+        "run": [
+          [
+            "places",
+            {
+              "type": "cafe"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "music",
+        "label": "🎵 Музыка",
+        "run": [
+          "music_charts",
+          "radio"
+        ]
+      },
+      {
+        "id": "sport",
+        "label": "⚽ Спорт",
+        "run": [
+          "sports"
+        ]
+      },
+      {
+        "id": "events",
+        "label": "🎟 События",
+        "run": [
+          "events"
+        ]
+      },
+      {
+        "id": "cook",
+        "label": "🍳 Готовить",
+        "run": [
+          "recipe"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "crypto",
+    "ru": "Крипто",
+    "en": "Crypto",
+    "icon": "🪙",
+    "question": "Что смотрим: цены, мой портфель, лучший своп, проверку токена, китов или бриф дня?",
+    "options": [
+      {
+        "serviceId": "crypto_price",
+        "label": "Цены",
+        "desc": "BTC, ETH, SOL",
+        "params": {}
+      },
+      {
+        "serviceId": "portfolio",
+        "label": "Мой портфель",
+        "desc": "8 сетей",
+        "params": {}
+      },
+      {
+        "serviceId": "best_swap",
+        "label": "Лучший своп",
+        "desc": "KyberSwap, Velora, LI.FI, Uniswap",
+        "params": {}
+      },
+      {
+        "serviceId": "best_bridge",
+        "label": "Лучший мост",
+        "desc": "Across, Relay, LI.FI",
+        "params": {}
+      },
+      {
+        "serviceId": "token_check",
+        "label": "Проверка токена",
+        "desc": "GoPlus",
+        "params": {}
+      },
+      {
+        "serviceId": "liquidity",
+        "label": "Ликвидность",
+        "desc": "пулы и влияние на цену",
+        "params": {}
+      },
+      {
+        "serviceId": "whales",
+        "label": "Киты",
+        "desc": "крупные переводы",
+        "params": {}
+      },
+      {
+        "serviceId": "basis_daily_brief",
+        "label": "Бриф дня",
+        "desc": "Basis Desk",
+        "params": {}
+      },
+      {
+        "serviceId": "gas",
+        "label": "Газ",
+        "desc": "комиссии сетей",
+        "params": {}
+      },
+      {
+        "serviceId": "fear_greed",
+        "label": "Страх и жадность",
+        "desc": "настроение рынка",
+        "params": {}
+      },
+      {
+        "serviceId": "news",
+        "label": "Крипто-новости",
+        "desc": "CoinDesk, Cointelegraph, Decrypt",
+        "params": {
+          "topic": "crypto"
+        }
+      },
+      {
+        "serviceId": "do_it_for_me",
+        "label": "Сделай за меня",
+        "desc": "своп ≤ $10 → готовая карточка",
+        "params": {}
+      }
+    ],
+    "chips": [
+      {
+        "id": "prices",
+        "label": "💲 Цены",
+        "run": [
+          "crypto_price",
+          "fear_greed"
+        ]
+      },
+      {
+        "id": "pf",
+        "label": "👛 Портфель",
+        "run": [
+          "portfolio"
+        ]
+      },
+      {
+        "id": "swap",
+        "label": "🔄 Своп",
+        "run": [
+          "best_swap"
+        ]
+      },
+      {
+        "id": "whales",
+        "label": "🐋 Киты",
+        "run": [
+          "whales"
+        ]
+      },
+      {
+        "id": "brief",
+        "label": "🗞 Бриф",
+        "run": [
+          "basis_daily_brief"
+        ]
+      }
+    ]
+  }
+]
