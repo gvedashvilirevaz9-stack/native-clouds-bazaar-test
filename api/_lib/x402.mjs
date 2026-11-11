@@ -22,7 +22,7 @@ export function agentConfig() {
 const normKey = (k) => (k.startsWith('0x') ? k : '0x' + k).trim();
 
 /** Normalised requirements from a 402 response. */
-async function readRequirements(res) {
+export async function readRequirements(res) {
   const hdr = res.headers.get('payment-required'); let body = null; const text = await res.text();
   try { body = JSON.parse(text); } catch { /* not json */ }
   const v2 = hdr ? unb64(hdr) : null; const src = v2 || body || {};
