@@ -378,3 +378,4 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bf-code{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.bf-code code{font-size:16px;padding:6px 10px;border-radius:10px;background:#fff;user-select:all}
 .bf-raw pre{max-height:240px;overflow:auto;font-size:11px;background:#ffffffaa;padding:10px;border-radius:12px}
 .bf-gone{opacity:.45;filter:grayscale(1);cursor:not-allowed}
+.bf-where{display:inline-flex;align-items:center;white-space:nowrap;font-size:13px;font-weight:600}
