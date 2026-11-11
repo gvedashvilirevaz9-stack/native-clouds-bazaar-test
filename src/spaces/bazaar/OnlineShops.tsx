@@ -3,7 +3,7 @@
 import {useEffect, useState} from 'react';
 import type React from 'react';
 import {bazaar} from './store';
-import {ProductView, sized, type Product} from './ProductView';
+import {ProductView, sized, osmTile, type Product} from './ProductView';
 
 type Engine = 'shopify' | 'woo';
 type Source = 'all' | Engine | 'market';
@@ -129,7 +129,7 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
       const j = await (await fetch(`/api/marketplace?q=${encodeURIComponent(query)}&country=${cc}&scope=${encodeURIComponent(scope)}${city ? '&city=' + encodeURIComponent(city) : ''}&lang=ru`)).json();
       if (j.error) throw new Error('Marketplace не ответил.');
       setBlocks((j.sections || []).map((s: any) => ({key: 'm-' + s.id, title: s.title, sub: [s.provider, s.slot === 'local' ? 'рядом' : s.slot === 'corridor' ? 'соседняя страна' : 'мир', !s.ok && s.status].filter(Boolean).join(' · '),
-        items: (s.items || []).map((i: any) => ({title: i.title, price: i.price != null ? String(i.price) : '', currency: i.currency || '', image: i.image, images: i.image ? [i.image] : [], url: i.url || '', description: i.subtitle || '', seller: i.provider, store: 'market', vendor: null, available: null, kind: i.kind, priceLabel: i.priceLabel, rating: i.rating}))})));
+        items: (s.items || []).map((i: any) => ({title: i.title, price: i.price != null ? String(i.price) : '', currency: i.currency || '', image: i.image, images: i.image ? [i.image] : [], url: i.url || '', description: i.subtitle || '', seller: i.provider, store: 'market', vendor: null, available: null, kind: i.kind, priceLabel: i.priceLabel, rating: i.rating, lat: i.lat, lon: i.lon}))})));
       setDirs((j.directories || []).filter((d: any) => d.url));
       const ok = (j.sources || []).filter((x: any) => x.ok).length; setSrcInfo(`${j.location?.label || ''}${j.location?.city ? ', ' + j.location.city : ''} · ${j.breadcrumb || j.title} · источников ответило ${ok} из ${(j.sources || []).length}`);
       if (j.nav?.length) setNotes([`Уточните: ${j.nav.join(', ')}`]);
@@ -208,7 +208,7 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
     {blocks.filter(b => b.items.length).map((b, bi) => <div key={b.key} className="bz-storeblock">
       <div className="bz-storehead"><b>{b.title}</b>{b.sub && <small>{b.sub}</small>}<button type="button" className="bz-btn" onClick={() => toBazaar(b)}>＋ Сохранить как лавку</button></div>
       <div className="bz-cards">{b.items.map((i, k) => <button type="button" key={k} className="bz-card" onClick={() => setView({b: bi, k})} data-testid="bz-online-card">
-        <span className={'bz-card-img' + (i.image ? '' : ' art t' + (k % 5))}>{i.image ? <img src={sized(i.image, 400)} alt="" loading="lazy" decoding="async"/> : (i as any).kind === 'store' ? <span className="bz-glyph pin"><Pin size={46}/></span> : <span className="bz-glyph">{glyph(b.title)}</span>}{(i.images?.length || 0) > 1 && <em className="bz-card-n">{i.images!.length} фото</em>}</span>
+        <span className={'bz-card-img' + (i.image ? '' : ' art t' + (k % 5))}>{i.image ? <img src={sized(i.image, 400)} alt="" loading="lazy" decoding="async"/> : Number.isFinite(i.lat) ? <span className="bz-cardmap"><img src={osmTile(i.lat!, i.lon!)} alt="" loading="lazy"/><Pin size={34}/></span> : (i as any).kind === 'store' ? <span className="bz-glyph pin"><Pin size={46}/></span> : <span className="bz-glyph">{glyph(b.title)}</span>}{(i.images?.length || 0) > 1 && <em className="bz-card-n">{i.images!.length} фото</em>}</span>
         <b>{i.title}</b><span className="bz-card-p">{price(i)}{i.compareAt && <s> {price({...i, price: i.compareAt})}</s>}{i.available === false ? ' · нет в наличии' : ''}</span>{i.seller && <small className="bz-card-s">{i.seller}</small>}<small>Смотреть ⤢</small>
       </button>)}</div>
     </div>)}

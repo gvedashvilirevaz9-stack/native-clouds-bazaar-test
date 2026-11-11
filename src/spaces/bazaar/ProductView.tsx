@@ -5,7 +5,11 @@ import {bazaar} from './store';
 
 export type Product = {title: string; price: string | null; currency?: string | null; image: string | null; images?: string[]; url: string;
   description?: string; compareAt?: string | null; options?: {name: string; values: string[]}[]; rating?: number | null; reviews?: number | null;
-  available?: boolean | null; seller?: string | null; store?: string; category?: string; variants?: {title: string; price: string; available: boolean}[]; vendor?: string | null};
+  available?: boolean | null; seller?: string | null; store?: string; category?: string; variants?: {title: string; price: string; available: boolean}[]; vendor?: string | null; lat?: number; lon?: number};
+/** OpenStreetMap: a map window around a point (no key). */
+export const osmEmbed = (lat: number, lon: number, d = 0.004) => `https://www.openstreetmap.org/export/embed.html?bbox=${lon - d * 1.6},${lat - d},${lon + d * 1.6},${lat + d}&layer=mapnik&marker=${lat},${lon}`;
+export const osmTile = (lat: number, lon: number, z = 16) => { const n = 2 ** z, r = lat * Math.PI / 180; const x = Math.floor((lon + 180) / 360 * n), y = Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n); return `https://tile.openstreetmap.org/${z}/${x}/${y}.png`; };
+const hasGeo = (p: Product) => Number.isFinite(p.lat) && Number.isFinite(p.lon);
 
 const money = (v: string | null | undefined, cur?: string | null) => !v ? '' : cur && cur !== 'USD' ? `${Number(v).toLocaleString()} ${cur}` : `$${Number(v).toFixed(2)}`;
 /** Ask the shop's image server for a smaller file when it can resize (Shopify CDN: ?width=). Cards get ~400px, the big view ~1600px, not the 4000px original. */
@@ -23,7 +27,7 @@ export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p
   const stage = useRef<HTMLDivElement>(null);
   useEffect(() => { setFull(p); setI(0); setZoom(false); setSaved(false);
     const thin = (p.images?.length || 0) < 2 || !p.description || !p.options?.length;
-    if (!thin || !/^https:\/\//.test(p.url)) return;
+    if (!thin || !/^https:\/\//.test(p.url) || p.store === 'market') return;
     let alive = true; setLoading(true);
     fetch(`/api/product?url=${encodeURIComponent(p.url)}`).then(r => r.json()).then(d => { if (!alive || d.error) return;
       setFull(x => ({...x, images: mergeImgs((x.images?.length ? x.images : [x.image]).filter(Boolean) as string[], d.images || []), description: d.description || x.description, options: d.options?.length ? d.options : x.options,
@@ -52,10 +56,11 @@ export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p
       <div className="bz-pv-gal">
         <div ref={stage} className={'bz-pv-stage' + (zoom ? ' z' : '')} onMouseMove={zoom ? move : undefined} onClick={e => { if (!src) return; if (!zoom) move(e); setZoom(!zoom); }} data-testid="bz-pv-stage">
           {shown && <div className="bz-pv-img" style={{backgroundImage: `url("${sized(shown, 1600).replace(/"/g, '%22')}")`, backgroundPosition: zoom ? pos : 'center', backgroundSize: zoom ? '240%' : 'contain'}}/>}
-          {!shown && <span className="bz-pv-noimg">нет фото</span>}
+          {!shown && hasGeo(full) && <iframe className="bz-pv-map" title="Карта" src={osmEmbed(full.lat!, full.lon!)} loading="lazy" onClick={e => e.stopPropagation()} data-testid="bz-pv-map"/>}
+          {!shown && !hasGeo(full) && <span className="bz-pv-noimg">нет фото</span>}
           <button type="button" className="bz-pv-arr l" style={{visibility: imgs.length > 1 ? 'visible' : 'hidden'}} onClick={e => { e.stopPropagation(); go(-1); }} aria-label="Предыдущее фото">‹</button>
           <button type="button" className="bz-pv-arr r" style={{visibility: imgs.length > 1 ? 'visible' : 'hidden'}} onClick={e => { e.stopPropagation(); go(1); }} aria-label="Следующее фото">›</button>
-          <span className="bz-pv-hint">{zoom ? 'ведите мышью · клик — уменьшить' : 'клик — увеличить'}{imgs.length > 1 ? ` · ${i + 1} / ${imgs.length}` : ''}</span>
+          <span className="bz-pv-hint" style={!shown && hasGeo(full) ? {display: 'none'} : undefined}>{zoom ? 'ведите мышью · клик — уменьшить' : 'клик — увеличить'}{imgs.length > 1 ? ` · ${i + 1} / ${imgs.length}` : ''}</span>
         </div>
         <div className="bz-pv-thumbs">{imgs.length > 1 ? imgs.map((t, k) => <button key={k} type="button" aria-pressed={k === i} onClick={() => { setI(k); setZoom(false); }} aria-label={`Фото ${k + 1}`}><img src={sized(t, 160)} alt="" loading="lazy" decoding="async"/></button>) : <span className="bz-pv-thumbs-empty">{loading ? 'загружаю фото…' : 'одно фото'}</span>}</div>
       </div>

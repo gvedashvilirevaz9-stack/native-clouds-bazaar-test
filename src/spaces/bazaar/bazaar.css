@@ -260,3 +260,7 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bz-card-img.art.t0{background:linear-gradient(140deg,#fff3c4,#ffe2a8)}.bz-card-img.art.t1{background:linear-gradient(140deg,#efe4ff,#dcd0ff)}.bz-card-img.art.t2{background:linear-gradient(140deg,#dcf7e6,#c4ecd4)}.bz-card-img.art.t3{background:linear-gradient(140deg,#ffe4d6,#ffd0bc)}.bz-card-img.art.t4{background:linear-gradient(140deg,#dcefff,#c6e2fb)}
 .bz-glyph{font-size:52px;filter:drop-shadow(0 6px 10px #0002)}.bz-glyph.pin{color:#e0503a;font-size:0}
 @media (max-width:980px){.bz-markets{grid-template-columns:1fr}}
+/* map instead of a missing photo */
+.bz-pv-map{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:inherit}
+.bz-cardmap{position:absolute;inset:0;display:grid;place-items:center;color:#e0503a}.bz-cardmap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.85)}
+.bz-cardmap svg{position:relative;filter:drop-shadow(0 4px 6px #0005);transform:translateY(-14px)}
