@@ -9,7 +9,7 @@ type Kind = 'topups' | 'gift-cards' | 'esims';
 type Pkg = {value: any; label: string; price?: string | null};
 type Prod = {slug: string; id: string; name: string; image: string | null; country?: string | null; pkgs: Pkg[]; raw: any};
 type Buy = {invoice: string; product: string; amount: string; at: number; status: string; codes?: any[]; tx?: string | null; phone?: string};
-const API = '/api/bitrefill';
+const API = '/api/x/bitrefill';
 const KEY = 'bz.bitrefill.v1', ORD = 'bz.bitrefill.orders.v1';
 const KINDS: {id: Kind; ru: string; icon: string; color: string}[] = [{id: 'topups', ru: 'Пополнить телефон', icon: '📱', color: '#2f8fd8'}, {id: 'gift-cards', ru: 'Подарочные карты', icon: '🎁', color: '#e0508f'}, {id: 'esims', ru: 'eSIM для поездок', icon: '📶', color: '#14a3a8'}];
 const PRESETS: Record<Kind, string[]> = {topups: ['Magti', 'Silknet', 'Beeline'], 'gift-cards': ['Amazon', 'Steam', 'Netflix', 'Spotify', 'Apple', 'Google Play', 'Uber', 'Airbnb'], esims: ['Turkey', 'Europe', 'Georgia', 'USA', 'United Arab Emirates', 'Thailand', 'Asia', 'Global']};

@@ -12,7 +12,7 @@
 //   GET  ?op=status&invoice_id=
 import {getAddress, isAddress} from 'viem';
 import {createSiweMessage} from 'viem/siwe';
-import {readRequirements} from './_lib/x402.mjs';
+import {readRequirements} from './x402.mjs';
 
 const API = 'https://api.bitrefill.com';
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64');
