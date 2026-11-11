@@ -1,6 +1,7 @@
 // "Базар": the buying side. Separate from "My shop" (selling side): own room, own storage, own commands.
 // Stalls = price-list files people send you + catalogs agents bring from outside services. One search over all.
 import {useEffect, useMemo, useRef, useState} from 'react';
+import type React from 'react';
 import qrcode from 'qrcode-generator';
 import {bazaar, useBazaar, type Order, type Stall, type CatalogItem} from './store';
 import {parseCartridge} from './cartridge';
@@ -97,19 +98,19 @@ function StallView({s, onOrder}: {s: Stall; onOrder: (o: Order) => void}) {
   return <div className="bz-list">{s.note && <p className="bz-note">{s.note}</p>}{bazaar.catalog(s.key).map(i => <ItemRow key={i.id} i={i} onBuy={() => onOrder(bazaar.order(s.key, [{id: i.id, qty: 1}]))}/>)}</div>;
 }
 
+const CONN_COLOR: Record<string, string> = {ready: '#2f9e63', adapter: '#2f8fd8', planned: '#8a8fa0'};
 function Connections() {
+  const [sel, setSel] = useState(''); const c = CONNECTORS.find(x => x.id === sel);
   return <div className="bz-sec" data-testid="bz-connect">
-    <h2>Подключения: кто и как продаёт в Базаре</h2>
-    <p className="bz-note">У каждого источника свой стандарт. Модули включаются по одному: сначала покупаете вы сами (USDC с личного кошелька), потом — агент со своим кошельком и лимитами.</p>
-    <div className="bz-conns">{CONNECTORS.map(c => <div key={c.id} className={'bz-conn s-' + c.status}>
-      <div className="bz-conn-h"><b>{c.title}</b><span className={'bz-st s-' + c.status}>{STATUS_RU[c.status]}</span></div>
-      <small><b>Стандарт:</b> {c.standard}</small>
-      <small><b>Кто платит:</b> {c.payers.map(p => p === 'human' ? '👤 человек' : '🤖 агент').join(', ')} · {c.flows.map(f => FLOW_RU[f]).join(', ')}</small>
-      <small><b>Деньги:</b> {c.money}</small>
-      <small><b>Как подключить:</b> {c.how}</small>
-      <small><b>Агент:</b> {c.agent}</small>
-      <small><b>Нужно:</b> {c.needs}{c.link && <> · <a href={c.link} target="_blank" rel="noreferrer">{c.link.replace(/^https:\/\//, '')}</a></>}</small>
-    </div>)}</div>
+    <div className="bz-step"><span>🔌</span>Откуда приходят товары <small>выберите источник</small></div>
+    <div className="bz-providers">{CONNECTORS.map(x => <button key={x.id} type="button" aria-pressed={sel === x.id} style={{'--pc': CONN_COLOR[x.status]} as React.CSSProperties} className="bz-prov" onClick={() => setSel(sel === x.id ? '' : x.id)}>
+      <span className="bz-prov-glow"/><b>{x.title.split(/[(:]/)[0].trim()}</b><small>{x.payers.map(p => p === 'human' ? '👤 человек' : '🤖 агент').join(' · ')}</small><i>{STATUS_RU[x.status]}</i></button>)}</div>
+    {c && <div className="bz-box bz-svcdetail" data-testid="bz-conn-detail">
+      <div className="bz-svcdetail-h"><b>{c.title}</b><span>{STATUS_RU[c.status]}</span><span>{c.flows.map(f => FLOW_RU[f]).join(', ')}</span></div>
+      <p>{c.how}</p><p className="bz-svcdetail-how">Агент: {c.agent}</p>
+      <details><summary>Технически</summary><p className="bz-note">Стандарт: {c.standard}. Деньги: {c.money}. Нужно: {c.needs}</p></details>
+      {c.link && <div className="bz-row"><a className="bz-btn" href={c.link} target="_blank" rel="noreferrer">Подробнее ↗</a></div>}
+    </div>}
   </div>;
 }
 

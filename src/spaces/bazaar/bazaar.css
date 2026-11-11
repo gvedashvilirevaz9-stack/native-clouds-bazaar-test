@@ -236,3 +236,14 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bz-dirs{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0}
 .bz-svc.act{cursor:pointer;transition:transform .12s,box-shadow .12s}.bz-svc.act:hover{transform:translateY(-2px);box-shadow:0 10px 26px #1e3a5a22;border-color:#fff}
 .bz-svc-cta{align-self:flex-start;margin-top:4px;font-size:13px;font-weight:600;padding:6px 12px;border-radius:999px;background:#0052ff;color:#fff}.bz-svc-cta.off{background:#ffffff99;color:#567}
+/* service detail panel (crypto + connections), same glass as providers */
+.bz-svcdetail{border-color:color-mix(in srgb,var(--pc,#2f8fd8),#fff 55%);box-shadow:0 10px 30px color-mix(in srgb,var(--pc,#2f8fd8),transparent 80%),inset 0 1px 0 #fff;backdrop-filter:blur(10px)}
+.bz-svcdetail p{margin:0;font-size:14px;line-height:1.45;color:#203d4b}.bz-svcdetail-how{opacity:.8}
+.bz-svcdetail-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.bz-svcdetail-h b{font-size:17px;margin-right:6px}
+.bz-svcdetail-h span{font-size:12px;padding:3px 10px;border-radius:999px;background:#ffffff99;border:1px solid #ffffffcc;color:#3d5868}
+.bz-crypto .bz-btn.acc,.bz-svcdetail .bz-btn.acc{background:#0052ff;border-color:#0052ff}
+.bz-mywallet{backdrop-filter:blur(10px)}
+.bz-crypto,.bz-sec[data-testid=bz-connect]{max-width:1440px}
+.bz-crypto .bz-box,.bz-sec[data-testid=bz-connect] .bz-box{max-width:900px}
+.bz-crypto .bz-prov i,.bz-sec[data-testid=bz-connect] .bz-prov i{position:relative;top:auto;right:auto;margin-top:6px;order:9}
+.bz-prov[aria-pressed=true] i{background:#ffffff40;color:#fff}

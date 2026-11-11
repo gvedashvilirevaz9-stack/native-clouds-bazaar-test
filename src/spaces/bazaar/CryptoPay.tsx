@@ -1,20 +1,21 @@
 // "💸 Платить криптой": your Coinbase wallet in the Bazaar + where USDC actually works + a manual "pay to address".
 // Facts about outside services are as of Nov 2026; each card links to the service itself.
 import {useEffect, useState} from 'react';
+import type React from 'react';
 import {useWallet, signIn, signOut, refreshBalance, payUsdc} from './wallet';
 import {fmt, units, txUrl, addrUrl} from '../shop/chain';
 
 const short = (a: string) => a.slice(0, 6) + '…' + a.slice(-4);
-type Svc = {icon: string; name: string; what: string; how: string; who: 'human' | 'agent' | 'both'; where: 'here' | 'site' | 'agent'; net: string; link?: string; tab?: string; cta: string};
+type Svc = {icon: string; name: string; what: string; how: string; who: 'human' | 'agent' | 'both'; where: 'here' | 'site' | 'agent'; net: string; link?: string; tab?: string; cta: string; sub: string; color: string};
 
 export const CRYPTO_SERVICES: Svc[] = [
-  {icon: '🏪', name: 'Лавки «Моего магазина»', what: 'Товары из прайс-листов, которые вам прислали (вкладка «Лавки»).', how: 'Корзина → «Оплатить с Coinbase». USDC уходит прямо продавцу, номер заказа зашит в сумму.', who: 'both', where: 'here', net: 'USDC · Base', tab: 'stalls', cta: 'Открыть лавки'},
-  {icon: '🛍', name: 'Shopify-магазины с оплатой USDC', what: 'Обычные интернет-магазины. Кнопка USDC есть не у всех: только у продавцов из стран, где Shopify её включил.', how: 'Найти товар в «Магазинах онлайн» → открыть магазин → на кассе выбрать USDC → подтвердить в Coinbase.', who: 'human', where: 'site', net: 'USDC · Base и др.', link: 'https://help.shopify.com/en/manual/payments/shopify-payments/usdc-payments', tab: 'online', cta: 'Искать в Shopify'},
-  {icon: '🎁', name: 'Bitrefill', what: 'Подарочные карты (Amazon, Steam и др.), пополнение телефона, eSIM для поездок.', how: 'На сайте выбрать товар → оплата «USDC (Base)» → перевести сумму с Coinbase (или через форму ниже).', who: 'both', where: 'site', net: 'USDC · Base', link: 'https://www.bitrefill.com', cta: 'Открыть Bitrefill ↗'},
-  {icon: '🏨', name: 'Travala', what: 'Отели, а также перелёты и туры за криптовалюту. Для агентов есть протокол бронирования отелей с оплатой USDC.', how: 'Человек: оплата криптой на сайте. Агент: ищет и бронирует, последний шаг — ваша подпись.', who: 'both', where: 'site', net: 'USDC · Base и др.', link: 'https://www.travala.com', cta: 'Открыть Travala ↗'},
-  {icon: '🧾', name: 'Кнопка «Оплатить криптой» на кассе', what: 'Магазины на Stripe или PayPal, у которых включена оплата криптой.', how: 'На кассе магазина выбрать оплату криптой → подключить Coinbase → подтвердить.', who: 'human', where: 'site', net: 'USDC, разные сети', tab: 'online', cta: 'Искать магазины'},
-  {icon: '⚡', name: 'Платные API за запрос (x402)', what: 'Данные, ИИ, поиск, погода, отчёты. Цена — центы за запрос. Каталог: x402 Bazaar / agentic.market.', how: 'Платит агент своим отдельным кошельком в рамках лимитов (вкладка «Агент и лимиты»). Человек ничего не нажимает.', who: 'agent', where: 'agent', net: 'USDC · Base', link: 'https://agentic.market', tab: 'agent', cta: 'Кошелёк агента и лимиты'},
-  {icon: '💸', name: 'Moneyplace (ваши сервисы)', what: '39 сервисов из вашей сборки Money: утро, деньги, крипта, поездки, вечер. Бесплатные и платные по тарифам.', how: 'Следующий модуль: подключается к Базару отдельно, оплата платных — x402 через агента или вручную.', who: 'both', where: 'agent', net: 'USDC · Base', cta: 'Скоро'},
+  {sub: 'прайс-листы · USDC продавцу', color: '#d98a2f', icon: '🏪', name: 'Лавки', what: 'Товары из прайс-листов, которые вам прислали (вкладка «Лавки»).', how: 'Корзина → «Оплатить с Coinbase». USDC уходит прямо продавцу, номер заказа зашит в сумму.', who: 'both', where: 'here', net: 'USDC · Base', tab: 'stalls', cta: 'Открыть лавки'},
+  {sub: 'USDC на кассе магазина', color: '#5fae3e', icon: '🛍', name: 'Shopify', what: 'Обычные интернет-магазины. Кнопка USDC есть не у всех: только у продавцов из стран, где Shopify её включил.', how: 'Найти товар в «Магазинах онлайн» → открыть магазин → на кассе выбрать USDC → подтвердить в Coinbase.', who: 'human', where: 'site', net: 'USDC · Base и др.', link: 'https://help.shopify.com/en/manual/payments/shopify-payments/usdc-payments', tab: 'online', cta: 'Искать в Shopify'},
+  {sub: 'подарочные карты, eSIM, связь', color: '#3f7bf2', icon: '🎁', name: 'Bitrefill', what: 'Подарочные карты (Amazon, Steam и др.), пополнение телефона, eSIM для поездок.', how: 'На сайте выбрать товар → оплата «USDC (Base)» → перевести сумму с Coinbase (или через форму ниже).', who: 'both', where: 'site', net: 'USDC · Base', link: 'https://www.bitrefill.com', cta: 'Открыть Bitrefill ↗'},
+  {sub: 'отели и поездки', color: '#14a3a8', icon: '🏨', name: 'Travala', what: 'Отели, а также перелёты и туры за криптовалюту. Для агентов есть протокол бронирования отелей с оплатой USDC.', how: 'Человек: оплата криптой на сайте. Агент: ищет и бронирует, последний шаг — ваша подпись.', who: 'both', where: 'site', net: 'USDC · Base и др.', link: 'https://www.travala.com', cta: 'Открыть Travala ↗'},
+  {sub: 'Stripe / PayPal: крипта на кассе', color: '#7a5af5', icon: '🧾', name: 'Касса с криптой', what: 'Магазины на Stripe или PayPal, у которых включена оплата криптой.', how: 'На кассе магазина выбрать оплату криптой → подключить Coinbase → подтвердить.', who: 'human', where: 'site', net: 'USDC, разные сети', tab: 'online', cta: 'Искать магазины'},
+  {sub: 'API за центы · платит агент', color: '#e0503a', icon: '⚡', name: 'x402 сервисы', what: 'Данные, ИИ, поиск, погода, отчёты. Цена — центы за запрос. Каталог: x402 Bazaar / agentic.market.', how: 'Платит агент своим отдельным кошельком в рамках лимитов (вкладка «Агент и лимиты»). Человек ничего не нажимает.', who: 'agent', where: 'agent', net: 'USDC · Base', link: 'https://agentic.market', tab: 'agent', cta: 'Кошелёк агента и лимиты'},
+  {sub: '39 ваших сервисов · скоро', color: '#999', icon: '💸', name: 'Moneyplace', what: '39 сервисов из вашей сборки Money: утро, деньги, крипта, поездки, вечер. Бесплатные и платные по тарифам.', how: 'Следующий модуль: подключается к Базару отдельно, оплата платных — x402 через агента или вручную.', who: 'both', where: 'agent', net: 'USDC · Base', cta: 'Скоро'},
 ];
 const WHO: Record<Svc['who'], string> = {human: '👤 платите вы', agent: '🤖 платит агент', both: '👤 вы или 🤖 агент'};
 const WHERE: Record<Svc['where'], string> = {here: 'работает здесь', site: 'на сайте сервиса', agent: 'через агента'};
@@ -50,10 +51,9 @@ function ManualPay() {
 }
 
 export function CryptoPay({go}: {go?: (tab: string) => void}) {
-  const w = useWallet();
+  const w = useWallet(); const [sel, setSel] = useState(''); const cur = CRYPTO_SERVICES.find(x => x.name === sel);
   useEffect(() => { if (w.address) void refreshBalance(); }, [w.address]);
   return <div className="bz-sec bz-crypto" data-testid="bz-crypto">
-    <h2>Платить криптой</h2>
     <div className="bz-box bz-mywallet">
       {w.address ? <>
         <div><small>Ваш кошелёк · вход через Coinbase</small><b className="bz-addr"><a href={addrUrl(w.address)} target="_blank" rel="noreferrer">{short(w.address)}</a></b>
@@ -69,21 +69,16 @@ export function CryptoPay({go}: {go?: (tab: string) => void}) {
       </>}
     </div>
 
-    <div className="bz-ways">
-      <div><b>1 · Перевод на адрес</b><small>Продавец или сервис даёт адрес и сумму. Вы отправляете USDC с Coinbase. Так работают лавки и счета Bitrefill.</small></div>
-      <div><b>2 · Касса магазина</b><small>На странице магазина кнопка USDC / «Оплатить криптой». Подключаете Coinbase там же и подтверждаете.</small></div>
-      <div><b>3 · x402 — оплата за запрос</b><small>Сервис отвечает «402: заплатите». Платит агент своим отдельным кошельком, маленькими суммами, в ваших лимитах.</small></div>
-    </div>
-
-    <h3>Где это работает</h3>
-    <div className="bz-svcs">{CRYPTO_SERVICES.map(s => <div key={s.name} className={'bz-svc w-' + s.where + (s.tab || s.link ? ' act' : '')} data-testid="bz-svc" role={s.tab || s.link ? 'button' : undefined} tabIndex={s.tab || s.link ? 0 : undefined}
-      onClick={e => { if ((e.target as HTMLElement).closest('a')) return; if (s.tab && go) go(s.tab); else if (s.link) window.open(s.link, '_blank', 'noopener'); }}>
-      <div className="bz-svc-h"><span className="bz-svc-i">{s.icon}</span><b>{s.name}</b><span className={'bz-st s-' + (s.where === 'here' ? 'ready' : s.where === 'site' ? 'adapter' : 'planned')}>{WHERE[s.where]}</span></div>
-      <small>{s.what}</small>
-      <small><b>Как:</b> {s.how}</small>
-      <small className="bz-svc-f"><span>{WHO[s.who]}</span><span>{s.net}</span>{s.link && <a href={s.link} target="_blank" rel="noreferrer">{s.link.replace(/^https:\/\/(www\.)?/, '').split('/')[0]} ↗</a>}</small>
-      <span className={'bz-svc-cta' + (s.tab || s.link ? '' : ' off')}>{s.cta}{s.tab ? ' →' : ''}</span>
-    </div>)}</div>
+    <div className="bz-step"><span>💸</span>Где платить криптой <small>выберите сервис</small></div>
+    <div className="bz-providers" data-testid="bz-svcs">{CRYPTO_SERVICES.map(x => <button key={x.name} type="button" data-testid="bz-svc" aria-pressed={sel === x.name}
+      style={{'--pc': x.color} as React.CSSProperties} className={'bz-prov' + (x.cta === 'Скоро' ? ' off' : '')} disabled={x.cta === 'Скоро'} onClick={() => setSel(sel === x.name ? '' : x.name)}>
+      <span className="bz-prov-glow"/><b>{x.icon} {x.name}</b><small>{x.sub}</small>{x.where === 'here' && <i>здесь</i>}{x.cta === 'Скоро' && <i>скоро</i>}</button>)}</div>
+    {cur && <div className="bz-box bz-svcdetail" style={{'--pc': cur.color} as React.CSSProperties} data-testid="bz-svc-detail">
+      <div className="bz-svcdetail-h"><b>{cur.icon} {cur.name}</b><span>{WHO[cur.who]}</span><span>{cur.net}</span><span>{WHERE[cur.where]}</span></div>
+      <p>{cur.what}</p><p className="bz-svcdetail-how">{cur.how}</p>
+      <div className="bz-row">{cur.tab && go && <button type="button" className="bz-btn acc" onClick={() => go(cur.tab!)}>{cur.cta} →</button>}
+        {cur.link && <a className={'bz-btn' + (cur.tab ? '' : ' acc')} href={cur.link} target="_blank" rel="noreferrer">{cur.tab ? 'Подробнее ↗' : cur.cta}</a>}</div>
+    </div>}
 
     <ManualPay/>
     <p className="bz-note">Совет: держите на Coinbase-кошельке немного USDC в сети Base. Комиссия сети Base — доли цента; если кошелёк попросит, держите там и немного ETH.</p>
