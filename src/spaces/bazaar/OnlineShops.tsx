@@ -3,7 +3,8 @@
 import {useState} from 'react';
 import {bazaar} from './store';
 
-const STORES: {domain: string; name: string; icon: string; ru: string; hint: string}[] = [
+type Store = {domain: string; name: string; icon: string; ru: string; hint: string};
+const DEFAULT_STORES: Store[] = [
   {domain: 'floydhome.com', name: 'Floyd', icon: '🛋', ru: 'мебель', hint: 'sofa'},
   {domain: 'fromourplace.com', name: 'Our Place', icon: '🍳', ru: 'посуда', hint: 'pan'},
   {domain: 'allbirds.com', name: 'Allbirds', icon: '👟', ru: 'обувь', hint: 'shoes'},
@@ -14,7 +15,7 @@ const STORES: {domain: string; name: string; icon: string; ru: string; hint: str
 // Stores search in English; a few everyday words are translated so "диван" just works.
 const RU: Record<string, string> = {мужчина: 'men', мужчины: 'men', мужской: 'men', мужские: 'men', мужская: 'men', мен: 'men', женщина: 'women', женский: 'women', женские: 'women', женская: 'women', детский: 'kids', детские: 'kids', дети: 'kids', игрушки: 'toys', игрушка: 'toy', машинки: 'cars', машинка: 'car', свитер: 'sweater', свитера: 'sweater', платье: 'dress', сумка: 'bag', часы: 'watch', очки: 'glasses', кофе: 'coffee', чай: 'tea', диван: 'sofa', диваны: 'sofa', кровать: 'bed', стол: 'table', стул: 'chair', кресло: 'chair', кастрюля: 'pot', кастрюли: 'pot', сковорода: 'pan', сковородка: 'pan', нож: 'knife', посуда: 'cookware',
   кроссовки: 'sneakers', обувь: 'shoes', ботинки: 'boots', носки: 'socks', худи: 'hoodie', футболка: 'shirt', штаны: 'pants', шорты: 'shorts', куртка: 'jacket', простыни: 'sheets', подушка: 'pillow', одеяло: 'comforter', полотенце: 'towel', помада: 'lipstick', тени: 'eyeshadow'};
-// A store's own search is loose ("toy cars" brings shoes). Keep only items whose title has every word (car = cars).
+// Score helpers: best title matches first.
 const stem = (w: string) => w.replace(/(es|s)$/, '');
 // Score = how many query words are in the title. Matches go first; a store whose results match nothing is hidden (lipstick for "men").
 const score = (title: string, q: string) => { const t = title.toLowerCase(); return q.split(/\s+/).filter(w => w.length > 1).reduce((a, w) => a + (t.includes(stem(w)) ? 1 : 0), 0); };
@@ -22,8 +23,46 @@ const toEn = (q: string) => q.toLowerCase().split(/\s+/).map(w => RU[w] || w).jo
 
 type Item = {title: string; price: string | null; available: boolean | null; image: string | null; url: string; vendor: string | null; store: string; seller?: string | null; currency?: string | null};
 const GLOBAL = 'global';
+// The person's own list of stores (kept in this browser). Starts with the six examples.
+const KEY = 'bz.stores.v1';
+const loadStores = (): Store[] => { try { const v = JSON.parse(localStorage.getItem(KEY) || 'null'); if (Array.isArray(v)) return v; } catch { /* storage off */ } return DEFAULT_STORES; };
+const saveStores = (v: Store[]) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* storage off */ } };
+const isDomain = (x: string) => /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(x.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, ''));
+const cleanDomain = (x: string) => x.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '').toLowerCase();
+
+function AddStore({stores, onAdd}: {stores: Store[]; onAdd: (s: Store) => void}) {
+  const [open, setOpen] = useState(false); const [name, setName] = useState(''); const [busy, setBusy] = useState(false);
+  const [found, setFound] = useState<{name: string; domain: string}[]>([]); const [msg, setMsg] = useState('');
+  const has = (d: string) => stores.some(s => s.domain === d);
+  const works = async (d: string) => { try { const j = await (await fetch(`/api/shop-search?store=${encodeURIComponent(d)}&q=a`)).json(); return !j.error; } catch { return false; } };
+  const add = async (n: string, d: string) => { setBusy(true); setMsg(''); const ok = await works(d); setBusy(false);
+    if (!ok) { setMsg(`У магазина ${d} закрыт свой поиск — искать по нему можно через «Весь Shopify».`); return; }
+    onAdd({domain: d, name: n, icon: '🛒', ru: '', hint: ''}); setOpen(false); setName(''); setFound([]); };
+  const find = async () => {
+    const q = name.trim(); if (!q) return; setMsg(''); setFound([]);
+    if (isDomain(q)) { await add(cleanDomain(q), cleanDomain(q)); return; }
+    setBusy(true);
+    try { const j = await (await fetch(`/api/global-search?source=shopify&q=${encodeURIComponent(q)}`)).json(); const map = new Map<string, string>();
+      for (const i of j.items || []) if (i.storeDomain) map.set(cleanDomain(i.storeDomain), i.store || i.storeDomain);
+      const all = [...map].map(([domain, n]) => ({name: n, domain}));
+      const near = all.filter(x => (x.name + ' ' + x.domain).toLowerCase().includes(q.toLowerCase()));
+      setFound(near.length ? near : all); if (!all.length) setMsg('Магазин не найден. Попробуйте адрес сайта, например mattel.com');
+    } catch { setMsg('Поиск работает на сайте Vercel.'); }
+    setBusy(false);
+  };
+  if (!open) return <button type="button" className="bz-addstore" onClick={() => setOpen(true)} data-testid="bz-addstore">＋ Магазин</button>;
+  return <div className="bz-addpanel" data-testid="bz-addpanel">
+    <div className="bz-search"><input autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && void find()} placeholder="Название или адрес магазина: Mattel, nike, shop.example.com" data-testid="bz-addstore-q"/>
+      <button type="button" className="bz-btn acc" disabled={busy || !name.trim()} onClick={() => void find()} data-testid="bz-addstore-go">{busy ? 'Ищу…' : 'Найти магазин'}</button>
+      <button type="button" className="bz-btn" onClick={() => { setOpen(false); setFound([]); setMsg(''); }}>Отмена</button></div>
+    {found.length > 0 && <div className="bz-found">{found.slice(0, 12).map(f => <div key={f.domain} className="bz-found-row"><b>{f.name}</b><small>{f.domain}</small>
+      {has(f.domain) ? <span className="bz-note">уже на панели</span> : <button type="button" className="bz-btn" disabled={busy} onClick={() => void add(f.name, f.domain)}>＋ Добавить</button>}</div>)}</div>}
+    {msg && <p className="bz-warnbox">{msg}</p>}
+  </div>;
+}
 
 export function OnlineShops() {
+  const [STORES, setStores] = useState<Store[]>(loadStores); const setList = (v: Store[]) => { setStores(v); saveStores(v); };
   const [pick, setPick] = useState<string>(GLOBAL); const [total, setTotal] = useState<number | null>(null); const [own, setOwn] = useState(''); const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false); const [items, setItems] = useState<Item[]>([]); const [notes, setNotes] = useState<string[]>([]); const [done, setDone] = useState(false);
   const run = async () => {
@@ -54,14 +93,15 @@ export function OnlineShops() {
     <p className="bz-note">«Весь Shopify» — поиск по всем магазинам на Shopify сразу (общий каталог Shopify, бесплатно, без ключей). Или выберите отдельный магазин. Пишите по-русски или по-английски.</p>
     <div className="bz-storechips">
       <button type="button" aria-pressed={pick === GLOBAL && !own} onClick={() => { setPick(GLOBAL); setOwn(''); }} data-testid="bz-online-global"><b>🌍</b>Весь Shopify<small>все магазины</small></button>
-      <button type="button" aria-pressed={pick === 'all' && !own} onClick={() => { setPick('all'); setOwn(''); }}>6 магазинов сразу</button>
-      {STORES.map(s => <button key={s.domain} type="button" aria-pressed={pick === s.domain && !own} onClick={() => { setPick(s.domain); setOwn(''); if (!q) setQ(s.hint); }}><b>{s.icon}</b>{s.name}<small>{s.ru}</small></button>)}
+      {STORES.length > 1 && <button type="button" aria-pressed={pick === 'all' && !own} onClick={() => { setPick('all'); setOwn(''); }}>Мои магазины сразу ({STORES.length})</button>}
+      {STORES.map(s => <span key={s.domain} className="bz-chip"><button type="button" aria-pressed={pick === s.domain && !own} onClick={() => { setPick(s.domain); setOwn(''); if (!q && s.hint) setQ(s.hint); }}><b>{s.icon}</b>{s.name}{s.ru && <small>{s.ru}</small>}</button>
+        <button type="button" className="bz-chip-x" title="Убрать с панели" aria-label={'Убрать ' + s.name} onClick={() => { setList(STORES.filter(x => x.domain !== s.domain)); if (pick === s.domain) setPick(GLOBAL); }}>×</button></span>)}
+      <AddStore stores={STORES} onAdd={st => { setList([...STORES, st]); setPick(st.domain); }}/>
     </div>
     <div className="bz-search">
       <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && void run()} placeholder="Что ищем? диван, кастрюля, кроссовки…" data-testid="bz-online-q"/>
       <button type="button" className="bz-btn acc" disabled={busy || !q.trim()} onClick={() => void run()} data-testid="bz-online-go">{busy ? 'Ищу…' : 'Найти'}</button>
     </div>
-    <details className="bz-own"><summary>Свой магазин на Shopify</summary><input value={own} onChange={e => setOwn(e.target.value)} placeholder="адрес магазина, например shop.example.com"/></details>
     {notes.map((n, i) => <p key={i} className="bz-warnbox">{n}</p>)}
     {done && !items.length && !notes.length && <p className="bz-note" data-testid="bz-online-none">{pick === GLOBAL ? 'Ничего не нашлось. Попробуйте по-английски или другое слово.' : 'В этих магазинах такого нет. Попробуйте «Весь Shopify».'}</p>}
     {total != null && items.length > 0 && <p className="bz-note">Найдено примерно {total.toLocaleString()} · показаны первые {items.length}</p>}
