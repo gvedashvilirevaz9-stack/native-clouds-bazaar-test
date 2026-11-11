@@ -5,16 +5,16 @@ import {useWallet, signIn, signOut, refreshBalance, payUsdc} from './wallet';
 import {fmt, units, txUrl, addrUrl} from '../shop/chain';
 
 const short = (a: string) => a.slice(0, 6) + '…' + a.slice(-4);
-type Svc = {icon: string; name: string; what: string; how: string; who: 'human' | 'agent' | 'both'; where: 'here' | 'site' | 'agent'; net: string; link?: string};
+type Svc = {icon: string; name: string; what: string; how: string; who: 'human' | 'agent' | 'both'; where: 'here' | 'site' | 'agent'; net: string; link?: string; tab?: string; cta: string};
 
 export const CRYPTO_SERVICES: Svc[] = [
-  {icon: '🏪', name: 'Лавки «Моего магазина»', what: 'Товары из прайс-листов, которые вам прислали (вкладка «Лавки»).', how: 'Корзина → «Оплатить с Coinbase». USDC уходит прямо продавцу, номер заказа зашит в сумму.', who: 'both', where: 'here', net: 'USDC · Base'},
-  {icon: '🛍', name: 'Shopify-магазины с оплатой USDC', what: 'Обычные интернет-магазины. Кнопка USDC есть не у всех: только у продавцов из стран, где Shopify её включил.', how: 'Найти товар в «Магазинах онлайн» → открыть магазин → на кассе выбрать USDC → подтвердить в Coinbase.', who: 'human', where: 'site', net: 'USDC · Base и др.', link: 'https://help.shopify.com/en/manual/payments/shopify-payments/usdc-payments'},
-  {icon: '🎁', name: 'Bitrefill', what: 'Подарочные карты (Amazon, Steam и др.), пополнение телефона, eSIM для поездок.', how: 'На сайте выбрать товар → оплата «USDC (Base)» → перевести сумму с Coinbase (или через форму ниже).', who: 'both', where: 'site', net: 'USDC · Base', link: 'https://www.bitrefill.com'},
-  {icon: '🏨', name: 'Travala', what: 'Отели, а также перелёты и туры за криптовалюту. Для агентов есть протокол бронирования отелей с оплатой USDC.', how: 'Человек: оплата криптой на сайте. Агент: ищет и бронирует, последний шаг — ваша подпись.', who: 'both', where: 'site', net: 'USDC · Base и др.', link: 'https://www.travala.com'},
-  {icon: '🧾', name: 'Кнопка «Оплатить криптой» на кассе', what: 'Магазины на Stripe или PayPal, у которых включена оплата криптой.', how: 'На кассе магазина выбрать оплату криптой → подключить Coinbase → подтвердить.', who: 'human', where: 'site', net: 'USDC, разные сети'},
-  {icon: '⚡', name: 'Платные API за запрос (x402)', what: 'Данные, ИИ, поиск, погода, отчёты. Цена — центы за запрос. Каталог: x402 Bazaar / agentic.market.', how: 'Платит агент своим отдельным кошельком в рамках лимитов (вкладка «Агент и лимиты»). Человек ничего не нажимает.', who: 'agent', where: 'agent', net: 'USDC · Base', link: 'https://agentic.market'},
-  {icon: '💸', name: 'Moneyplace (ваши сервисы)', what: '39 сервисов из вашей сборки Money: утро, деньги, крипта, поездки, вечер. Бесплатные и платные по тарифам.', how: 'Следующий модуль: подключается к Базару отдельно, оплата платных — x402 через агента или вручную.', who: 'both', where: 'agent', net: 'USDC · Base'},
+  {icon: '🏪', name: 'Лавки «Моего магазина»', what: 'Товары из прайс-листов, которые вам прислали (вкладка «Лавки»).', how: 'Корзина → «Оплатить с Coinbase». USDC уходит прямо продавцу, номер заказа зашит в сумму.', who: 'both', where: 'here', net: 'USDC · Base', tab: 'stalls', cta: 'Открыть лавки'},
+  {icon: '🛍', name: 'Shopify-магазины с оплатой USDC', what: 'Обычные интернет-магазины. Кнопка USDC есть не у всех: только у продавцов из стран, где Shopify её включил.', how: 'Найти товар в «Магазинах онлайн» → открыть магазин → на кассе выбрать USDC → подтвердить в Coinbase.', who: 'human', where: 'site', net: 'USDC · Base и др.', link: 'https://help.shopify.com/en/manual/payments/shopify-payments/usdc-payments', tab: 'online', cta: 'Искать в Shopify'},
+  {icon: '🎁', name: 'Bitrefill', what: 'Подарочные карты (Amazon, Steam и др.), пополнение телефона, eSIM для поездок.', how: 'На сайте выбрать товар → оплата «USDC (Base)» → перевести сумму с Coinbase (или через форму ниже).', who: 'both', where: 'site', net: 'USDC · Base', link: 'https://www.bitrefill.com', cta: 'Открыть Bitrefill ↗'},
+  {icon: '🏨', name: 'Travala', what: 'Отели, а также перелёты и туры за криптовалюту. Для агентов есть протокол бронирования отелей с оплатой USDC.', how: 'Человек: оплата криптой на сайте. Агент: ищет и бронирует, последний шаг — ваша подпись.', who: 'both', where: 'site', net: 'USDC · Base и др.', link: 'https://www.travala.com', cta: 'Открыть Travala ↗'},
+  {icon: '🧾', name: 'Кнопка «Оплатить криптой» на кассе', what: 'Магазины на Stripe или PayPal, у которых включена оплата криптой.', how: 'На кассе магазина выбрать оплату криптой → подключить Coinbase → подтвердить.', who: 'human', where: 'site', net: 'USDC, разные сети', tab: 'online', cta: 'Искать магазины'},
+  {icon: '⚡', name: 'Платные API за запрос (x402)', what: 'Данные, ИИ, поиск, погода, отчёты. Цена — центы за запрос. Каталог: x402 Bazaar / agentic.market.', how: 'Платит агент своим отдельным кошельком в рамках лимитов (вкладка «Агент и лимиты»). Человек ничего не нажимает.', who: 'agent', where: 'agent', net: 'USDC · Base', link: 'https://agentic.market', tab: 'agent', cta: 'Кошелёк агента и лимиты'},
+  {icon: '💸', name: 'Moneyplace (ваши сервисы)', what: '39 сервисов из вашей сборки Money: утро, деньги, крипта, поездки, вечер. Бесплатные и платные по тарифам.', how: 'Следующий модуль: подключается к Базару отдельно, оплата платных — x402 через агента или вручную.', who: 'both', where: 'agent', net: 'USDC · Base', cta: 'Скоро'},
 ];
 const WHO: Record<Svc['who'], string> = {human: '👤 платите вы', agent: '🤖 платит агент', both: '👤 вы или 🤖 агент'};
 const WHERE: Record<Svc['where'], string> = {here: 'работает здесь', site: 'на сайте сервиса', agent: 'через агента'};
@@ -32,7 +32,7 @@ function ManualPay() {
   const validTo = /^0x[0-9a-fA-F]{40}$/.test(to.trim()); let u: bigint | null = null; try { u = amt ? units(amt.replace(',', '.')) : null; } catch { u = null; }
   const ready = !!w.address && validTo && !!u && u > 0n && ok;
   const go = async () => { setBusy(true); setMsg(''); setTx(''); try { const h = await payUsdc(to.trim(), u!); setTx(h); setMsg('✓ Отправлено. Хеш ниже — покажите его получателю.'); setOk(false); } catch (e: any) { setMsg(e?.code === 4001 ? 'Вы отменили в кошельке.' : String(e?.message || e)); } setBusy(false); };
-  return <div className="bz-card" data-testid="bz-manual">
+  return <div className="bz-box" data-testid="bz-manual">
     <h3>Оплатить на адрес вручную</h3>
     <p className="bz-note">Для счёта, где сервис дал адрес и сумму в USDC (Base), — например, Bitrefill или продавец в переписке.</p>
     <div className="bz-grid2">
@@ -49,12 +49,12 @@ function ManualPay() {
   </div>;
 }
 
-export function CryptoPay() {
+export function CryptoPay({go}: {go?: (tab: string) => void}) {
   const w = useWallet();
   useEffect(() => { if (w.address) void refreshBalance(); }, [w.address]);
   return <div className="bz-sec bz-crypto" data-testid="bz-crypto">
     <h2>Платить криптой</h2>
-    <div className="bz-card bz-mywallet">
+    <div className="bz-box bz-mywallet">
       {w.address ? <>
         <div><small>Ваш кошелёк · вход через Coinbase</small><b className="bz-addr"><a href={addrUrl(w.address)} target="_blank" rel="noreferrer">{short(w.address)}</a></b>
           <span className="bz-bal">{w.usdc == null ? '…' : fmt(w.usdc)} <small>USDC · Base</small></span></div>
@@ -76,11 +76,13 @@ export function CryptoPay() {
     </div>
 
     <h3>Где это работает</h3>
-    <div className="bz-svcs">{CRYPTO_SERVICES.map(s => <div key={s.name} className={'bz-svc w-' + s.where} data-testid="bz-svc">
+    <div className="bz-svcs">{CRYPTO_SERVICES.map(s => <div key={s.name} className={'bz-svc w-' + s.where + (s.tab || s.link ? ' act' : '')} data-testid="bz-svc" role={s.tab || s.link ? 'button' : undefined} tabIndex={s.tab || s.link ? 0 : undefined}
+      onClick={e => { if ((e.target as HTMLElement).closest('a')) return; if (s.tab && go) go(s.tab); else if (s.link) window.open(s.link, '_blank', 'noopener'); }}>
       <div className="bz-svc-h"><span className="bz-svc-i">{s.icon}</span><b>{s.name}</b><span className={'bz-st s-' + (s.where === 'here' ? 'ready' : s.where === 'site' ? 'adapter' : 'planned')}>{WHERE[s.where]}</span></div>
       <small>{s.what}</small>
       <small><b>Как:</b> {s.how}</small>
       <small className="bz-svc-f"><span>{WHO[s.who]}</span><span>{s.net}</span>{s.link && <a href={s.link} target="_blank" rel="noreferrer">{s.link.replace(/^https:\/\/(www\.)?/, '').split('/')[0]} ↗</a>}</small>
+      <span className={'bz-svc-cta' + (s.tab || s.link ? '' : ' off')}>{s.cta}{s.tab ? ' →' : ''}</span>
     </div>)}</div>
 
     <ManualPay/>
@@ -93,7 +95,7 @@ export function AgentWalletCard() {
   const [h, setH] = useState<any>(null);
   useEffect(() => { fetch('/api/health', {cache: 'no-store'}).then(r => r.ok ? r.json() : null).then(setH).catch(() => setH(null)); }, []);
   const addr = h?.agentWallet && h.agentWallet !== 'INVALID_KEY' ? h.agentWallet : null;
-  return <div className="bz-card" data-testid="bz-agent-wallet">
+  return <div className="bz-box" data-testid="bz-agent-wallet">
     <h3>🤖 Кошелёк агента — отдельный</h3>
     <p className="bz-note">Это <b>не ваш Coinbase-кошелёк</b>. У агента свой EVM-адрес и свой приватный ключ. Ключ лежит только на сервере (Vercel → Settings → Environment Variables), не в коде и не в чате. Агент платит им только x402-сервисы и только в лимитах сервера. Ваш Coinbase-кошелёк агент не трогает: там каждую оплату подтверждаете вы.</p>
     <div className="bz-kv">

@@ -177,7 +177,7 @@ export function BazaarRoom({onClose}: {onClose: () => void}) {
         {st.orders.length ? st.orders.slice().reverse().map(o => <div key={o.id} className="bz-ord-row"><button type="button" className="bz-link" onClick={() => { setOpen(o.stall); setOrderId(o.id); setTab('stalls'); }}>#{o.code} · {o.stallName}</button>
           <span>{o.items.map(i => i.title).join(', ').slice(0, 80)}</span><b>{o.groups.reduce((a, g) => a + Number(g.total), 0)} USDC</b><span>{orderPaid(o) ? '✓ оплачено' : 'ждёт оплаты'}</span><small>{new Date(o.created).toLocaleString()}</small></div>) : <p className="bz-note">Пока ничего.</p>}</div>}
       {tab === 'online' && <OnlineShops onFiles={() => { setTab('stalls'); setOpen(null); }}/>}
-      {tab === 'crypto' && <CryptoPay/>}
+      {tab === 'crypto' && <CryptoPay go={t => { setTab(t as Tab); if (t === 'stalls') setOpen(null); }}/>}
       {tab === 'connect' && <Connections/>}
       {tab === 'agent' && <AgentLimits/>}
     </div>

@@ -211,8 +211,8 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bz-cb{display:inline-flex;align-items:center;gap:8px;border:1px solid #ffffffaa;background:#0052ff;color:#fff;border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 4px 14px #0052ff40}
 .bz-cb:disabled{opacity:.7;cursor:wait}.bz-cb.on{background:#ffffffcc;color:#0b2a5c;cursor:default;box-shadow:none;border-color:#0052ff55}
 .bz-cb b{font-weight:600;color:#0052ff}.bz-cb-dot{width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 3px #0052ff}.bz-cb.on .bz-cb-dot{background:#0052ff;box-shadow:inset 0 0 0 3px #fff,0 0 0 1px #0052ff}
-.bz-card{background:#ffffff8c;border:1px solid #ffffffcc;border-radius:16px;padding:16px 18px;margin:14px 0;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 24px #1e3a5a14}
-.bz-card h3{margin:0;font-size:16px}
+.bz-box{background:#ffffff8c;border:1px solid #ffffffcc;border-radius:16px;padding:16px 18px;margin:14px 0;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 24px #1e3a5a14}
+.bz-box h3{margin:0;font-size:16px}
 .bz-mywallet{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;border-color:#0052ff44;background:linear-gradient(135deg,#ffffffcc,#e6eeffcc)}
 .bz-mywallet>div:first-child{display:flex;flex-direction:column;gap:2px;min-width:240px}.bz-mywallet>small{flex-basis:100%}
 .bz-addr{font-size:17px}.bz-addr a{color:#0b2a5c;text-decoration:none;font-family:ui-monospace,monospace}.bz-bal{font-size:24px;font-weight:700;color:#0052ff}.bz-bal small{font-size:13px;color:#456;font-weight:500}
@@ -226,3 +226,13 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bz-kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:14px}.bz-kv span{opacity:.7}
 .bz-steps{margin:8px 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .bz-crypto details summary{cursor:pointer;font-weight:600}
+/* Marketplace: where */
+.bz-where{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;margin:4px 0 10px}
+.bz-countries{display:flex;flex-wrap:wrap;gap:6px}
+.bz-countries button{display:inline-flex;align-items:center;gap:6px;border:1px solid #ffffffaa;background:#ffffff66;border-radius:999px;padding:7px 13px;font:inherit;font-size:13px;cursor:pointer;color:#203d4b}
+.bz-countries button[aria-pressed=true]{background:#e0503a;border-color:#e0503a;color:#fff;box-shadow:0 4px 14px #e0503a44}
+.bz-where label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:#3d5868}
+.bz-where select{font:inherit;font-size:13px;padding:7px 10px;border-radius:10px;border:1px solid #ffffffaa;background:#ffffffcc;min-width:180px}
+.bz-dirs{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0}
+.bz-svc.act{cursor:pointer;transition:transform .12s,box-shadow .12s}.bz-svc.act:hover{transform:translateY(-2px);box-shadow:0 10px 26px #1e3a5a22;border-color:#fff}
+.bz-svc-cta{align-self:flex-start;margin-top:4px;font-size:13px;font-weight:600;padding:6px 12px;border-radius:999px;background:#0052ff;color:#fff}.bz-svc-cta.off{background:#ffffff99;color:#567}

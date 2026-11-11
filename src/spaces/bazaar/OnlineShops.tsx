@@ -1,12 +1,17 @@
 // "Магазины онлайн": search real Shopify stores from the Bazaar page. No tokens: the site's own
 // /api/shop-search asks the store's public search. Works on the deployed site (Vercel), not offline.
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import type React from 'react';
 import {bazaar} from './store';
 import {ProductView, sized, type Product} from './ProductView';
 
 type Engine = 'shopify' | 'woo';
-type Source = 'all' | Engine;
+type Source = 'all' | Engine | 'market';
+// The owner's Marketplace (archive): search by country / city / scope through /api/marketplace.
+type Country = {cc: string; name: string; capital: string; currency: string; market: string; cities: {en: string; ru: string}[]};
+type MarketMeta = {countries: Country[]; you: {cc: string | null; supported: boolean; city: string | null; name: string | null}};
+const SCOPES = [{id: 'local', ru: 'Только страна'}, {id: 'local+world', ru: 'Страна + соседи + мир'}, {id: 'world', ru: 'Весь мир'}];
+const FLAG: Record<string, string> = {GE: '🇬🇪', AM: '🇦🇲', AZ: '🇦🇿', KZ: '🇰🇿', CN: '🇨🇳', TR: '🇹🇷'};
 type Store = {domain: string; name: string; icon: string; ru: string; hint: string; engine?: Engine};
 const DEFAULT_STORES: Store[] = [
   {domain: 'floydhome.com', name: 'Floyd', icon: '🛋', ru: 'мебель', hint: 'sofa'},
@@ -47,6 +52,7 @@ const PROVIDERS: {id: string; name: string; sub: string; color: string; on: bool
   {id: 'all', name: 'Везде', sub: 'Shopify + WooCommerce сразу', color: '#2f8fd8', on: true},
   {id: 'shopify', name: 'Shopify', sub: 'все магазины на Shopify', color: '#5fae3e', on: true},
   {id: 'woo', name: 'WooCommerce', sub: '82 проверенных магазина', color: '#9a63d6', on: true},
+  {id: 'market', name: '📍 Marketplace', sub: 'по стране и городу: магазины, еда, места', color: '#e0503a', on: true},
   {id: 'files', name: 'Прайс-листы', sub: 'файлы Native Clouds', color: '#d98a2f', on: true},
   {id: 'amazon', name: 'Amazon', sub: 'только через платных посредников', color: '#999', on: false},
   {id: 'ebay', name: 'eBay', sub: 'нужен ключ разработчика', color: '#999', on: false},
@@ -95,6 +101,10 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
   const [blocks, setBlocks] = useState<{key: string; title: string; sub?: string; items: Item[]}[]>([]);
   const [adding, setAdding] = useState<Engine | null>(null);
   const [view, setView] = useState<{b: number; k: number} | null>(null);
+  const [meta, setMeta] = useState<MarketMeta | null>(null); const [cc, setCc] = useState(''); const [city, setCity] = useState(''); const [scope, setScope] = useState('local');
+  const [dirs, setDirs] = useState<{cc: string | null; name: string; url: string}[]>([]); const [srcInfo, setSrcInfo] = useState('');
+  useEffect(() => { if (src !== 'market' || meta) return; fetch('/api/marketplace?meta=1').then(r => r.json()).then((m: MarketMeta) => { setMeta(m); if (!cc) setCc(m.you.supported && m.you.cc ? m.you.cc : 'GE'); }).catch(() => setNotes(['Marketplace работает на сайте Vercel (нужен сервер /api).'])); }, [src]);
+  const country = meta?.countries.find(c => c.cc === cc);
   const catEn = CATS.find(c => c.ru === cat)?.en || '';
   const shown = favs.filter(f => src === 'all' || engineOf(f) === src);
 
@@ -108,7 +118,22 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
     if (j.error) throw new Error(`${f.name}: магазин не открыл поиск.`);
     return (j.items || []).filter((i: any) => i.price && Number(i.price) > 0).map((i: any) => ({...i, store: f.domain, _s: score(i.title, query)})).sort((a: any, b: any) => b._s - a._s) as Item[]; };
 
+  const market = async () => {
+    const query = q.trim() || cat; if (!query) return;
+    setBusy(true); setNotes([]); setBlocks([]); setDone(false); setDirs([]); setSrcInfo('');
+    try {
+      const j = await (await fetch(`/api/marketplace?q=${encodeURIComponent(query)}&country=${cc}&scope=${encodeURIComponent(scope)}${city ? '&city=' + encodeURIComponent(city) : ''}&lang=ru`)).json();
+      if (j.error) throw new Error('Marketplace не ответил.');
+      setBlocks((j.sections || []).map((s: any) => ({key: 'm-' + s.id, title: s.title, sub: [s.provider, s.slot === 'local' ? 'рядом' : s.slot === 'corridor' ? 'соседняя страна' : 'мир', !s.ok && s.status].filter(Boolean).join(' · '),
+        items: (s.items || []).map((i: any) => ({title: i.title, price: i.price != null ? String(i.price) : '', currency: i.currency || '', image: i.image, images: i.image ? [i.image] : [], url: i.url || '', description: i.subtitle || '', seller: i.provider, store: 'market', vendor: null, available: null, kind: i.kind, priceLabel: i.priceLabel, rating: i.rating}))})));
+      setDirs((j.directories || []).filter((d: any) => d.url));
+      const ok = (j.sources || []).filter((x: any) => x.ok).length; setSrcInfo(`${j.location?.label || ''}${j.location?.city ? ', ' + j.location.city : ''} · ${j.breadcrumb || j.title} · источников ответило ${ok} из ${(j.sources || []).length}`);
+      if (j.nav?.length) setNotes([`Уточните: ${j.nav.join(', ')}`]);
+    } catch (e: any) { setNotes([e?.message === 'Failed to fetch' ? 'Marketplace работает на сайте Vercel.' : e?.message || 'Ошибка']); }
+    setBusy(false); setDone(true);
+  };
   const run = async () => {
+    if (src === 'market') return market();
     const typed = toEn(q); if (!typed && !cat) return;
     setBusy(true); setNotes([]); setBlocks([]); setDone(false);
     const out: typeof blocks = []; const n: string[] = [];
@@ -128,13 +153,13 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
     bazaar.addConnector({key: 'c-' + Date.now().toString(36), name: `${b.title}: ${q || cat}`, protocol: b.key === 'shopify' ? 'ucp' : 'api', endpoint: b.key === 'shopify' ? 'https://catalog.shopify.com/api/ucp/mcp' : undefined, note: 'Найдено в «Магазинах онлайн». Цены в валюте магазина; оплата на его странице.', logo: b.items[0].image,
       items: b.items.map((i, k) => ({id: 'p' + k, title: i.title, price: i.price, image: i.image, url: i.url, pay: {kind: 'link' as const, url: i.url}}))});
   };
-  const price = (i: Item) => i.currency && i.currency !== 'USD' ? `${Number(i.price).toLocaleString()} ${i.currency}` : `$${Number(i.price).toFixed(2)}`;
+  const price = (i: Item) => !i.price || !Number(i.price) ? ((i as any).priceLabel || ((i as any).kind === 'store' ? '📍 на карте' : 'цена у продавца')) : i.currency && i.currency !== 'USD' ? `${Number(i.price).toLocaleString()} ${i.currency}` : `$${Number(i.price).toFixed(2)}`;
   const empty = done && !notes.length && blocks.every(b => !b.items.length);
 
   return <div className="bz-sec bz-online" data-testid="bz-online">
     <div className="bz-providers" role="tablist" aria-label="Где искать">{PROVIDERS.map(p => <button key={p.id} type="button" role="tab" disabled={!p.on} data-testid={'bz-prov-' + p.id}
       aria-pressed={p.id === src} style={{'--pc': p.color} as React.CSSProperties} className={'bz-prov' + (p.on ? '' : ' off')}
-      onClick={() => { if (p.id === 'files') { onFiles?.(); return; } setSrc(p.id as Source); setFav(null); setBlocks([]); setDone(false); setNotes([]); }}>
+      onClick={() => { if (p.id === 'files') { onFiles?.(); return; } setSrc(p.id as Source); setFav(null); setBlocks([]); setDone(false); setNotes([]); setDirs([]); setSrcInfo(''); }}>
       <span className="bz-prov-glow"/><b>{p.name}</b><small>{p.sub}</small>{!p.on && <i>скоро</i>}</button>)}</div>
 
     <div className="bz-step"><span>1</span>Категория</div>
@@ -143,12 +168,20 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
       {CATS.map(c => <button key={c.ru} type="button" aria-pressed={cat === c.ru} onClick={() => setCat(cat === c.ru ? '' : c.ru)}><b>{c.icon}</b>{c.ru}</button>)}
     </div>
 
+    {src === 'market' && <><div className="bz-step"><span>📍</span>Где <small>{meta?.you.cc ? (meta.you.supported ? `по IP вы в стране: ${meta.you.name}` : `по IP: ${meta.you.name || meta.you.cc} — этой страны пока нет, выберите вручную`) : 'выберите страну'}</small></div>
+      <div className="bz-where" data-testid="bz-market-where">
+        <div className="bz-countries">{(meta?.countries || []).map(c => <button key={c.cc} type="button" aria-pressed={c.cc === cc} onClick={() => { setCc(c.cc); setCity(''); }} data-testid={'bz-cc-' + c.cc}><b>{FLAG[c.cc] || '🌍'}</b>{c.name}</button>)}</div>
+        <label>Город<select value={city} onChange={e => setCity(e.target.value)} data-testid="bz-market-city"><option value="">{country ? `${country.cities.find(x => x.en === country.capital)?.ru || country.capital} (по умолчанию)` : '—'}</option>{country?.cities.map(x => <option key={x.en} value={x.en}>{x.ru}</option>)}</select></label>
+        <label>Охват<select value={scope} onChange={e => setScope(e.target.value)} data-testid="bz-market-scope">{SCOPES.map(x => <option key={x.id} value={x.id}>{x.ru}</option>)}</select></label>
+      </div></>}
+
     <div className="bz-step"><span>2</span>Что ищем</div>
     <div className="bz-search">
-      <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && void run()} placeholder={cat ? `${cat}: уточните или просто нажмите «Найти»` : 'диван, кастрюля, кроссовки, toy cars…'} data-testid="bz-online-q"/>
+      <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && void run()} placeholder={src === 'market' ? 'пицца, игрушки, iPhone 15, отель, такси, eSIM…' : cat ? `${cat}: уточните или просто нажмите «Найти»` : 'диван, кастрюля, кроссовки, toy cars…'} data-testid="bz-online-q"/>
       <button type="button" className="bz-btn acc" disabled={busy || (!q.trim() && !cat)} onClick={() => void run()} data-testid="bz-online-go">{busy ? 'Ищу…' : 'Найти'}</button>
     </div>
 
+    {src !== 'market' && <>
     <div className="bz-step"><span>★</span>Мои магазины <small>{fav ? 'поиск только в выбранном — нажмите ещё раз, чтобы искать везде' : 'необязательно: добавьте любимые, чтобы искать только в них'}</small></div>
     <div className="bz-storechips bz-favs">
       {shown.map(s => <span key={s.domain} className="bz-chip"><button type="button" aria-pressed={fav === s.domain} onClick={() => setFav(fav === s.domain ? null : s.domain)}><b>{s.icon}</b>{s.name}<small>{engineOf(s) === 'woo' ? 'Woo' : 'Shopify'}</small></button>
@@ -156,7 +189,8 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
       {!adding && <>{src !== 'woo' && <button type="button" className="bz-addstore" onClick={() => setAdding('shopify')} data-testid="bz-addstore">＋ Магазин Shopify</button>}
         {src !== 'shopify' && <button type="button" className="bz-addstore" onClick={() => setAdding('woo')}>＋ Магазин WooCommerce</button>}</>}
       {adding && <AddStore key={adding} engine={adding} stores={favs} startOpen onCancel={() => setAdding(null)} onAdd={st => { setFavs([...favs, st]); setFav(st.domain); setAdding(null); }}/>}
-    </div>
+    </div></>}
+    {srcInfo && <p className="bz-note" data-testid="bz-market-info">📍 {srcInfo}</p>}
 
     {notes.map((t, i) => <p key={i} className="bz-warnbox">{t}</p>)}
     {empty && <p className="bz-note" data-testid="bz-online-none">Ничего не нашлось. Попробуйте по-английски, другое слово или другую категорию.</p>}
@@ -167,6 +201,7 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
         <b>{i.title}</b><span className="bz-card-p">{price(i)}{i.compareAt && <s> {price({...i, price: i.compareAt})}</s>}{i.available === false ? ' · нет в наличии' : ''}</span>{i.seller && <small className="bz-card-s">{i.seller}</small>}<small>Смотреть ⤢</small>
       </button>)}</div>
     </div>)}
+    {dirs.length > 0 && <div className="bz-dirs" data-testid="bz-market-dirs"><b>Искать там же на площадках:</b>{dirs.map(d => <a key={d.url} className="bz-btn" href={d.url} target="_blank" rel="noreferrer">{FLAG[d.cc || ''] || '🌍'} {d.name} ↗</a>)}</div>}
     {view && (() => { const list = blocks.filter(b => b.items.length)[view.b]?.items || []; const it = list[view.k]; if (!it) return null;
       return <ProductView p={it} idx={view.k} total={list.length} onClose={() => setView(null)} onPrev={view.k > 0 ? () => setView({...view, k: view.k - 1}) : undefined} onNext={view.k < list.length - 1 ? () => setView({...view, k: view.k + 1}) : undefined}
         onSave={x => bazaar.saveFavorite({title: x.title, price: x.price, image: x.image, url: x.url, text: x.description?.slice(0, 300), pay: {kind: 'link', url: x.url}})}/>; })()}
