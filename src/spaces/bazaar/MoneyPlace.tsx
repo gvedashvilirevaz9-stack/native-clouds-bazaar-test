@@ -1,6 +1,6 @@
 // Agent Marketplace: the owner's Money Space services as glass cards (weather, rates, news, crypto, trips, evening).
 // Ask in words or pick a package; every answer lands in the same feed as a card. Information only — no payments here.
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import type React from 'react';
 
 type Opt = {serviceId: string; label: string; desc: string; needsInput: boolean};
@@ -63,6 +63,10 @@ export function MoneyPlace() {
     setBusy('');
   };
   const cur = meta?.packages.find(p => p.id === pk);
+  const strip = useRef<HTMLDivElement>(null);
+  const slide = (d: number) => strip.current?.scrollBy({left: d * Math.max(320, strip.current.clientWidth * 0.8), behavior: 'smooth'});
+  useEffect(() => { strip.current?.scrollTo({left: 0, behavior: 'smooth'}); }, [feed.length]);
+  const cards = feed.flatMap(e => e.items.map((r, i) => ({r, key: e.id + i, ask: e.ask, at: e.at, first: i === 0})));
   return <div className="mp" data-testid="mp">
     <div className="bz-step"><span>1</span>Что вам нужно <small>{meta?.you.city ? `город по IP: ${meta.you.city}` : 'пакеты сервисов'}</small></div>
     <div className="mp-pkgs">{(meta?.packages || []).map(p => <button key={p.id} type="button" aria-pressed={pk === p.id} style={{'--pc': PK_COLOR[p.id] || '#2f8fd8'} as React.CSSProperties} className="bz-prov mp-pkg" onClick={() => setPk(pk === p.id ? '' : p.id)} data-testid={'mp-pkg-' + p.id}>
@@ -79,7 +83,11 @@ export function MoneyPlace() {
     {hint && <p className="bz-note">{hint}</p>}
     {busy && <p className="bz-note">⏳ {busy}…</p>}
     {feed.length > 0 && <div className="bz-step"><span>✦</span>Лента <small>новые сверху · хранится в этом браузере</small><button type="button" className="bz-link" onClick={() => setFeed([])}>очистить</button></div>}
-    {feed.map(e => <section key={e.id} className="mp-batch"><h4>{e.ask}<small>{new Date(e.at).toLocaleTimeString('ru', {hour: '2-digit', minute: '2-digit'})}</small></h4>
-      <div className="mp-cards">{e.items.map((r, i) => <MoneyCard key={i} r={r}/>)}</div></section>)}
+    {cards.length > 0 && <div className="mp-stripwrap">
+      <button type="button" className="mp-arr l" onClick={() => slide(-1)} aria-label="Новее">‹</button>
+      <div className="mp-strip" ref={strip} data-testid="mp-strip">{cards.map(c => <div key={c.key} className={'mp-col' + (c.first ? ' first' : '')}>
+        <span className="mp-col-tag">{c.first ? c.ask + ' · ' : ''}{new Date(c.at).toLocaleTimeString('ru', {hour: '2-digit', minute: '2-digit'})}</span><MoneyCard r={c.r}/></div>)}</div>
+      <button type="button" className="mp-arr r" onClick={() => slide(1)} aria-label="Старее">›</button>
+    </div>}
   </div>;
 }
