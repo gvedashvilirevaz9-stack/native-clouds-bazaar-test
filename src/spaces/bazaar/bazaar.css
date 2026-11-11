@@ -364,3 +364,7 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bz-room.al-center .bz-body>.bz-sec,.bz-room.al-center .bz-body>.bz-online,.bz-room.al-center .bz-body>div>.bz-sec{margin-left:auto;margin-right:auto}
 .bz-room.al-right .bz-body>.bz-sec,.bz-room.al-right .bz-body>.bz-online,.bz-room.al-right .bz-body>div>.bz-sec{margin-left:auto;margin-right:0}
 @media (min-width:2000px){.bz-online,.bz-crypto,.bz-sec[data-testid=bz-connect]{max-width:1680px}}
+/* Shopping packages: same tiles as Agent Marketplace, ~25% smaller */
+.bz-groups{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.bz-groups .mp-pkg{padding:10px 12px 9px;border-radius:16px}.bz-groups .mp-pkg b{font-size:14px}.bz-groups .mp-pkg small{font-size:11px}
+.bz-online>.bz-below>.mp-top{margin-bottom:10px}.bz-online .bz-groups{margin-bottom:10px}.bz-online .mp-opts{margin-bottom:10px}

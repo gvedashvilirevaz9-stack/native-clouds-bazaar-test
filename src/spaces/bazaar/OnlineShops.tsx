@@ -26,11 +26,29 @@ const DEFAULT_STORES: Store[] = [
 // Stores search in English; a few everyday words are translated so "диван" just works.
 const RU: Record<string, string> = {мужчина: 'men', мужчины: 'men', мужской: 'men', мужские: 'men', мужская: 'men', мен: 'men', женщина: 'women', женский: 'women', женские: 'women', женская: 'women', детский: 'kids', детские: 'kids', дети: 'kids', игрушки: 'toys', игрушка: 'toy', машинки: 'cars', машинка: 'car', свитер: 'sweater', свитера: 'sweater', платье: 'dress', сумка: 'bag', часы: 'watch', очки: 'glasses', кофе: 'coffee', чай: 'tea', диван: 'sofa', диваны: 'sofa', кровать: 'bed', стол: 'table', стул: 'chair', кресло: 'chair', кастрюля: 'pot', кастрюли: 'pot', сковорода: 'pan', сковородка: 'pan', нож: 'knife', посуда: 'cookware',
   кроссовки: 'sneakers', обувь: 'shoes', ботинки: 'boots', носки: 'socks', худи: 'hoodie', футболка: 'shirt', штаны: 'pants', шорты: 'shorts', куртка: 'jacket', простыни: 'sheets', подушка: 'pillow', одеяло: 'comforter', полотенце: 'towel', помада: 'lipstick', тени: 'eyeshadow'};
+// The most-bought things: right inside the search line.
+const PRESETS: {ru: string; cat?: string}[] = [{ru: 'кроссовки', cat: 'Одежда и обувь'}, {ru: 'наушники', cat: 'Электроника и техника'}, {ru: 'iphone', cat: 'Электроника и техника'}, {ru: 'платье', cat: 'Одежда и обувь'},
+  {ru: 'худи', cat: 'Одежда и обувь'}, {ru: 'диван', cat: 'Мебель'}, {ru: 'игрушки', cat: 'Игрушки и коллекции'}, {ru: 'кофе', cat: 'Еда и напитки'}, {ru: 'подарок'}];
+const LOCAL_PRESETS: {ru: string; cat?: string}[] = [{ru: 'пицца'}, {ru: 'суши'}, {ru: 'аптека'}, {ru: 'супермаркет'}, {ru: 'кофе'}, {ru: 'хачапури'}, {ru: 'iPhone 15'}, {ru: 'игрушки'}, {ru: 'цветы'}];
+// Packages, like "Утро" in Agent Marketplace: the 12 categories folded into 8 groups people think in.
+const GROUPS: {id: string; ru: string; icon: string; color: string; cat: string; all: string; items: {ru: string; sub?: string; cat?: string}[]}[] = [
+  {id: 'women', ru: 'Женщинам', icon: '👗', color: '#e0508f', cat: 'Одежда и обувь', all: 'женская одежда', items: [{ru: 'платье'}, {ru: 'женская обувь'}, {ru: 'сумка', cat: 'Украшения и аксессуары'}, {ru: 'украшения', cat: 'Украшения и аксессуары'}, {ru: 'свитер'}, {ru: 'помада', cat: 'Красота и здоровье'}]},
+  {id: 'men', ru: 'Мужчинам', icon: '👔', color: '#2f6fd8', cat: 'Одежда и обувь', all: 'мужская одежда', items: [{ru: 'мужские кроссовки'}, {ru: 'худи'}, {ru: 'мужские штаны'}, {ru: 'куртка'}, {ru: 'часы', cat: 'Украшения и аксессуары'}, {ru: 'носки'}]},
+  {id: 'kids', ru: 'Детям', icon: '🧸', color: '#f2a93b', cat: 'Игрушки и коллекции', all: 'игрушки', items: [{ru: 'игрушки'}, {ru: 'машинки'}, {ru: 'конструктор'}, {ru: 'детская одежда', cat: 'Одежда и обувь'}, {ru: 'настольные игры'}]},
+  {id: 'home', ru: 'Дом', icon: '🏡', color: '#2f9e63', cat: 'Дом и сад', all: 'для дома', items: [{ru: 'диван', cat: 'Мебель'}, {ru: 'стол', cat: 'Мебель'}, {ru: 'кастрюля'}, {ru: 'сковорода'}, {ru: 'простыни'}, {ru: 'подушка'}, {ru: 'для питомцев', sub: 'корм, лежанки', cat: 'Питомцы'}]},
+  {id: 'beauty', ru: 'Красота', icon: '💄', color: '#c4508f', cat: 'Красота и здоровье', all: 'косметика', items: [{ru: 'помада'}, {ru: 'тени'}, {ru: 'крем'}, {ru: 'парфюм'}, {ru: 'уход за кожей'}]},
+  {id: 'tech', ru: 'Техника', icon: '🔌', color: '#5a6b7c', cat: 'Электроника и техника', all: 'электроника', items: [{ru: 'наушники'}, {ru: 'колонка'}, {ru: 'зарядка'}, {ru: 'чехол для телефона'}, {ru: 'iphone'}, {ru: 'цифровые товары', cat: 'Цифровые товары'}]},
+  {id: 'sport', ru: 'Спорт и отдых', icon: '🏃', color: '#14a3a8', cat: 'Спорт и отдых', all: 'спорт', items: [{ru: 'кроссовки для бега'}, {ru: 'спортивная одежда'}, {ru: 'велосипед'}, {ru: 'туризм'}, {ru: 'гитара', cat: 'Музыка и хобби'}]},
+  {id: 'food', ru: 'Еда', icon: '🍯', color: '#d98a2f', cat: 'Еда и напитки', all: 'еда', items: [{ru: 'кофе'}, {ru: 'чай'}, {ru: 'шоколад'}, {ru: 'мёд'}, {ru: 'соусы'}]},
+];
 // Score helpers: best title matches first.
 const stem = (w: string) => w.replace(/(es|s)$/, '');
 // Score = how many query words are in the title. Matches go first; a store whose results match nothing is hidden (lipstick for "men").
 const score = (title: string, q: string) => { const t = title.toLowerCase(); return q.split(/\s+/).filter(w => w.length > 1).reduce((a, w) => a + (t.includes(stem(w)) ? 1 : 0), 0); };
-const toEn = (q: string) => q.toLowerCase().split(/\s+/).map(w => RU[w] || w).join(' ').trim();
+const RU2: Record<string, string> = {одежда: 'clothing', женская: 'women', мужская: 'men', детская: 'kids', конструктор: 'building blocks', настольные: 'board', игры: 'games', для: '', дома: 'home', крем: 'cream', парфюм: 'perfume', уход: '', за: '', кожей: 'skincare',
+  колонка: 'speaker', зарядка: 'charger', чехол: 'case', телефона: 'phone', бега: 'running', спортивная: 'sport', велосипед: 'bike', туризм: 'camping', гитара: 'guitar', шоколад: 'chocolate', мёд: 'honey', мед: 'honey', соусы: 'sauce', питомцев: 'pet',
+  наушники: 'headphones', подарок: 'gift', косметика: 'makeup', электроника: 'electronics', спорт: 'sport', еда: 'food', цифровые: 'digital', товары: '', украшения: 'jewelry', сумка: 'bag', штаны: 'pants', куртка: 'jacket', кроссовки: 'sneakers'};
+const toEn = (q: string) => q.toLowerCase().split(/\s+/).map(w => w in RU2 ? RU2[w] : RU[w] || w).filter(Boolean).join(' ').trim();
 
 type Item = Product & {vendor: string | null; store: string; available: boolean | null};
 const GLOBAL = 'global';
@@ -118,6 +136,10 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
   const pick = (id: Source) => { setSrc(id); setFav(null); setBlocks([]); setDone(false); setNotes([]); setDirs([]); setSrcInfo(''); };
   useEffect(() => { if (meta) return; fetch('/api/marketplace?meta=1').then(r => r.json()).then((m: MarketMeta) => { setMeta(m); setCc(c => c || (m.you.supported && m.you.cc ? m.you.cc : 'GE')); }).catch(() => undefined); }, []);
   const catEn = CATS.find(c => c.ru === cat)?.en || '';
+  const [grp, setGrp] = useState(''); const curGrp = GROUPS.find(g => g.id === grp); const [goN, setGoN] = useState(0);
+  // A preset or a sub-category fills the search line and searches right away (same as Agent Marketplace).
+  const go = (text: string, c = '') => { setQ(text); setCat(c); setGoN(n => n + 1); };
+  useEffect(() => { if (goN) void run(); }, [goN]);
   const shown = favs.filter(f => src === 'all' || engineOf(f) === src);
 
   const shopifyAll = async (query: string) => { const j = await (await fetch(`/api/global-search?source=shopify&q=${encodeURIComponent(query)}`)).json();
@@ -188,24 +210,26 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
     <div className="bz-below" onClickCapture={foldOnUse}>
     {src === 'money' ? <MoneyPlace/> : <>
 
-    <div className="bz-step"><span>1</span>Категория</div>
-    <div className="bz-cats" data-testid="bz-cats">
-      <button type="button" aria-pressed={!cat} onClick={() => setCat('')}>Все</button>
-      {CATS.map(c => <button key={c.ru} type="button" aria-pressed={cat === c.ru} onClick={() => setCat(cat === c.ru ? '' : c.ru)}><b>{c.icon}</b>{c.ru}</button>)}
+    <div className="mp-top">
+      <div className="bz-step mp-label"><span>✦</span>Что ищем</div>
+      <div className="mp-bar" data-testid="bz-bar" onClick={e => { if (e.target === e.currentTarget) (e.currentTarget.querySelector('input') as HTMLInputElement)?.focus(); }}>
+        <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && void run()} placeholder={cat ? cat + '…' : 'найти…'} style={{width: `min(70%, ${Math.max(140, q.length * 8.6 + 40)}px)`}} data-testid="bz-online-q"/>
+        <div className="mp-presets">{(src === 'market' ? LOCAL_PRESETS : PRESETS).map(x => <button key={x.ru} type="button" disabled={busy} onClick={() => go(x.ru, x.cat)}>{x.ru}</button>)}</div>
+        <button type="button" className="mp-ask" disabled={busy || (!q.trim() && !cat)} onClick={() => void run()} data-testid="bz-online-go" aria-label="Найти">{busy ? '…' : '→'}</button>
+      </div>
     </div>
-
+    <div className="mp-pkgs bz-groups">{GROUPS.map(g => <button key={g.id} type="button" aria-pressed={grp === g.id} style={{'--pc': g.color} as React.CSSProperties} className="bz-prov mp-pkg" onClick={() => setGrp(grp === g.id ? '' : g.id)} data-testid={'bz-grp-' + g.id}>
+      <span className="bz-prov-glow"/><b>{g.icon} {g.ru}</b><small>{g.items.slice(0, 3).map(i => i.ru).join(' · ')}</small></button>)}</div>
+    {curGrp && <div className="mp-opts">
+      <button type="button" className="mp-chip all" disabled={busy} onClick={() => go(curGrp.all, curGrp.cat)}>{curGrp.icon} Всё в «{curGrp.ru}»</button>
+      {curGrp.items.map(i => <button key={i.ru} type="button" className="mp-chip" disabled={busy} onClick={() => go(i.ru, i.cat || curGrp.cat)}><b>{i.ru}</b>{i.sub && <small>{i.sub}</small>}</button>)}
+    </div>}
     {src === 'market' && <><div className="bz-step"><span>📍</span>Где <small>{meta?.you.cc ? (meta.you.supported ? `по IP вы в стране: ${meta.you.name}` : `по IP: ${meta.you.name || meta.you.cc} — этой страны пока нет, выберите вручную`) : 'выберите страну'}</small></div>
       <div className="bz-where" data-testid="bz-market-where">
         <div className="bz-countries">{(meta?.countries || []).map(c => <button key={c.cc} type="button" aria-pressed={c.cc === cc} onClick={() => { setCc(c.cc); setCity(''); }} data-testid={'bz-cc-' + c.cc}><b>{FLAG[c.cc] || '🌍'}</b>{c.name}</button>)}</div>
         <label>Город<select value={city} onChange={e => setCity(e.target.value)} data-testid="bz-market-city"><option value="">{country ? `${country.cities.find(x => x.en === country.capital)?.ru || country.capital} (по умолчанию)` : '—'}</option>{country?.cities.map(x => <option key={x.en} value={x.en}>{x.ru}</option>)}</select></label>
         <label>Охват<select value={scope} onChange={e => setScope(e.target.value)} data-testid="bz-market-scope">{SCOPES.map(x => <option key={x.id} value={x.id}>{x.ru}</option>)}</select></label>
       </div></>}
-
-    <div className="bz-step"><span>2</span>Что ищем</div>
-    <div className="bz-search">
-      <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && void run()} placeholder={src === 'market' ? 'пицца, игрушки, iPhone 15, отель, такси, eSIM…' : cat ? `${cat}: уточните или просто нажмите «Найти»` : 'диван, кастрюля, кроссовки, toy cars…'} data-testid="bz-online-q"/>
-      <button type="button" className="bz-btn acc" disabled={busy || (!q.trim() && !cat)} onClick={() => void run()} data-testid="bz-online-go">{busy ? 'Ищу…' : 'Найти'}</button>
-    </div>
 
     {src !== 'market' && <>
     <div className="bz-step"><span>★</span>Мои магазины <small>{fav ? 'поиск только в выбранном — нажмите ещё раз, чтобы искать везде' : 'необязательно: добавьте любимые, чтобы искать только в них'}</small></div>
