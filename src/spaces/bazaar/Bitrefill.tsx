@@ -46,7 +46,7 @@ export function BitrefillPanel() {
   const H = (): Record<string, string> => (valid ? {'X-Access-Token': tok!.token} : {});
   const post = async (op: string, b: any) => { const r = await fetch(`${API}?op=${op}`, {method: 'POST', headers: {'content-type': 'application/json', ...H()}, body: JSON.stringify(b)}); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.error || 'HTTP ' + r.status), {j}); return j; };
   const get = async (qs: string) => { const r = await fetch(`${API}?${qs}`, {headers: H()}); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.error || 'HTTP ' + r.status), {j}); return j; };
-  const fail = (e: any) => { setMsg(e?.code === 4001 ? 'Вы отменили в кошельке.' : String(e?.message || e)); if (e?.j) setRaw(e.j); };
+  const fail = (e: any) => { const m = String(e?.message || e); setMsg(e?.code === 4001 ? 'Вы отменили в кошельке.' : m.includes('404') ? 'Bitrefill не нашёл этот товар или номинал (404). Подробности — в «Техническом ответе» ниже.' : m.includes('400') ? 'Bitrefill не принял запрос (400). Подробности — ниже.' : m); if (e?.j) setRaw(e.j); };
 
   /** Sign in to Bitrefill with the wallet: one message, no money. */
   const connect = async () => {
@@ -79,13 +79,16 @@ export function BitrefillPanel() {
   };
   const open = async (p: Prod) => {
     setSel(p); setPkg(null); setMsg('');
-    if (!p.pkgs.length) { setBusy('detail'); try { const j = await get(`op=detail&slug=${encodeURIComponent(p.slug)}`); const d = norm(j.product || j); setSel({...p, ...d, image: p.image || d.image, pkgs: d.pkgs}); if (!d.pkgs.length) setRaw(j); } catch (e) { fail(e); } setBusy(''); }
+    if (!p.pkgs.length) { setBusy('detail'); try { let j: any; try { j = await get(`op=detail&slug=${encodeURIComponent(p.slug)}`); } catch (e) { if (p.id && p.id !== p.slug) j = await get(`op=detail&slug=${encodeURIComponent(p.id)}`); else throw e; } const d = norm(j.product || j); setSel({...p, ...d, image: p.image || d.image, pkgs: d.pkgs}); if (!d.pkgs.length) setRaw(j); } catch (e) { fail(e); } setBusy(''); }
   };
   /** Create the invoice, then let the wallet sign "send X USDC to Bitrefill"; Bitrefill confirms and delivers. */
   const buy = async () => {
     if (!sel || !pkg) return; setBusy('pay'); setMsg('');
     try {
-      const inv = await post('create', {items: [{product_id: sel.id, package_value: pkg.value, ...(kind === 'topups' && phone ? {refill_input: phone.replace(/[^\d+]/g, '')} : {})}]});
+      const extra = kind === 'topups' && phone ? {refill_input: phone.replace(/[^\d+]/g, '')} : {};
+      // Bitrefill wants the product slug and package_value exactly as returned; fall back to the other id on 404.
+      let inv: any; try { inv = await post('create', {items: [{product_id: sel.slug, package_value: pkg.value, ...extra}]}); }
+      catch (e: any) { if (!String(e.message).includes('404') || !sel.id || sel.id === sel.slug) throw e; inv = await post('create', {items: [{product_id: sel.id, package_value: pkg.value, ...extra}]}); }
       const invoice = inv.invoice_id; if (!invoice) throw Object.assign(new Error('Счёт не создан'), {j: inv});
       const rq = await post('pay-start', {invoice_id: invoice});
       const eth = await coinbase(); const [from] = await eth.request({method: 'eth_requestAccounts'}) as string[];
