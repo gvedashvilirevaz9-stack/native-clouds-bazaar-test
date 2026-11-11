@@ -380,3 +380,7 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bf-gone{opacity:.45;filter:grayscale(1);cursor:not-allowed}
 .bf-where{display:inline-flex;align-items:center;white-space:nowrap;font-size:13px;font-weight:600}
 .bz-pv-cart{background:#0052ff!important;border-color:#0052ff!important}
+/* Popup actions always fit the fixed frame: two text buttons + square icon buttons, shrink with ellipsis if narrow */
+.bz-pv-actions{min-width:0}.bz-pv-actions .bz-btn{min-width:0;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}
+.bz-pv-actions .bz-pv-ico{flex:none;width:44px;justify-content:center;padding:11px 0;font-size:18px}
+.bz-pv-actions .bz-pv-ico.on{color:#d39b00}

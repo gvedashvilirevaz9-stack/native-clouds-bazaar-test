@@ -81,8 +81,8 @@ export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p
           {(() => { const v = full.engine === 'shopify' && (full.variants || []).find(x => x.available && x.id); if (!v) return null; let o = ''; try { o = new URL(full.url).origin; } catch { return null; }
             return <a className="bz-btn acc bz-pv-cart" href={`${o}/cart/${v.id}:1`} target="_blank" rel="noreferrer" data-testid="bz-pv-cart" title={'Касса магазина с этим товаром в корзине' + (full.variants!.length > 1 ? ' · вариант: ' + v.title : '')}>Сразу к оплате ↗</a>; })()}
           {/^https?:\/\//.test(full.url || '') ? <a className="bz-btn" href={full.url} target="_blank" rel="noreferrer" data-testid="bz-pv-go">{/wolt\.com/.test(full.url) ? 'Открыть в Wolt ↗' : /openstreetmap\.org/.test(full.url) ? 'Открыть на карте ↗' : 'Перейти в магазин ↗'}</a> : <span className="bz-btn" aria-disabled="true">Ссылки нет</span>}
-          {onSave && <button type="button" className={'bz-btn' + (isFav ? ' on' : '')} onClick={() => { onSave(full); setSaved(true); }} data-testid="bz-pv-save">{isFav ? '★ В избранном' : '☆ В избранное'}</button>}
-          <button type="button" className="bz-btn" onClick={() => navigator.clipboard?.writeText(full.url)}>Копировать ссылку</button>
+          {onSave && <button type="button" className={'bz-btn bz-pv-ico' + (isFav ? ' on' : '')} onClick={() => { onSave(full); setSaved(true); }} data-testid="bz-pv-save" title={isFav ? 'В избранном' : 'В избранное'} aria-label={isFav ? 'В избранном' : 'В избранное'}>{isFav ? '★' : '☆'}</button>}
+          <button type="button" className="bz-btn bz-pv-ico" title="Копировать ссылку" aria-label="Копировать ссылку" onClick={() => navigator.clipboard?.writeText(full.url)}>🔗</button>
         </div>
         <div className="bz-pv-player" role="group" aria-label="Листать товары">
           <button type="button" className="bz-pv-skip" disabled={!onPrev} onClick={onPrev} aria-label="Предыдущий товар" data-testid="bz-pv-prev">
