@@ -30,7 +30,13 @@ export async function globalSearch(source, q, {limit = 20, country, maxPrice} = 
   const out = await mcpCall(s.url, 'search_catalog', {meta, catalog: {query: String(q).slice(0, 200), filters, pagination: {limit: Math.min(50, Math.max(1, +limit || 20))}}});
   const items = (out.products || []).map(p => {
     const v = (p.variants || [])[0] || {}; const seller = v.seller || {}; const price = money(v.price) || money(p.price_range?.min);
-    return {title: p.title, price: price?.amount || null, currency: price?.currency || null, image: (p.media || []).find(m => m.type === 'image')?.url || null,
+    const imgs = (p.media || []).filter(m => m.type === 'image' && m.url).map(m => m.url).slice(0, 12);
+    const list = money(v.list_price);
+    return {title: p.title, price: price?.amount || null, currency: price?.currency || null, image: imgs[0] || null, images: imgs,
+      description: String(p.description?.html || p.description?.plain || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 900),
+      compareAt: list && Number(list.amount) > Number(price?.amount || 0) ? list.amount : null,
+      options: (p.options || []).map(o => ({name: o.name, values: (o.values || []).map(x => typeof x === 'string' ? x : x.label || x.name || x.value).filter(Boolean).slice(0, 24)})).filter(o => o.values.length),
+      available: (p.variants || []).some(x => x.availability?.available !== false), reviews: p.rating?.count ?? null,
       url: p.url || v.url || v.checkout_url || seller.url || null, store: seller.name || seller.domain || null, storeDomain: seller.domain || null, rating: p.rating?.value ?? null,
       sellers: new Set((p.variants || []).map(x => x.seller?.domain).filter(Boolean)).size || 1};
   });

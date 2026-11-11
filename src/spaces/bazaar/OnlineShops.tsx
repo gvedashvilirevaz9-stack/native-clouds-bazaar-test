@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import type React from 'react';
 import {bazaar} from './store';
+import {ProductView, type Product} from './ProductView';
 
 type Engine = 'shopify' | 'woo';
 type Source = 'all' | Engine;
@@ -24,7 +25,7 @@ const stem = (w: string) => w.replace(/(es|s)$/, '');
 const score = (title: string, q: string) => { const t = title.toLowerCase(); return q.split(/\s+/).filter(w => w.length > 1).reduce((a, w) => a + (t.includes(stem(w)) ? 1 : 0), 0); };
 const toEn = (q: string) => q.toLowerCase().split(/\s+/).map(w => RU[w] || w).join(' ').trim();
 
-type Item = {title: string; price: string | null; available: boolean | null; image: string | null; url: string; vendor: string | null; store: string; seller?: string | null; currency?: string | null};
+type Item = Product & {vendor: string | null; store: string; available: boolean | null};
 const GLOBAL = 'global';
 // One set of categories for every platform. Shopify gets an English hint word; WooCommerce filters its store list.
 const CATS: {ru: string; icon: string; en: string}[] = [
@@ -93,6 +94,7 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
   const [q, setQ] = useState(''); const [busy, setBusy] = useState(false); const [notes, setNotes] = useState<string[]>([]); const [done, setDone] = useState(false);
   const [blocks, setBlocks] = useState<{key: string; title: string; sub?: string; items: Item[]}[]>([]);
   const [adding, setAdding] = useState<Engine | null>(null);
+  const [view, setView] = useState<{b: number; k: number} | null>(null);
   const catEn = CATS.find(c => c.ru === cat)?.en || '';
   const shown = favs.filter(f => src === 'all' || engineOf(f) === src);
 
@@ -158,12 +160,16 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
 
     {notes.map((t, i) => <p key={i} className="bz-warnbox">{t}</p>)}
     {empty && <p className="bz-note" data-testid="bz-online-none">Ничего не нашлось. Попробуйте по-английски, другое слово или другую категорию.</p>}
-    {blocks.filter(b => b.items.length).map(b => <div key={b.key} className="bz-storeblock">
+    {blocks.filter(b => b.items.length).map((b, bi) => <div key={b.key} className="bz-storeblock">
       <div className="bz-storehead"><b>{b.title}</b>{b.sub && <small>{b.sub}</small>}<button type="button" className="bz-btn" onClick={() => toBazaar(b)}>＋ Сохранить как лавку</button></div>
-      <div className="bz-cards">{b.items.map((i, k) => <a key={k} className="bz-card" href={i.url} target="_blank" rel="noreferrer" data-testid="bz-online-card">
-        <span className="bz-card-img" style={i.image ? {backgroundImage: `url("${i.image.replace(/"/g, '%22')}")`} : undefined}/>
-        <b>{i.title}</b><span className="bz-card-p">{price(i)}{i.available === false ? ' · нет в наличии' : ''}</span>{i.seller && <small className="bz-card-s">{i.seller}</small>}<small>Купить в магазине ↗</small>
-      </a>)}</div>
+      <div className="bz-cards">{b.items.map((i, k) => <button type="button" key={k} className="bz-card" onClick={() => setView({b: bi, k})} data-testid="bz-online-card">
+        <span className="bz-card-img" style={i.image ? {backgroundImage: `url("${i.image.replace(/"/g, '%22')}")`} : undefined}>{(i.images?.length || 0) > 1 && <em className="bz-card-n">{i.images!.length} фото</em>}</span>
+        <b>{i.title}</b><span className="bz-card-p">{price(i)}{i.compareAt && <s> {price({...i, price: i.compareAt})}</s>}{i.available === false ? ' · нет в наличии' : ''}</span>{i.seller && <small className="bz-card-s">{i.seller}</small>}<small>Смотреть ⤢</small>
+      </button>)}</div>
     </div>)}
+    {view && (() => { const list = blocks.filter(b => b.items.length)[view.b]?.items || []; const it = list[view.k]; if (!it) return null;
+      return <ProductView p={it} onClose={() => setView(null)} onPrev={view.k > 0 ? () => setView({...view, k: view.k - 1}) : undefined} onNext={view.k < list.length - 1 ? () => setView({...view, k: view.k + 1}) : undefined}
+        onSave={x => bazaar.addConnector({key: 'c-saved', name: '★ Сохранённые товары', protocol: 'api', note: 'Товары, которые вы сохранили из «Магазинов онлайн».', logo: x.image,
+          items: [...((bazaar.stall('c-saved') as any)?.items || []).filter((y: any) => y.url !== x.url), {id: 's' + Date.now(), title: x.title, price: x.price, image: x.image, url: x.url, pay: {kind: 'link', url: x.url}}]})}/>; })()}
   </div>;
 }

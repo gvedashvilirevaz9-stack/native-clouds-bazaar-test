@@ -6,9 +6,10 @@ const stem = (w) => w.replace(/(es|s)$/, '');
 async function one(s, q) {
   try { const r = await fetch(`https://${s.domain}/wp-json/wc/store/v1/products?search=${encodeURIComponent(q)}&per_page=8`, {headers: {accept: 'application/json', 'user-agent': 'NativeCloudsBazaar/0.1'}, signal: AbortSignal.timeout(6000)});
     if (!r.ok) return []; const list = await r.json(); if (!Array.isArray(list)) return [];
-    return list.map(p => { const pr = p.prices || {}; const minor = Number(pr.currency_minor_unit ?? 2);
-      return {title: String(p.name || '').replace(/<[^>]+>/g, '').replace(/&#8217;/g, '’').replace(/&amp;/g, '&'), price: pr.price ? (Number(pr.price) / 10 ** minor).toFixed(2) : null, currency: pr.currency_code || null,
-        available: p.is_in_stock ?? null, image: p.images?.[0]?.src || null, url: p.permalink, store: s.domain, category: s.category}; });
+    return list.map(p => {const pr = p.prices || {}; const minor = Number(pr.currency_minor_unit ?? 2); const m = (x) => x ? (Number(x) / 10 ** minor).toFixed(2) : null; const strip = (h) => String(h || '').replace(/<[^>]+>/g, ' ').replace(/&#8217;/g, '’').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+      return {title: strip(p.name), price: m(pr.price), compareAt: pr.regular_price && pr.regular_price !== pr.price ? m(pr.regular_price) : null, currency: pr.currency_code || null, available: p.is_in_stock ?? null,
+        image: p.images?.[0]?.src || null, images: (p.images || []).map(i => i.src).filter(Boolean).slice(0, 12), url: p.permalink, description: strip(p.short_description || p.description).slice(0, 900),
+        options: (p.attributes || []).map(a => ({name: a.name, values: (a.terms || []).map(t => t.name).slice(0, 24)})).filter(o => o.values.length), rating: p.average_rating ? Number(p.average_rating) || null : null, reviews: p.review_count || null, store: s.domain, category: s.category}; });
   } catch { return []; }
 }
 export default async function handler(req, res) {
