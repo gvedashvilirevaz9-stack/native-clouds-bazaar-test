@@ -3,6 +3,7 @@ import {netOf, units, fmt, tagged, isAddr, usdcBalance, verifyTx} from './chain.
 import {fetchPriceList, searchItems} from './pricelist.mjs';
 import {shopifyConfigured, shopifySearch, shopifyPublicSearch} from './shopify.mjs';
 import {agentConfig, probe, pay} from './x402.mjs';
+import {globalSearch} from './ucp.mjs';
 
 const O = (properties, required = []) => ({type: 'object', properties, required});
 const str = (description) => ({type: 'string', description});
@@ -40,6 +41,11 @@ export const TOOLS = {
     description: 'Search products in the Shopify store configured on the server (Storefront API, read-only). Checkout happens on Shopify (url).',
     inputSchema: O({q: str('search text'), first: {type: 'number'}}, ['q']),
     run: ({q, first}) => shopifySearch(q, first),
+  },
+  global_search: {
+    description: 'Search products across ALL Shopify stores (Shopify Global Catalog) or Channel3 (many retailers). Free, no key. Returns title, price, store, image, link to buy.',
+    inputSchema: O({q: str('what to find, in English works best, e.g. "toy cars"'), source: {type: 'string', enum: ['shopify', 'channel3']}, country: str('ships to, ISO code e.g. US, GE (optional)'), max_price: str('max price in USD (optional)'), limit: {type: 'number'}}, ['q']),
+    run: ({q, source = 'shopify', country, max_price, limit}) => globalSearch(source, q, {limit, country, maxPrice: max_price}),
   },
   shopify_store_search: {
     description: 'Search products in ANY Shopify store by its web address, no token needed (uses the store\'s public search). Prices are in the store currency; checkout happens on the store page (url).',
