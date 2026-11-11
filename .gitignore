@@ -1,0 +1,6 @@
+node_modules/
+web/
+.vercel/
+.env*
+*.zip
+src/spaces/shop/runtime.generated.ts

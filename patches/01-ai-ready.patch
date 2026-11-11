@@ -1,0 +1,385 @@
+diff --git a/SHOP.md b/SHOP.md
+index e6076ee..67c6755 100644
+--- a/SHOP.md
++++ b/SHOP.md
+@@ -79,6 +79,27 @@
+ - **Данные текут в сайты сами.** `shop.start(preset)` заменяет демо-контакты, город и логотип пресета вашими и ставит основной кошелёк. `shop.compose` (агент) заполняет то, что не задано в ответах анкеты. Для уже собранного сайта — «👤 Мои данные из админки» в конструкторе или `admin.apply`.
+ - В файл для покупателя админка **не попадает** (проверено тестом).
+ 
++## 🤖 Читается ИИ (products.json, llms.txt, schema.org)
++
++Каждый файл для отправки теперь несёт прайс-лист ещё и как данные:
++- `<script type="application/ld+json">` — разметка schema.org: Store, OfferCatalog, Offer/Product. Цены указаны как USD, в описании сказано, что оплата в USDC (Base): в ISO 4217 нет USDC.
++- `<script type="application/json" id="nc-pricelist">` — наш открытый формат `nativeclouds.pricelist.v1`. По нему другой портал открывает файл в «Базаре».
++- `<meta name="nc:pricelist">`.
++
++Папка сайта (.zip) дополнительно содержит `products.json` и `llms.txt`.
++
++Ничего скрытого туда не попадает: скрытые ячейки убираются, как и раньше. Код — `src/spaces/shop/seo.ts`. Витрина, оплата и формат ShopConfig не менялись; добавилось только необязательное поле `siteUrl`.
++
++В админке появилась страница **«🤖 Опубликовать для ИИ»**:
++- проверки готовности: цены, описания, кошелёк, контакты, город, адрес сайта;
++- поле для адреса сайта;
++- шаги со ссылками: папка сайта → Netlify Drop → validator.schema.org → ChatGPT Business Hub → Google Merchant Center → разослать прайс-лист;
++- просмотр того, что видит ИИ.
++
++Команда агента: `admin.publish {siteUrl}`.
++
++Покупательская сторона (открыть чужой прайс-лист и оплатить) — отдельный модуль, см. **BAZAAR.md**.
++
+ ## ¤ Касса владельца (только в портале)
+ 
+ * По каждому адресу: **баланс USDC сейчас** (`eth_call balanceOf`) и **сколько пришло за период** (события Transfer). Это разные числа: деньги могли выводиться (как в бухгалтерии лаборатории).
+diff --git a/examples/shop-agent-tools.json b/examples/shop-agent-tools.json
+index db83ca9..2d840e6 100644
+--- a/examples/shop-agent-tools.json
++++ b/examples/shop-agent-tools.json
+@@ -66,7 +66,12 @@
+        "sketchbook",
+        "encyclopedia",
+        "workshop",
+-       "fast"
++       "fast",
++       "ai-publish",
++       "bazaar",
++       "marketplace",
++       "purchases",
++       "bazaar.connect"
+       ]
+      }
+     },
+@@ -710,6 +715,25 @@
+      "tx"
+     ]
+    }
++  },
++  {
++   "name": "admin.publish",
++   "description": "\"Опубликовать для ИИ\": readiness checks, set the public site URL (https) used in schema.org / products.json, preview llms.txt. Opens the admin page.",
++   "input_schema": {
++    "type": "object",
++    "properties": {
++     "siteUrl": {
++      "type": "string"
++     },
++     "full": {
++      "type": "boolean"
++     },
++     "show": {
++      "type": "boolean"
++     }
++    },
++    "required": []
++   }
+   }
+  ]
+ }
+\ No newline at end of file
+diff --git a/src/spaces/shop/AdminPanel.tsx b/src/spaces/shop/AdminPanel.tsx
+index 8440f9b..f87b3b2 100644
+--- a/src/spaces/shop/AdminPanel.tsx
++++ b/src/spaces/shop/AdminPanel.tsx
+@@ -6,10 +6,13 @@ import {TEMPLATES} from './model';
+ import {lookupTx, head, fmt, fmt6, codeOf, txUrl, addrUrl} from './chain';
+ import {missing} from './recipes';
+ import {checkAddress} from '../billing/evm';
++import {aiChecks, manifest, jsonLd, llmsTxt} from './seo';
++import {packSite} from './export';
++import {downloadBlob} from '../billing/share';
+ import {Cabinet, ImgPick, T} from './ShopRoom';
+ 
+-export type Sub = 'home' | 'profile' | 'wallets' | 'money' | 'hash' | 'sites';
+-const SUBS: [Sub, string][] = [['home', '🏠 Главная'], ['profile', '👤 Мои данные'], ['wallets', '💳 Кошельки'], ['money', '¤ Бухгалтерия'], ['hash', '🔎 Проверить хеш'], ['sites', '🗂 Мои сайты']];
++export type Sub = 'home' | 'profile' | 'wallets' | 'money' | 'hash' | 'sites' | 'ai';
++const SUBS: [Sub, string][] = [['home', '🏠 Главная'], ['profile', '👤 Мои данные'], ['wallets', '💳 Кошельки'], ['money', '¤ Бухгалтерия'], ['hash', '🔎 Проверить хеш'], ['sites', '🗂 Мои сайты'], ['ai', '🤖 Опубликовать для ИИ']];
+ 
+ export function LoginGate({onPresets}: {onPresets: () => void}) {
+   const [pw, setPw] = useState('');
+@@ -115,12 +118,51 @@ function HashCheck() {
+   </div>;
+ }
+ 
++// "Опубликовать для ИИ": the site is already machine-readable inside; this page says what is left to do by hand.
++type AiState = {done: Record<string, boolean>};
++const AI_STEPS: {id: string; title: string; text: string; link?: [string, string]}[] = [
++  {id: 'zip', title: 'Скачать папку сайта', text: 'В папке: index.html (витрина), products.json (прайс-лист как данные), llms.txt (описание для ИИ). Разметка schema.org уже внутри страницы.'},
++  {id: 'host', title: 'Выложить в интернет', text: 'Netlify Drop, Cloudflare Pages или GitHub Pages — бесплатно. Перетащите папку и получите адрес. Вставьте адрес выше и скачайте папку ещё раз: ссылки в данных станут правильными.', link: ['https://app.netlify.com/drop', 'Netlify Drop']},
++  {id: 'check', title: 'Проверить разметку', text: 'Вставьте адрес сайта в валидатор schema.org — он покажет магазин и товары так, как их видят поисковики и ИИ.', link: ['https://validator.schema.org/', 'validator.schema.org']},
++  {id: 'chatgpt', title: 'ChatGPT: заявить бизнес', text: 'Business Hub (бета с 10.11.2026): профиль, фид товаров, статистика упоминаний. Нужен сайт. Агент для покупателей пока только у бизнесов в США — профиль можно заявить там, где работает ChatGPT.', link: ['https://chatgpt.com/business-hub', 'chatgpt.com/business-hub']},
++  {id: 'google', title: 'Google: профиль компании и Merchant Center', text: 'Профиль компании — для карт и поиска; Merchant Center — для товаров в Google и Gemini. Используйте адрес сайта и products.json как источник данных.', link: ['https://merchants.google.com/', 'Merchant Center']},
++  {id: 'share', title: 'Разослать прайс-лист', text: 'Тот же HTML-файл можно отправить в мессенджер или вставить в «Базар» другого портала — там его откроют как витрину и оплатят.'},
++];
++function AiPublish() {
++  const st = useShop(); const cfg = st.shop; const [ai, setAi] = useState<AiState>({done: {}}); const [url, setUrl] = useState(cfg?.siteUrl || '');
++  useEffect(() => { void kv.get<AiState>('aiPublish').then(v => v && setAi(v)); }, []);
++  useEffect(() => setUrl(cfg?.siteUrl || ''), [cfg?.siteUrl]);
++  const tick = (id: string, v: boolean) => { const n = {done: {...ai.done, [id]: v}}; setAi(n); void kv.set('aiPublish', n); };
++  const checks = aiChecks(cfg); const okUrl = !url || /^https:\/\/[^\s"'<>]+$/.test(url);
++  const saveUrl = () => { if (cfg && okUrl) shop.set({siteUrl: url.replace(/\/+$/, '') || undefined}); };
++  return <div className="ad-sec" data-testid="admin-ai">
++    <h2>Опубликовать для ИИ</h2>
++    <p className="sh-note">ChatGPT, Gemini, Claude и поисковики читают не картинку сайта, а данные. В каждом файле и папке сайта они уже есть: прайс-лист (products.json), разметка schema.org и llms.txt. Здесь — что осталось сделать руками.</p>
++    {!cfg ? <p className="sh-warnbox">Сначала соберите сайт.</p> : <>
++      <div className="ad-checks" data-testid="admin-ai-checks">{checks.map(c => <div key={c.id} className={c.ok ? 'ok' : 'todo'}><b>{c.ok ? '✓' : '•'}</b>{c.text}</div>)}</div>
++      <div className="ad-add"><input value={url} onChange={e => setUrl(e.target.value.trim())} onBlur={saveUrl} placeholder="https://адрес-вашего-сайта (после публикации)" className={url ? (okUrl ? 'ok' : 'bad') : ''} data-testid="admin-ai-url"/>
++        <button type="button" className="sh-btn" disabled={!okUrl} onClick={saveUrl}>Сохранить адрес</button></div>
++      <ol className="ad-steps">{AI_STEPS.map(s => <li key={s.id} className={ai.done[s.id] ? 'done' : ''}>
++        <label className="sh-check"><input type="checkbox" checked={!!ai.done[s.id]} onChange={e => tick(s.id, e.target.checked)} data-testid={'admin-ai-step-' + s.id}/> <b>{s.title}</b></label>
++        <span>{s.text}</span>
++        <div className="sh-row">{s.id === 'zip' && <button type="button" className="sh-primary" data-testid="admin-ai-zip" onClick={async () => { const r = await packSite(cfg); downloadBlob(r.blob, r.name); tick('zip', true); }}>⬇ Папка сайта (.zip)</button>}
++          {s.link && <a className="sh-btn" href={s.link[0]} target="_blank" rel="noreferrer">{s.link[1]} ↗</a>}</div>
++      </li>)}</ol>
++      <details className="sh-hist"><summary>Посмотреть, что видит ИИ</summary>
++        <h4>llms.txt</h4><pre className="ad-pre" data-testid="admin-ai-llms">{llmsTxt(cfg)}</pre>
++        <h4>products.json</h4><pre className="ad-pre">{JSON.stringify(manifest(cfg), null, 1).slice(0, 6000)}</pre>
++        <h4>schema.org (JSON-LD)</h4><pre className="ad-pre">{JSON.stringify(jsonLd(cfg), null, 1).slice(0, 6000)}</pre>
++      </details>
++    </>}
++  </div>;
++}
++
+ /** Which admin page to show when the panel mounts (set by agent commands before the lazy room loads). */
+ export const adminNav: {sub: Sub} = {sub: 'home'};
+ 
+ export function AdminPanel({onBuild, onSite, onPresets}: {onBuild: (t: string) => void; onSite: () => void; onPresets: () => void}) {
+   const st = useShop(); const [sub, setSub0] = useState<Sub>(adminNav.sub); const setSub = (x: Sub) => { adminNav.sub = x; setSub0(x); };
+-  useEffect(() => { const f = (e: any) => { if (e.detail?.admin) setSub0(e.detail.admin); }; window.addEventListener('shop:ui', f); return () => window.removeEventListener('shop:ui', f); }, []);
++  useEffect(() => { const pend = (window as any).__shopUiPending; if (pend?.admin) { adminNav.sub = pend.admin; setSub0(pend.admin); } const f = (e: any) => { if (e.detail?.admin) setSub0(e.detail.admin); }; window.addEventListener('shop:ui', f); return () => window.removeEventListener('shop:ui', f); }, []);
+   if (!st.unlocked) return <LoginGate onPresets={onPresets}/>;
+   return <section className="ad" data-testid="admin-panel">
+     <nav className="ad-nav">{SUBS.map(([k, l]) => <button type="button" key={k} aria-pressed={sub === k} data-testid={'admin-sub-' + k} onClick={() => setSub(k)}>{l}</button>)}
+@@ -131,6 +173,7 @@ export function AdminPanel({onBuild, onSite, onPresets}: {onBuild: (t: string) =
+       {sub === 'wallets' && <Wallets/>}
+       {sub === 'money' && <div className="ad-sec"><h2>Бухгалтерия</h2><p className="sh-note">Все ваши кошельки: сколько пришло, баланс, платежи с номерами заказов. Читается прямо из сети Base.</p>{st.shop || shop.wallets().length ? <Cabinet cfg={st.shop || TEMPLATES.blank.make()}/> : <p className="sh-note">Добавьте кошелёк.</p>}</div>}
+       {sub === 'hash' && <HashCheck/>}
++      {sub === 'ai' && <AiPublish/>}
+       {sub === 'sites' && <div className="ad-sec"><h2>Мои сайты</h2>
+         {shop.sites().length ? <div className="sh-sites">{shop.sites().map(x => <button type="button" key={x.id} aria-pressed={x.current} onClick={() => { if (!x.current) shop.switchTo(x.id); onSite(); }}>{x.current ? '● ' : ''}{x.name}<small>{new Date(x.updatedAt).toLocaleDateString()}</small></button>)}</div> : <p className="sh-note">Пока нет. Начните с пресета:</p>}
+         <div className="ad-quick">{Object.entries(TEMPLATES).map(([k, t]) => <button type="button" key={k} onClick={() => onBuild(k)}><b>{t.icon}</b>{t.ru}</button>)}</div></div>}
+diff --git a/src/spaces/shop/commands.ts b/src/spaces/shop/commands.ts
+index 3698636..4a62a0f 100644
+--- a/src/spaces/shop/commands.ts
++++ b/src/spaces/shop/commands.ts
+@@ -6,10 +6,11 @@ import {checkAddress} from '../billing/evm';
+ import {downloadBlob} from '../billing/share';
+ import {lookupTx, head, balance, transfers, blockAt, fmt, fmt6, codeOf} from './chain';
+ import {kv} from './store';
++import {aiChecks, manifest, llmsTxt} from './seo';
+ import {compose, missing, resolveImage, RECIPES, QUESTIONNAIRE, type Answers} from './recipes';
+ 
+ export const SHOP_COMMANDS = ['shop.sites', 'shop.switch', 'shop.questionnaire', 'shop.recipes', 'shop.compose', 'shop.photo', 'shop.banner', 'shop.missing', 'shop.finish', 'shop.open', 'shop.templates', 'shop.start', 'shop.get', 'shop.set', 'shop.section.add', 'shop.section.patch', 'shop.section.remove', 'shop.cell.add', 'shop.cell.patch', 'shop.cell.remove', 'shop.payment.set', 'shop.export', 'shop.prompt',
+-  'admin.open', 'admin.unlock', 'admin.status', 'admin.profile.get', 'admin.profile.set', 'admin.wallets.list', 'admin.wallets.add', 'admin.wallets.patch', 'admin.wallets.remove', 'admin.apply', 'admin.accounting', 'admin.hash'];
++  'admin.open', 'admin.unlock', 'admin.status', 'admin.profile.get', 'admin.profile.set', 'admin.wallets.list', 'admin.wallets.add', 'admin.wallets.patch', 'admin.wallets.remove', 'admin.apply', 'admin.accounting', 'admin.hash', 'admin.publish'];
+ const ui = (detail: object) => window.dispatchEvent(new CustomEvent('shop:ui', {detail}));
+ const toDataUrl = (b: Blob) => new Promise<string>(r => { const f = new FileReader(); f.onload = () => r(String(f.result)); f.readAsDataURL(b); });
+ const lean = () => { const s = shop.get().shop; if (!s) return null; return JSON.parse(JSON.stringify(s, (k, v) => typeof v === 'string' && v.startsWith('data:') ? `(image ${Math.round(v.length / 1365)} KB)` : v)); };
+@@ -117,6 +118,14 @@ export async function executeShop(id: string, a: any = {}) {
+       if (a.show !== false) { window.dispatchEvent(new CustomEvent('shop:open')); ui({view: 'admin', admin: 'money'}); }
+       return {totalIncoming: fmt(total) + ' USDC', onWalletsNow: fmt(bal) + ' USDC', wallets: out, note: 'Пришло — сумма входящих USDC с момента подключения адреса; баланс может быть меньше, если деньги выводились.'};
+     }
++    case 'admin.publish': {
++      const s = shop.get().shop; if (!s) throw new Error('SHOP_NOT_STARTED');
++      if (a.siteUrl !== undefined) { const u = String(a.siteUrl || '').replace(/\/+$/, ''); if (u && !/^https:\/\/[^\s"'<>]+$/.test(u)) throw new Error('SITE_URL_INVALID'); shop.set({siteUrl: u || undefined}); }
++      if (a.show !== false) { (window as any).__shopUiPending = {view: 'admin', admin: 'ai'}; window.dispatchEvent(new CustomEvent('shop:open')); ui({view: 'admin', admin: 'ai'}); }
++      const cur = shop.get().shop!;
++      return {checks: aiChecks(cur), siteUrl: cur.siteUrl || null, files: {'products.json': a.full ? manifest(cur) : {items: manifest(cur).items.length, schema: 'nativeclouds.pricelist.v1'}, 'llms.txt': a.full ? llmsTxt(cur) : llmsTxt(cur).slice(0, 600)},
++        next: ['shop.export {as:"site"} → выложить папку (Netlify Drop / Cloudflare Pages)', 'admin.publish {siteUrl:"https://…"} → затем снова shop.export {as:"site"}', 'ChatGPT Business Hub: https://chatgpt.com/business-hub (нужен сайт)', 'Google Merchant Center: https://merchants.google.com/']};
++    }
+     case 'admin.hash': {
+       const mine = shop.addresses().map(x => x.address); const r: any = await lookupTx(a.tx || a.hash || '', mine);
+       if (!r.found) return {found: false, reason: r.reason, hint: r.reason === 'FAILED' ? 'Транзакция не прошла — денег нет.' : 'Не найдена в Base: проверьте хеш и сеть или подождите.'};
+diff --git a/src/spaces/shop/export.ts b/src/spaces/shop/export.ts
+index f1e7d48..522dcc0 100644
+--- a/src/spaces/shop/export.ts
++++ b/src/spaces/shop/export.ts
+@@ -3,6 +3,7 @@
+ import {RUNTIME_JS, RUNTIME_CSS} from './runtime.generated';
+ import {SUNRISE_CREDIT, type ShopConfig, type Img} from './model';
+ import {plan} from '../billing/plan';
++import {headTags, manifest, llmsTxt} from './seo';
+ 
+ const abs = (src: string) => /^(data:|https?:|blob:)/.test(src) ? src : new URL(src, document.baseURI).href;
+ async function toDataUrl(src: string) {
+@@ -27,11 +28,11 @@ function forBuyers(c: ShopConfig): ShopConfig {
+   return x;
+ }
+ const safe = (s: string) => s.replace(/<\/(script)/gi, '<\\/$1').replace(/<!--/g, '<\\!--');
+-export function html(cfg: ShopConfig, mode: 'file' | 'edit' | 'gallery' = 'file') {
++export function html(cfg: ShopConfig, mode: 'file' | 'edit' | 'gallery' | 'bazaar' = 'file') {
+   const title = cfg.brand.name.replace(/[<>&"]/g, '');
+   return `<!doctype html><html lang="${cfg.lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>${title}</title><meta name="description" content="${(cfg.hero.sub || '').replace(/[<>&"]/g, '').slice(0, 160)}"><meta name="generator" content="Sunrise Workshop · My shop">
+-<style>html,body{margin:0}${RUNTIME_CSS}</style></head><body>
++${mode === 'file' ? headTags(cfg, safe) + '\n' : ''}<style>html,body{margin:0}${RUNTIME_CSS}</style></head><body>
+ <div id="shop" data-mode="${mode}"></div>
+ <script type="application/json" id="shop-data">${safe(JSON.stringify(cfg))}</script>
+ <script>${safe(RUNTIME_JS)}</script></body></html>`;
+@@ -55,10 +56,14 @@ export async function packSite(cfg: ShopConfig) {
+   const {blob} = await packFile(cfg);
+   const {zipSync, strToU8} = await import('fflate');
+   const readme = `${cfg.brand.name}\n\nThis folder is your whole website: one index.html.\n\nPublish it (free options):\n- Netlify Drop: open https://app.netlify.com/drop and drag this folder in.\n- Cloudflare Pages: Create project > Upload assets > this folder.\n- GitHub Pages: new repository > upload index.html > Settings > Pages > Deploy from branch.\n\nPayments go to the EVM addresses inside the page (USDC on Base). Keep this file private until the addresses are correct.\n`;
+-  const zip = zipSync({'index.html': new Uint8Array(await blob.arrayBuffer()), 'README.txt': strToU8(readme)});
++  const buyers = forBuyers(cfg);
++  const zip = zipSync({'index.html': new Uint8Array(await blob.arrayBuffer()), 'README.txt': strToU8(readme + AI_README),
++    'products.json': strToU8(JSON.stringify(manifest(buyers), null, 1)), 'llms.txt': strToU8(llmsTxt(buyers))});
+   return {blob: new Blob([zip], {type: 'application/zip'}), name: fileName(cfg).replace(/\.html$/, '') + ' (site).zip'};
+ }
+ 
++const AI_README = `\nFor AI assistants and search (already done for you):\n- products.json: the price list as data (nativeclouds.pricelist.v1).\n- llms.txt: a short description for language models.\n- index.html carries the same list plus schema.org markup.\nAfter publishing, put the site address into the shop admin (Опубликовать для ИИ) and pack again, so links point to it.\n`;
++
+ /** Photos are shrunk before they go into the shop, so the file stays small enough for messengers. */
+ export async function compressImage(file: Blob, maxEdge = 1600, quality = 0.78): Promise<string> {
+   const bmp = await createImageBitmap(file); const k = Math.min(1, maxEdge / Math.max(bmp.width, bmp.height));
+diff --git a/src/spaces/shop/model.ts b/src/spaces/shop/model.ts
+index 65fe7e9..44acb08 100644
+--- a/src/spaces/shop/model.ts
++++ b/src/spaces/shop/model.ts
+@@ -38,6 +38,8 @@ export type ShopConfig = {
+   theme: Theme;
+   /** Footer credit. Free plan: always the Native Clouds / Sunrise mark. Paid plans: own logo + link, or none. */
+   credit?: {mode: 'sunrise' | 'own' | 'none'; text: string; url: string; logo: Img};
++  /** Public address of the site once it is published (used in schema.org / products.json). Optional. */
++  siteUrl?: string;
+ };
+ export const SUNRISE_URL = 'https://sunspace.club/';
+ export const SUNRISE_CREDIT = {mode: 'sunrise' as const, text: 'Native Clouds · Sunrise', url: SUNRISE_URL, logo: null};
+diff --git a/src/spaces/shop/seo.ts b/src/spaces/shop/seo.ts
+new file mode 100644
+index 0000000..6b335cb
+--- /dev/null
++++ b/src/spaces/shop/seo.ts
+@@ -0,0 +1,106 @@
++// "Readable for AI": the same shop described as data, so assistants (ChatGPT, Gemini, Claude, Grok…),
++// search engines and other portals (the Bazaar) can read the price list without guessing from the page.
++//
++// Three outputs, all generated from the ShopConfig and nothing else:
++//   1. manifest()  → nativeclouds.pricelist.v1 — our open price-list format ("cartridge"). Embedded in every
++//                    exported HTML file as <script type="application/json" id="nc-pricelist"> and saved as
++//                    products.json in the site zip. The Bazaar imports files by it.
++//   2. jsonLd()    → schema.org Store + OfferCatalog + Offer/Product (what search and AI crawlers understand).
++//   3. llmsTxt()   → plain Markdown summary for language models (llms.txt convention).
++// Nothing private goes in: hidden cells are dropped, same as in the buyer's file.
++import type {ShopConfig, Cell} from './model';
++import {CHAIN_ID, USDC} from './chain';
++
++export const PRICELIST_SCHEMA = 'nativeclouds.pricelist.v1';
++
++export type PriceItem = {
++  id: string; section: string; title: string; text: string; tags: string[];
++  price: string | null; unit: string | null; currency: 'USDC';
++  receiver: string | null; seller: string | null; place: string | null; stock: number | null;
++  image: string | null;                     // "#aN" (picture N inside the same HTML file), https URL, or null
++};
++export type PriceList = {
++  schema: typeof PRICELIST_SCHEMA; id: string; name: string; updatedAt: string; lang: string;
++  description: string; url: string | null;
++  seller: {name: string; place: string | null; contact: Record<string, string>};
++  payment: {chainId: number; network: 'base'; token: 'USDC'; tokenAddress: string; decimals: 6;
++    mode: 'shared' | 'individual'; address: string | null; orderTag: boolean; note: string};
++  items: PriceItem[];
++  generator: string;
++};
++
++const visible = (cfg: ShopConfig) => cfg.sections.map(s => ({s, cells: s.cells.filter(c => !c.hidden)}));
++const receiverOf = (cfg: ShopConfig, c: Cell) => cfg.payment.mode === 'individual' ? (c.receiver || null) : (cfg.payment.address || null);
++const imgRef = (src?: string | null) => !src ? null : src.startsWith('#a') || /^https:\/\//.test(src) ? src : null;  // data: pictures live in the file, not here
++const clean = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).filter(([, v]) => v != null && v !== '')) as Record<string, string>;
++
++export function manifest(cfg: ShopConfig): PriceList {
++  return {
++    schema: PRICELIST_SCHEMA, id: cfg.id, name: cfg.brand.name, updatedAt: new Date(cfg.updatedAt || Date.now()).toISOString(), lang: cfg.lang,
++    description: [cfg.hero.title, cfg.hero.sub].filter(Boolean).join(' — ').slice(0, 300), url: cfg.siteUrl || null,
++    seller: {name: cfg.brand.name, place: cfg.brand.place || null, contact: clean(cfg.contact as any)},
++    payment: {chainId: CHAIN_ID, network: 'base', token: 'USDC', tokenAddress: USDC, decimals: 6, mode: cfg.payment.mode, address: cfg.payment.address || null, orderTag: cfg.payment.orderTag, note: cfg.payment.note},
++    items: visible(cfg).flatMap(({s, cells}) => cells.map(c => ({
++      id: c.id, section: s.tab, title: c.title, text: c.text, tags: c.tags || [], price: c.price, unit: c.unit || null, currency: 'USDC' as const,
++      receiver: c.price ? receiverOf(cfg, c) : null, seller: c.seller || null, place: c.place || null, stock: c.stock ?? null, image: imgRef(c.image?.src),
++    }))),
++    generator: 'Native Clouds · My shop (https://sunspace.club/)',
++  };
++}
++
++/** schema.org graph. Prices are in USDC, a dollar stablecoin: priceCurrency is "USD" (ISO 4217 has no USDC) and the offer says how it is paid. */
++export function jsonLd(cfg: ShopConfig) {
++  const url = cfg.siteUrl || undefined; const m = manifest(cfg);
++  const sameAs = [m.seller.contact.telegram && 'https://t.me/' + m.seller.contact.telegram.replace(/^@/, ''), m.seller.contact.instagram && 'https://instagram.com/' + m.seller.contact.instagram.replace(/^@/, '')].filter(Boolean);
++  const store: any = {'@type': 'Store', '@id': (url || '') + '#store', name: cfg.brand.name, description: m.description || undefined, url,
++    address: cfg.brand.place ? {'@type': 'PostalAddress', addressLocality: cfg.brand.place} : undefined,
++    telephone: m.seller.contact.phone || m.seller.contact.whatsapp || undefined, email: m.seller.contact.email || undefined,
++    sameAs: sameAs.length ? sameAs : undefined, paymentAccepted: 'USDC (Base network)', currenciesAccepted: 'USD'};
++  store.hasOfferCatalog = {'@type': 'OfferCatalog', name: cfg.brand.name, itemListElement: m.items.filter(i => i.price).map(i => ({
++    '@type': 'Offer', price: i.price, priceCurrency: 'USD', availability: i.stock === 0 ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
++    description: `Paid in USDC on Base${i.unit ? ' · per ' + i.unit : ''}`, url: url ? url + '#' + i.id : undefined,
++    seller: i.seller ? {'@type': 'Person', name: i.seller} : {'@id': (url || '') + '#store'},
++    availableAtOrFrom: i.place ? {'@type': 'Place', name: i.place} : undefined,
++    itemOffered: {'@type': 'Product', name: i.title, description: i.text || undefined, category: i.section, image: i.image?.startsWith('https://') ? i.image : undefined, keywords: i.tags.length ? i.tags.join(', ') : undefined},
++  }))};
++  return {'@context': 'https://schema.org', '@graph': [store]};
++}
++
++export function llmsTxt(cfg: ShopConfig) {
++  const m = manifest(cfg); const c = m.seller.contact;
++  const lines = [`# ${m.name}`, '', `> ${m.description || 'Price list'}${m.seller.place ? ' · ' + m.seller.place : ''}`, ''];
++  const bySec = new Map<string, PriceItem[]>(); for (const i of m.items) bySec.set(i.section, [...(bySec.get(i.section) || []), i]);
++  for (const [sec, items] of bySec) {
++    lines.push(`## ${sec}`, '');
++    for (const i of items) lines.push(`- **${i.title}** — ${i.price ? `${i.price} USDC${i.unit ? ' / ' + i.unit : ''}` : 'price on request'}${i.place ? ` · 📍 ${i.place}` : ''}${i.seller ? ` · seller: ${i.seller}` : ''}${i.text ? `\n  ${i.text.replace(/\s+/g, ' ').slice(0, 240)}` : ''}`);
++    lines.push('');
++  }
++  lines.push('## How to buy', '',
++    `- Pay in USDC on Base (chainId ${CHAIN_ID}, token ${USDC}, 6 decimals).`,
++    m.payment.mode === 'shared' ? `- Receiver: ${m.payment.address || 'ask the seller'}` : '- Each item has its own receiver address (see products.json).',
++    m.payment.orderTag ? '- The last 4 of the 6 decimals of the amount carry the order number (e.g. 25.001234 = order #1234). If the wallet cannot send 6 decimals, send the round price and give the seller the transaction hash.' : '- Send the exact price and give the seller the transaction hash.',
++    `- Then send the order and the transaction hash to the seller${Object.keys(c).length ? ': ' + Object.entries(c).map(([k, v]) => `${k} ${v}`).join(', ') : '.'}`,
++    '', '## Machine-readable', '', '- products.json — the full price list (nativeclouds.pricelist.v1).', '- The HTML page embeds the same list (#nc-pricelist) and schema.org JSON-LD.', '');
++  return lines.join('\n');
++}
++
++/** Tags placed in the <head> of the exported page. `safe` escapes "</script" so text from cells cannot close the tag. */
++export function headTags(cfg: ShopConfig, safe: (s: string) => string) {
++  return `<meta name="nc:pricelist" content="${PRICELIST_SCHEMA}">
++<script type="application/ld+json">${safe(JSON.stringify(jsonLd(cfg)))}</script>
++<script type="application/json" id="nc-pricelist">${safe(JSON.stringify(manifest(cfg)))}</script>`;
++}
++
++/** Readiness for AI and search: what is missing, in plain words. Used by the admin "Опубликовать для ИИ" page. */
++export function aiChecks(cfg: ShopConfig | null) {
++  if (!cfg) return [{id: 'site', ok: false, text: 'Нет сайта — соберите его из пресета'}];
++  const items = manifest(cfg).items; const priced = items.filter(i => i.price);
++  return [
++    {id: 'items', ok: priced.length > 0, text: priced.length ? `Товаров с ценой: ${priced.length}` : 'Нет ни одного товара с ценой'},
++    {id: 'texts', ok: items.every(i => (i.text || '').length >= 20), text: items.every(i => (i.text || '').length >= 20) ? 'У всех товаров есть описание' : `Без нормального описания: ${items.filter(i => (i.text || '').length < 20).map(i => i.title).slice(0, 4).join(', ')}`},
++    {id: 'wallet', ok: items.filter(i => i.price).every(i => i.receiver), text: priced.every(i => i.receiver) ? 'Кошелёк для оплаты указан' : 'Не у всех товаров есть кошелёк для оплаты'},
++    {id: 'contact', ok: Object.keys(clean(cfg.contact as any)).length > 0, text: Object.keys(clean(cfg.contact as any)).length ? 'Контакты есть' : 'Нет контактов продавца'},
++    {id: 'place', ok: !!cfg.brand.place, text: cfg.brand.place ? `Город: ${cfg.brand.place}` : 'Не указан город — ИИ не поймёт, где вы'},
++    {id: 'url', ok: !!cfg.siteUrl, text: cfg.siteUrl ? `Адрес сайта: ${cfg.siteUrl}` : 'Сайт ещё не выложен в интернет (для ChatGPT и Google нужен адрес)'},
++  ];
++}
+diff --git a/src/spaces/shop/shop.css b/src/spaces/shop/shop.css
+index c0f580d..701bd42 100644
+--- a/src/spaces/shop/shop.css
++++ b/src/spaces/shop/shop.css
+@@ -118,3 +118,10 @@
+ .sh-top .sh-views button{background:none;border:0;color:#e8efe8;padding:6px 12px;border-radius:999px;font:inherit;font-size:13px;cursor:pointer}
+ .sh-top .sh-views button[aria-pressed=true]{background:#fff;color:#18242a!important;font-weight:600}
+ .sh-top .sh-views button:disabled{opacity:.4;cursor:default}
++.ad-checks{display:flex;flex-direction:column;gap:4px;padding:12px;border:1px solid #e3e3dc;border-radius:12px;background:#fff}
++.ad-checks div{display:flex;gap:8px}.ad-checks .ok b{color:#2f7d4f}.ad-checks .todo{color:#8a5a12}
++.ad-steps{display:flex;flex-direction:column;gap:10px;padding-left:20px;margin:6px 0}
++.ad-steps li{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid #e3e3dc;border-radius:12px;background:#fff}
++.ad-steps li.done{background:#f1f8f2;border-color:#cfe6d5}
++.ad-steps span{color:#556;font-size:13px}
++.ad-pre{max-height:260px;overflow:auto;background:#f6f6f1;border-radius:8px;padding:10px;font-size:11px;white-space:pre-wrap;word-break:break-word}
+diff --git a/standalone/main.tsx b/standalone/main.tsx
+index 1438da4..425aea1 100644
+--- a/standalone/main.tsx
++++ b/standalone/main.tsx
+@@ -83,7 +83,7 @@ function App(){
+    if(SHOP_COMMANDS.includes(id))return import('../src/spaces/shop/commands').then(m=>m.executeShop(id,args));
+    if(id==='fast.open'){fastSheet.open();return {opened:'fast'}}
+    // One door for the agent: "открой бухгалтерию", "открой сборку сайта", "открой счета"…
+-   if(id==='portal.open'){const P:any={shop:['shop','admin:home'],admin:['shop','admin:home'],presets:['shop','presets'],gallery:['shop','presets'],'shop.build':['shop','build'],site:['shop','build'],accounting:['shop','admin:money'],wallets:['shop','admin:wallets'],profile:['shop','admin:profile'],hash:['shop','admin:hash'],'my-sites':['shop','admin:sites'],'shop.cash':['shop','cash'],'shop.pack':['shop','pack'],billing:['ws','billing'],invoices:['ws','billing'],day:['ws','day'],estimate:['ws','estimate'],inbox:['ws','inbox'],media:['ws','media'],notebook:['ws','notebook'],sketchbook:['ws','sketchbook'],encyclopedia:['ws','encyclopedia'],workshop:['ws','notebook'],fast:['fast','']};
++   if(id==='portal.open'){const P:any={shop:['shop','admin:home'],admin:['shop','admin:home'],presets:['shop','presets'],gallery:['shop','presets'],'shop.build':['shop','build'],site:['shop','build'],accounting:['shop','admin:money'],wallets:['shop','admin:wallets'],profile:['shop','admin:profile'],hash:['shop','admin:hash'],'ai-publish':['shop','admin:ai'],'my-sites':['shop','admin:sites'],'shop.cash':['shop','cash'],'shop.pack':['shop','pack'],billing:['ws','billing'],invoices:['ws','billing'],day:['ws','day'],estimate:['ws','estimate'],inbox:['ws','inbox'],media:['ws','media'],notebook:['ws','notebook'],sketchbook:['ws','sketchbook'],encyclopedia:['ws','encyclopedia'],workshop:['ws','notebook'],fast:['fast','']};
+     const p=P[String(args.place||'').toLowerCase()];if(!p)return {error:'UNKNOWN_PLACE',places:Object.keys(P)};
+     if(p[0]==='fast'){fastSheet.open();return {opened:'fast'}}
+     if(p[0]==='shop'){const d=p[1].startsWith('admin:')?{admin:p[1].slice(6),view:'admin'}:p[1]==='presets'?{view:'presets'}:{tab:p[1]};(window as any).__shopUiPending=d;window.dispatchEvent(new CustomEvent('shop:open'));setTimeout(()=>window.dispatchEvent(new CustomEvent('shop:ui',{detail:d})),60);return {opened:args.place,places:Object.keys(P),...(p[1].startsWith('admin:')?{note:'Админка открыта. Если на экране вход — admin.unlock (пароль пока заглушка).'}:{})}}

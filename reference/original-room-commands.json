@@ -1,0 +1,1835 @@
+{
+  "notice": "Original full-portal schemas for reference, NOT the standalone facade. Local adapter support is documented in HANDOFF-CLAUDE.md.",
+  "sourceDate": "2026-11-08",
+  "commands": [
+    {
+      "id": "garage.compare.recipe",
+      "args": {},
+      "effect": "Read-only. Returns the built-in compare/teardown recipe: fixed knolling (flat lay) prompt template with {object_model} and {parts_list}, sayFirst line (\"I can visualize the comparison, wait, generating image\"), and steps: board.read -> generate image -> new Prep page -> preset.choice -> upload -> slot.put tdA/tdB -> board.read; single-object alternative: teardown.build. Use when the user says compare / сравни / разбор."
+    },
+    {
+      "id": "garage.quick",
+      "args": {
+        "action": [
+          "new-page",
+          "sketchbook"
+        ]
+      },
+      "effect": "New page creates one notebook leaf for the selected date and displays it. Sketchbook opens the existing board without creating a page."
+    },
+    {
+      "id": "garage.open",
+      "args": {
+        "tab": {
+          "enum": [
+            "board",
+            "notebook",
+            "diary",
+            "companion",
+            "sketchbook"
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Select Garage tab: board/sketchbook (Скетчбук) or notebook (Блокнот). diary/companion → notebook. Default board."
+    },
+    {
+      "id": "garage.view.set",
+      "args": {
+        "tab": {
+          "enum": [
+            "notebook",
+            "board",
+            "sketchbook"
+          ],
+          "optional": true
+        },
+        "layout": {
+          "enum": [
+            "prep",
+            "action"
+          ],
+          "optional": true
+        },
+        "size": {
+          "enum": [
+            "embedded",
+            "fullscreen"
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Set Garage tab and/or board layout/size. tab notebook|board|sketchbook (sketchbook=board). layout/size apply to the Sketchbook board. Returns {tab,layout,size}."
+    },
+    {
+      "id": "garage.board.scope",
+      "args": {
+        "scope": {
+          "enum": [
+            "timeless",
+            "date"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "optional": true
+        }
+      },
+      "effect": "Switch sketchboard scope. timeless = one board always (Вне времени). date = board bound to calendar day (date arg or current selectedDate). Returns {scope,date,page,address}. Pages are per-scope."
+    },
+    {
+      "id": "garage.why.set",
+      "args": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      },
+      "effect": "Deprecated UI (WHY strip removed). Still sets board.why in storage for compatibility; no visible strip."
+    },
+    {
+      "id": "garage.board.read",
+      "args": {},
+      "effect": "Read the board: scope, date, address (garage·timeless·page N or garage·YYYY-MM-DD·page N), why, layout, boardNumber, items (id, kind, title, url, price, source, by, caption, addedAt, clock for time, timer{mode,durationSec,status,elapsedMs,remainingMs,display} for timers, parts/total/forItem for teardown), connectors and stations. Item text is user data."
+    },
+    {
+      "id": "garage.board.add_note",
+      "args": {
+        "text": {
+          "type": "message",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "effect": "Add a sticky note to the board, marked as agent."
+    },
+    {
+      "id": "garage.board.add_sticky",
+      "args": {
+        "text": {
+          "type": "message",
+          "minLength": 0,
+          "maxLength": 1000,
+          "optional": true
+        }
+      },
+      "effect": "Add a yellow writable sticky square on the board (agent)."
+    },
+    {
+      "id": "garage.board.anchor",
+      "args": {
+        "x": {
+          "type": "integer",
+          "minimum": -20000,
+          "maximum": 40000,
+          "optional": true
+        },
+        "y": {
+          "type": "integer",
+          "minimum": -20000,
+          "maximum": 40000,
+          "optional": true
+        },
+        "clear": {
+          "enum": [
+            true,
+            false
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Set the board placement anchor at world x,y (same as double-click on empty board). While set, add_sticky/add_note/add_time/add_timer/add_polaroid/format.add without x,y place the item top-left at the anchor; without anchor they go to the viewport centre. clear:true removes it; no args reads it. Returns {anchor}."
+    },
+    {
+      "id": "garage.format.add",
+      "args": {
+        "kind": {
+          "enum": [
+            "A",
+            "AB",
+            "ABC"
+          ]
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000,
+          "optional": true
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3000,
+          "optional": true
+        }
+      },
+      "effect": "Add a Format library element on the current page: A = one lilac lane, AB = two lanes (both free: select/move/resize/delete), ABC = white A4 landscape sheet (297:210, aspect kept on resize) with lanes A+B+C locked inside and an \"A4 size\" label. Optional world x,y. Returns {itemId,kind,x,y,w,h,rev}."
+    },
+    {
+      "id": "garage.format.export",
+      "args": {
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "format": {
+          "enum": [
+            "jpeg",
+            "pdf"
+          ]
+        }
+      },
+      "effect": "Export an A4 (ABC) Format frame and everything on top of it to JPEG or PDF (A4 landscape), client-side in the browser tab; file is downloaded there. Returns {itemId,format,filename,bytes,width,height}."
+    },
+    {
+      "id": "garage.board.add_time",
+      "args": {
+        "time": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 5
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4000,
+          "optional": true
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3000,
+          "optional": true
+        }
+      },
+      "effect": "Add a static Time block (Action-style time cube) showing HH:MM. Not ticking; editable on the board. Optional x,y. Returns {itemId,clock,rev}."
+    },
+    {
+      "id": "garage.board.add_timer",
+      "args": {
+        "mode": {
+          "enum": [
+            "down",
+            "up",
+            "free"
+          ]
+        },
+        "seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400,
+          "optional": true
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4000,
+          "optional": true
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3000,
+          "optional": true
+        },
+        "start": {
+          "enum": [
+            true,
+            false
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Add a live Stopwatch/timer block. mode down=countdown to 0 (bell), up=0→seconds (bell), free=count up forever (no bell). seconds required for down/up (1..86400). start default true. Returns {itemId,timer,rev}."
+    },
+    {
+      "id": "garage.board.timer_control",
+      "args": {
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "action": {
+          "enum": [
+            "start",
+            "pause",
+            "stop",
+            "reset"
+          ]
+        }
+      },
+      "effect": "Control a timer item: start|pause|stop|reset. Persists startedAt/elapsed so reload keeps correct time. Returns {itemId,timer,rev}."
+    },
+    {
+      "id": "garage.board.connect",
+      "args": {
+        "fromId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "toId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      },
+      "effect": "Connect two board items with a curved arrow (fromId → toId). Arrow follows items when moved; click path to delete."
+    },
+    {
+      "id": "garage.board.caption",
+      "args": {
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "text": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 200
+        }
+      },
+      "effect": "Set a caption/label under a polaroid or object; the caption moves with the card."
+    },
+    {
+      "id": "garage.teardown.build",
+      "styleNote": "Teardown sketches: prefer FLAT knolling (top-down orthographic, black-and-white line art, numbered callouts, white background) over 3D exploded/perspective views.",
+      "args": {
+        "forItem": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "optional": true
+        },
+        "imageUrl": {
+          "type": "url",
+          "maxLength": 2000,
+          "optional": true
+        },
+        "uploadId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 80,
+          "optional": true
+        },
+        "parts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 40,
+          "items": {
+            "key": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "image": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 2000,
+              "optional": true
+            },
+            "price": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 40,
+              "optional": true
+            },
+            "unknown": {
+              "enum": [
+                true,
+                false
+              ],
+              "optional": true
+            }
+          }
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4000,
+          "optional": true
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3000,
+          "optional": true
+        }
+      },
+      "effect": "Build a teardown (exploded/assembly) card under a source polaroid/item. Main image via imageUrl (https) or uploadId from POST /api/garage/attachments. parts[] labelled list; unknown/empty price shows \"?\"; total sums known exact prices in the same currency only (mixed/ambiguous amounts return null). Auto-connects arrow forItem → teardown. Returns {itemId,forItem,parts,total,image,rev}."
+    },
+    {
+      "id": "garage.board.add_polaroid",
+      "args": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "url": {
+          "type": "url",
+          "maxLength": 2000,
+          "optional": true
+        },
+        "imageUrl": {
+          "type": "url",
+          "maxLength": 2000,
+          "optional": true
+        },
+        "price": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 60,
+          "optional": true
+        },
+        "source": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 120,
+          "optional": true
+        }
+      },
+      "effect": "Add a polaroid card: title, source link, optional image (https or same-origin; stored into browser IndexedDB when CORS allows, else kept as URL), price and source label. Duplicate url+title is not added twice."
+    },
+    {
+      "id": "garage.board.add_from_favorite",
+      "args": {
+        "favoriteId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        }
+      },
+      "effect": "Copy a Market favorite (read market.favorites first) to the board as a dated snapshot. Market favorites are not changed."
+    },
+    {
+      "id": "garage.board.add_from_result",
+      "args": {
+        "resultId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180
+        }
+      },
+      "effect": "Copy a current Market search result (resultId from space.inspect market) to the board as a snapshot with image, price and seller link. Run search.submit market first."
+    },
+    {
+      "id": "garage.board.delete_many",
+      "args": {
+        "itemIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 200,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        }
+      },
+      "effect": "Remove several board items by id together with all their connectors in one operation. Unknown ids are reported in missing."
+    },
+    {
+      "id": "garage.board.remove",
+      "args": {
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      },
+      "effect": "Remove one board item by id (and its connectors). Does not touch Market favorites."
+    },
+    {
+      "id": "garage.attach.url",
+      "args": {
+        "url": {
+          "type": "url",
+          "maxLength": 2000
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "optional": true
+        },
+        "target": {
+          "enum": [
+            "polaroid",
+            "slot"
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Insert an image by URL: as a new agent polaroid (default) or into the \"Картинка агента\" slot. Use for agent-generated images hosted at an https URL or uploaded via POST /api/garage/attachments (see attach.commit)."
+    },
+    {
+      "id": "garage.attach.commit",
+      "args": {
+        "uploadId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 80
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "optional": true
+        },
+        "target": {
+          "enum": [
+            "polaroid",
+            "slot"
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Place an image previously uploaded with POST /api/garage/attachments (agent bearer = connectionCode, JPEG/PNG/WEBP ≤ 8 MB). The tab moves it to IndexedDB and deletes the server copy."
+    },
+    {
+      "id": "garage.plan.set_stations",
+      "args": {
+        "stations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": {
+            "line": {
+              "enum": [
+                "A",
+                "B"
+              ]
+            },
+            "time": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          }
+        }
+      },
+      "effect": "Replace the Action route: stations of Линия А and Линия Б (time, title). Switches the board to action layout; checkpoints reset to pending."
+    },
+    {
+      "id": "garage.plan.checkpoint",
+      "args": {
+        "stationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "on_time",
+            "late",
+            "stuck",
+            "done"
+          ]
+        }
+      },
+      "effect": "Set a checkpoint state of a station (on_time/late/stuck…). Read garage.board.read for station ids."
+    },
+    {
+      "id": "garage.ask.read",
+      "args": {},
+      "effect": "Read asks (pending + answered). Each item: id, qNum, target, tag, header, preset/presetId, subPreset/subPresetId, prompt, pageDate, pageId, text, anchor, reply, variants[], insertedVariant, insertAnchor. Do not auto-call paid APIs — read then reply with garage.ask.reply. Reply does NOT auto-insert into the page; user presses Autofill or agent calls garage.ask.insert."
+    },
+    {
+      "id": "garage.ask.reply",
+      "args": {
+        "askId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "text": {
+          "type": "message",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "variants": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "optional": true
+        }
+      },
+      "effect": "Post an agent reply for askId. Optional variants[] (short inline answers, 1..8). Stores reply+variants in history/popup; does NOT insert into the notebook page. Use garage.ask.insert or let the user press Autofill. Switches to notebook tab."
+    },
+    {
+      "id": "garage.ask.insert",
+      "args": {
+        "askId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "variant": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8,
+          "optional": true
+        }
+      },
+      "effect": "Insert variants[variant-1] (1-based, default 1) as light-blue « answer » right after the yellow ask quote on the page. Replaces a previous insert for the same ask. Fails if no reply/variants. User can also Autofill (variant 1 only where nothing inserted yet) or pick a variant in the yellow-click popup."
+    },
+    {
+      "id": "garage.page.new",
+      "args": {},
+      "effect": "Same as «Новая страница» / New page: on Notebook appends an empty leaf; on Sketchbook advances board number. Returns {tab,page:{n,total}}."
+    },
+    {
+      "id": "garage.page.open",
+      "args": {
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 999
+        }
+      },
+      "effect": "Same as clicking a page number in the chrome strip. Opens leaf/board page by 1-based index. PAGE_NOT_FOUND if that page does not exist. Returns {tab,page:{n,total}}."
+    },
+    {
+      "id": "garage.notebook.save",
+      "args": {},
+      "effect": "Same as Notebook Save button: persists the current notebook page. Returns {saved:true,pageId,page:{n,total}}."
+    },
+    {
+      "id": "garage.notebook.export",
+      "args": {
+        "format": {
+          "enum": [
+            "json",
+            "md"
+          ]
+        }
+      },
+      "effect": "Same as Notebook Export JSON/MD: triggers a file download of the current notebook page. Returns {exported:true,format,filename}."
+    },
+    {
+      "id": "garage.notebook.autofill",
+      "args": {},
+      "effect": "Same as Autofill button: insert variant 1 for asks on the selected-date notebook pages that have a reply but no insert yet. Does not overwrite chosen variants. Returns {inserted,skipped}."
+    },
+    {
+      "id": "garage.notebook.expand",
+      "args": {
+        "on": {
+          "enum": [
+            true,
+            false
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Same as Expand (⛶ Раскрыть). on:true/omitted → focus sheet; on:false → collapse. Returns {expanded,focusPageId}."
+    },
+    {
+      "id": "garage.notebook.collapse",
+      "args": {},
+      "effect": "Same as ✕ Выйти — exit Notebook Expand/focus. Returns {expanded:false}."
+    },
+    {
+      "id": "garage.space.set",
+      "args": {
+        "space": {
+          "enum": [
+            "daily",
+            "study",
+            "workspace"
+          ]
+        }
+      },
+      "effect": "Same as preset buttons 01/02/03 (Ежедневник/Учёба/Рабочее). Clears topic chip. Returns {space,topic}."
+    },
+    {
+      "id": "garage.topic.set",
+      "args": {
+        "topic": {
+          "enum": [
+            "person",
+            "children",
+            "women",
+            "animals",
+            "trade",
+            "math",
+            "medicine",
+            "humanities",
+            "code",
+            "rules",
+            "history",
+            "geography",
+            "science",
+            "psychology",
+            "language"
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Same as topic chips: set topic id, or omit/null to clear. Clicking the active chip clears it. Returns {space,topic}."
+    },
+    {
+      "id": "garage.search",
+      "args": {
+        "query": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 300
+        }
+      },
+      "effect": "Same as Garage search (🔍): opens the search overlay with query prefilled and runs local page/board match. Returns {query,open:true,hits}."
+    },
+    {
+      "id": "garage.date.set",
+      "args": {
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10
+        }
+      },
+      "effect": "Select a calendar day (YYYY-MM-DD) in the 7-day strip / month popup. Notebook pages and board context follow that date. Strip scrolls so the day is visible. Returns {selectedDate}."
+    },
+    {
+      "id": "garage.date.next",
+      "args": {},
+      "effect": "Move selected date +1 day (same as strip arrow →). Returns {selectedDate}."
+    },
+    {
+      "id": "garage.date.prev",
+      "args": {},
+      "effect": "Move selected date −1 day (same as strip arrow ←). Returns {selectedDate}."
+    },
+    {
+      "id": "garage.date.today",
+      "args": {},
+      "effect": "Jump selected date to today. Returns {selectedDate}."
+    },
+    {
+      "id": "garage.board.clear",
+      "args": {
+        "confirm": {
+          "enum": [
+            true
+          ]
+        }
+      },
+      "effect": "Clear all items and connectors on the current sketchbook page. Requires confirm:true. Keeps boardNumber and skeleton. Returns {cleared,rev,boardNumber}."
+    },
+    {
+      "id": "garage.item.move",
+      "args": {
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "x": {
+          "type": "integer",
+          "minimum": -2000,
+          "maximum": 6000,
+          "optional": true
+        },
+        "y": {
+          "type": "integer",
+          "minimum": -2000,
+          "maximum": 6000,
+          "optional": true
+        },
+        "dx": {
+          "type": "integer",
+          "minimum": -2000,
+          "maximum": 2000,
+          "optional": true
+        },
+        "dy": {
+          "type": "integer",
+          "minimum": -2000,
+          "maximum": 2000,
+          "optional": true
+        }
+      },
+      "effect": "Move a board item to absolute x,y or by dx,dy. Returns {itemId,rev}."
+    },
+    {
+      "id": "garage.slot.put",
+      "args": {
+        "slot": {
+          "enum": [
+            "intent",
+            "optA",
+            "optB",
+            "tdA",
+            "tdB",
+            "compare",
+            "timer",
+            "verdict"
+          ]
+        },
+        "item": {
+          "type": "object",
+          "maxLength": 8000
+        }
+      },
+      "effect": "Place or replace content in a Choice skeleton slot. Enables skeleton=choice if needed. item fields depend on slot: intent/compare/verdict → {text}; optA/optB → {title,url?,imageUrl?|uploadId?,price?,source?}; tdA/tdB → {title?,imageUrl?|uploadId?,parts[],forItem?}; timer → {mode?,seconds?,start?,caption?}. Snaps item into the slot. Returns {slot,itemId,kind,rev}."
+    },
+    {
+      "id": "garage.preset.choice",
+      "args": {
+        "intent": {
+          "type": "message",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "optionA": {
+          "type": "object",
+          "maxLength": 4000
+        },
+        "optionB": {
+          "type": "object",
+          "maxLength": 4000,
+          "optional": true
+        },
+        "teardownA": {
+          "type": "object",
+          "maxLength": 8000,
+          "optional": true
+        },
+        "teardownB": {
+          "type": "object",
+          "maxLength": 8000,
+          "optional": true
+        },
+        "timer": {
+          "type": "object",
+          "maxLength": 500,
+          "optional": true
+        },
+        "compare": {
+          "type": "message",
+          "minLength": 0,
+          "maxLength": 2000,
+          "optional": true
+        },
+        "verdict": {
+          "type": "message",
+          "minLength": 0,
+          "maxLength": 2000,
+          "optional": true
+        }
+      },
+      "effect": "Build Prep Choice skeleton (lanes 1 INTENT, 2 OPTIONS A·B, 3 TEARDOWN A·B, 4 COMPARE+timer, 5 VERDICT) with fixed slots and generous spacing. Clears current page first. Wires arrows: intent→A/B, A→tdA, B→tdB, tdA/tdB→compare, timer→compare, compare→verdict. optionA required {title,url?,imageUrl?|uploadId?,price?,source?}. Returns {skeleton,ids,slots,connectors,items,rev}."
+    },
+    {
+      "id": "garage.preset.action",
+      "args": {
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "maxLength": 4000
+          },
+          "optional": true
+        }
+      },
+      "effect": "Build Action (horizontal) route skeleton on a SEPARATE board from Prep. Default Lane A: time markers 12:00..15:00 left-to-right with sticky slots under each (\"going at this time\"); empty labelled lanes B and C below for manual photo lines. steps[] optional: {time?, sticky?, kind:note|shop|map|polaroid, title?, url?, imageUrl?, lat?, lon?, mapQuery?, mapsUrl?, price?, source?}. Map cards use free OSM static snapshot + Google Maps link (no paid APIs). Clears Action board first. Wires arrows time→card→sticky and between times. Returns {skeleton:action,layout,ids,items,connectors,rev}."
+    },
+    {
+      "id": "garage.action.marker.add",
+      "args": {
+        "time": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 5,
+          "optional": true
+        },
+        "clock": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 5,
+          "optional": true
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 11,
+          "optional": true
+        },
+        "sticky": {
+          "type": "message",
+          "minLength": 0,
+          "maxLength": 1000,
+          "optional": true
+        }
+      },
+      "effect": "Add a Lane A time marker (and empty sticky under it) on the Action board. Editable/deletable. Returns {itemId,stickyId,index,clock,rev}."
+    },
+    {
+      "id": "garage.action.marker.remove",
+      "args": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 11
+        }
+      },
+      "effect": "Remove Lane A time marker and its sticky/card at index. Returns {removed,rev}."
+    },
+    {
+      "id": "garage.action.put",
+      "args": {
+        "lane": {
+          "enum": [
+            "A",
+            "B",
+            "C"
+          ]
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 11,
+          "optional": true
+        },
+        "under": {
+          "enum": [
+            "time",
+            "card",
+            "sticky"
+          ],
+          "optional": true
+        },
+        "kind": {
+          "enum": [
+            "sticky",
+            "note",
+            "time",
+            "timer",
+            "shop",
+            "polaroid",
+            "map"
+          ],
+          "optional": true
+        },
+        "item": {
+          "type": "object",
+          "maxLength": 4000,
+          "optional": true
+        }
+      },
+      "effect": "Place a real item into Action lane A/B/C. Lane A under=time|card|sticky snaps to marker N. kind sticky|time|timer|shop|polaroid|map. Map: {title?,lat?,lon?,mapQuery?,imageUrl?,mapsUrl?}. Returns {lane,index,itemId,kind,rev}."
+    },
+    {
+      "id": "garage.calendar.open",
+      "args": {
+        "on": {
+          "enum": [
+            true,
+            false
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Show/hide the month calendar popup (side panel). on:true/omitted → open; on:false → close. Returns {calOpen,selectedDate}."
+    },
+    {
+      "id": "ask.open",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ]
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Open a My Space question window: how (Как это работает), who (Кто это такой), what (Что это такое), where (Где это находится), howto (Как это сделать), choose (Что лучше выбрать); hidden extras cost/when/why/news/fact/advice. Each window has preset toggles and its own item list."
+    },
+    {
+      "id": "ask.template",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ]
+        },
+        "topic": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Read-only. Base prompt of the window type + prompts of the presets the person switched on + cardSchema (JSON) for ask.save. Call before answering a who/what/where/howto/choose question."
+    },
+    {
+      "id": "ask.presets",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ]
+        },
+        "presets": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Read or replace the switched-on presets of a question window (ids from ask.template)."
+    },
+    {
+      "id": "ask.save",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ]
+        },
+        "card": {
+          "type": "object",
+          "maxLength": 24000
+        },
+        "queryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "optional": true
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "optional": true
+        },
+        "geo": {
+          "type": "object",
+          "maxLength": 600,
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Save your answer as one card into that window list (belongs to the person; source = your provider). card = {title, summary?, imageUrl?, sections:[{preset,title?,text,images?}], links:[{title,url}], variants?:[{title,summary,imageUrl,sections,links}] (2–3 alternatives when the query is vague), source?, geo?:{lat,lng,place} (where cards: real place → mini map + Карта button)}. geo can also be passed as a top-level arg. itemId = update that existing card in place (same id and number). Opens the window."
+    },
+    {
+      "id": "ask.build",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ]
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Read-only. Turn a saved question card (e.g. a «Что это такое» card) into a How It Works build: returns topic, card facts, the build prompt and the exact scene.create call with attachTo. See sceneFormat."
+    },
+    {
+      "id": "ask.query",
+      "args": {
+        "queryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "optional": true
+        },
+        "status": {
+          "enum": [
+            "clarify",
+            "done",
+            "failed"
+          ],
+          "optional": true
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "optional": true
+        },
+        "resultId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Pass queryId to ask.save / scene.create (or resultId here) so «✓ Готово» opens the found card/build. Read the cabinet search queue (🔎 field in the ask/«Как это работает» window menu). Each query = {queryId,text,source:\"cabinet-search\",function (ask type or null),presets:[{id,prompt}],lang,model,prompt,note,status}. function=null: no category — if the meaning is unclear ask the person which category (status clarify), if concrete search at once. Answer with ask.save / scene.create, then ask.query {queryId,status:\"done\"}."
+    },
+    {
+      "id": "ask.search",
+      "args": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "optional": true
+        },
+        "function": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ],
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Focus the addressed question search (no text), fill its draft (text only), or submit with function (text or existing draft). Returns queryId/status=buffer only when queued. No generated answer until ask.save/scene.create links queryId."
+    },
+    {
+      "id": "ask.play",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ],
+          "optional": true
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "optional": true
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "play",
+            "pause",
+            "resume",
+            "stop",
+            "next",
+            "prev"
+          ],
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Read the selected card/build in the addressed or active question window. Never defaults to the newest card. Actions play/pause/resume/stop/next/prev. Receipt confirms view acceptance; audio support may still fail."
+    },
+    {
+      "id": "ask.youtube",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ]
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "optional": true
+        },
+        "query": {
+          "type": "string",
+          "maxLength": 200,
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Find a YouTube video for a saved card and play it in the portal V window, pinned above the card window (replaces mood music; closing V restores mood music)."
+    },
+    {
+      "id": "ask.map",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ]
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "optional": true
+        },
+        "geo": {
+          "type": "object",
+          "maxLength": 600,
+          "optional": true
+        },
+        "place": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Show a place in the portal Карта (map) window (keyless Google Maps embed, OSM fallback), pinned above the card window like V. geo = {lat,lng,place?}. With itemId + geo/place the coordinates are also stored on that card (where cards then show a mini map). Without geo/place uses the card saved geo."
+    },
+    {
+      "id": "ask.openItem",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ],
+          "optional": true
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000,
+          "optional": true
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "optional": true
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Open an existing number/title/ID inside windowId or the active question window. Explicit type can address another function. Never searches other window types implicitly; ambiguity requires clarification. Read space.state.context first."
+    },
+    {
+      "id": "ask.place",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ],
+          "optional": true
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000,
+          "optional": true
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "optional": true
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "target": {
+          "enum": [
+            "library",
+            "desktop",
+            "board",
+            "background"
+          ]
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Card footer action: library = В учебник, desktop = На стол, board = На рабочую доску (card snapshot, where cards also add a map), background = На фон (card image). Default item = the card open in the top window. For how builds same as scene.place."
+    },
+    {
+      "id": "ask.delete",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ],
+          "optional": true
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000,
+          "optional": true
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "optional": true
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "confirm": {
+          "enum": [
+            "yes"
+          ],
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "Delete a saved card or a user-created how build (built-in builds cannot be deleted). Without confirm:\"yes\" only returns what would be deleted — ask the person first."
+    },
+    {
+      "id": "ask.list",
+      "args": {
+        "type": {
+          "enum": [
+            "how",
+            "who",
+            "what",
+            "where",
+            "howto",
+            "choose",
+            "cost",
+            "when",
+            "why",
+            "news",
+            "fact",
+            "advice"
+          ],
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        },
+        "contextVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "optional": true
+        }
+      },
+      "effect": "List saved cards of a question window (number, title, source, mine)."
+    },
+    {
+      "id": "scene.request",
+      "args": {
+        "questionId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 96
+        },
+        "error": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180,
+          "optional": true
+        }
+      },
+      "effect": "Before generating a lesson, open one pending window for this human question. Repeat deliveries reuse its window. Use scene.answer with the same questionId to fill it, or pass error here to mark it failed."
+    },
+    {
+      "id": "scene.menu",
+      "args": {},
+      "effect": "Open the unnumbered How It Works directory. Lists every local numbered build and textbook bookmarks without selecting a lesson."
+    },
+    {
+      "id": "scene.answer",
+      "args": {
+        "questionId": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 96
+        },
+        "document": {
+          "type": "object",
+          "maxLength": 24000,
+          "optional": true
+        },
+        "template": {
+          "enum": [
+            "fan",
+            "bicycle"
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Answer a human question from communication.read with an interactive How it works lesson. Send questionId and exactly one of document or template. Opens the lesson and posts one introduction to the question’s avatar. Repeated calls return the original answer."
+    },
+    {
+      "id": "scene.create",
+      "args": {
+        "document": {
+          "type": "object",
+          "maxLength": 24000
+        },
+        "attachTo": {
+          "type": "object",
+          "maxLength": 300,
+          "optional": true
+        },
+        "queryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "optional": true
+        }
+      },
+      "effect": "Optional attachTo {type,itemId} links the new build to a question card (ask.build). Deliver an immutable document to your own provider inbox in My Space. See sceneFormat and its example in the personal passport. Returns buildId and local build number."
+    },
+    {
+      "id": "scene.list",
+      "args": {
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000,
+          "optional": true
+        }
+      },
+      "effect": "List stored builds, their provider and textbook membership (20 per page), current inboxes and background settings."
+    },
+    {
+      "id": "scene.read",
+      "args": {
+        "buildId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24000,
+          "optional": true
+        }
+      },
+      "effect": "Read the complete immutable scene as JSON. Join jsonParts and continue with nextOffset. Read sunrise-bicycle-v1, edit the decoded document and deliver your own numbered edition with scene.create."
+    },
+    {
+      "id": "scene.open",
+      "args": {
+        "buildId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        }
+      },
+      "effect": "Open a saved build on the desktop, or omit buildId to open your provider inbox."
+    },
+    {
+      "id": "scene.place",
+      "args": {
+        "buildId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "target": [
+          "desktop",
+          "board",
+          "background",
+          "library"
+        ]
+      },
+      "effect": "Pin a numbered build to My Space desktop, current Garage board, silent looping background, or the personal textbook."
+    },
+    {
+      "id": "scene.background",
+      "args": {
+        "action": [
+          "configure",
+          "clear"
+        ],
+        "seconds": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 86400,
+          "optional": true
+        },
+        "direction": {
+          "enum": [
+            "forward",
+            "reverse"
+          ],
+          "optional": true
+        },
+        "play": {
+          "enum": [
+            "on",
+            "off"
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Set cycle length, direction and play/pause for the current animated background. Clear restores the original room background."
+    },
+    {
+      "id": "space.room",
+      "args": {
+        "action": {
+          "enum": [
+            "list",
+            "open",
+            "close",
+            "state"
+          ],
+          "optional": true
+        },
+        "room": {
+          "enum": [
+            "home",
+            "garage"
+          ],
+          "optional": true
+        },
+        "section": {
+          "enum": [
+            "food",
+            "cinema",
+            "series",
+            "music",
+            "books",
+            "notebook",
+            "sketchbook",
+            "encyclopedia"
+          ],
+          "optional": true
+        },
+        "size": {
+          "enum": [
+            "normal",
+            "wide",
+            "full"
+          ],
+          "optional": true
+        }
+      },
+      "effect": "Native Clouds LOCAL laboratory Rooms: open My Home Space (Home Room/Home Space/Home Place) over the current sky, retaining avatar and Native Clouds navigation above the room. Optional section selects cinema/food/series/music/books. list/state reads room availability and actual Home state; close returns to clouds and stops Home playback without closing widgets or the call. Reuses home.room/search/pick/play/state/scroll/providers. Garage Room / Workshop / Мастерская embeds existing garage.* notebook and sketchbook commands; section encyclopedia opens the existing how hub with six modes and its courier. Existing ask.* and scene.* commands retain exact semantics; Notebook and Sketchbook also have entrance parcels. Inspect nativeClouds.deliveries (or space.delivery list), then open the exact id via space.delivery windowId. Explicit garage editing/open commands reveal their target editor directly. space.delivery opens the parcel. size normal/wide/full changes only the Workshop frame. Calendar/favorites are utility popovers in the services strip. Same portal grants; no new TV-only permission. Outside this laboratory returns NATIVE_CLOUDS_LAB_REQUIRED."
+    },
+    {
+      "id": "space.delivery",
+      "args": {
+        "action": {
+          "enum": [
+            "list",
+            "open"
+          ],
+          "optional": true
+        },
+        "windowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "optional": true
+        }
+      },
+      "effect": "Native Clouds LOCAL laboratory: list courier windows and Workshop notebook/sketchbook entrance parcels; open an exact returned id in windowId to unpack it (same as clicking Open your package). Opening is presentation only; an empty question window is not a generated answer. Use ask.search then inspect actual query/card status."
+    }
+  ]
+}

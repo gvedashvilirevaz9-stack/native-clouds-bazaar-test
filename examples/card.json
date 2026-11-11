@@ -1,0 +1,19 @@
+{
+  "command": "ask.save",
+  "args": {
+    "type": "who",
+    "source": "anthropic",
+    "card": {
+      "title": "Ada Lovelace — example card",
+      "summary": "This is a handoff format example, not a live AI search result.",
+      "sections": [
+        {
+          "preset": "bio",
+          "title": "Biography",
+          "text": "Ada Lovelace was a nineteenth-century mathematician known for her notes on Charles Babbage's Analytical Engine."
+        }
+      ],
+      "links": []
+    }
+  }
+}

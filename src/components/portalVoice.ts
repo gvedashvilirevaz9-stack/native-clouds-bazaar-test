@@ -1,0 +1,4 @@
+type VoiceState={owner:string;phase:string;error:string;supported:boolean;audible:boolean;itemId:string;cursor:number;voiceName:string;language:string};
+type Engine={prepareReading(text:string):{text:string;offsets:number[]};snapshot():VoiceState;pause():void;resume():void;play(item:{owner:string;itemId:string;text:string;title:string;lang?:string;startOffset?:number;onSpeechCue?:(text:string,offset:number,wordOnly:boolean,rate:number,from?:number)=>void}):boolean;stop(owner:string):void;subscribe(fn:(s:VoiceState)=>void):()=>void;setRussianVoice(gender:string):unknown;voiceOptions(language:string):{effectiveVoice:string};watchVoices(fn:()=>void):()=>void};
+export const portalVoice=()=> (window as unknown as {PORTAL_SPEECH?:Engine}).PORTAL_SPEECH;
+export function narrate(text:string,owner:string){return portalVoice()?.play({owner,itemId:crypto.randomUUID(),text,title:owner});}

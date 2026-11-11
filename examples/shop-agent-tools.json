@@ -1,0 +1,739 @@
+{
+ "about": "Sunrise Workshop · My shop — tools for an agent (MCP). Each tool maps 1:1 to window.workshop.execute(name, args) in the portal tab.",
+ "playbook": [
+  "0. First time: admin.status → if todo has admin.profile.set / admin.wallets.add, ask the person for name, contacts, city and wallet address(es) once. Every later site (shop.compose / shop.start) takes them automatically.",
+  "1. shop.questionnaire → ask the person only these questions (short, one message).",
+  "2. Photos: the person drops them into the portal or sends them to you → intake.add → \"asset:<id>\".",
+  "3. shop.compose {about, items, banner, address, contact} → read \"missing\".",
+  "4. Ask for what is missing → shop.photo / shop.banner / shop.payment.set / shop.set {contact}.",
+  "5. shop.missing is empty (or only photos) → shop.finish {as:\"dataUrl\"} → give the person the file to send. For a web link: shop.export {as:\"site\"} and publish on static hosting.",
+  "Never invent prices or wallet addresses. Prices at most 2 decimals (the last 4 of 6 USDC decimals carry the order number)."
+ ],
+ "example": {
+  "tool": "shop.compose",
+  "args": {
+   "about": "барахло из подвала",
+   "place": "Тбилиси, Ваке",
+   "items": [
+    {
+     "title": "Видеомагнитофон Panasonic",
+     "price": 40,
+     "qty": 1,
+     "photo": "asset:as-…"
+    },
+    {
+     "title": "Набор инструментов",
+     "price": 15,
+     "qty": 2
+    }
+   ],
+   "address": "0x…",
+   "contact": {
+    "telegram": "username"
+   }
+  }
+ },
+ "tools": [
+  {
+   "name": "portal.open",
+   "description": "Open a place in the portal by name. \"открой админку\" → admin; \"открой бухгалтерию\" → accounting (admin → Бухгалтерия, totals across all wallets); \"кошельки\" → wallets; \"мои данные\" → profile; \"проверь хеш\" → hash; \"примеры\" → presets; \"собрать сайт\" → shop.build; \"счета\" → billing.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "place": {
+      "type": "string",
+      "enum": [
+       "shop",
+       "admin",
+       "presets",
+       "gallery",
+       "shop.build",
+       "site",
+       "accounting",
+       "wallets",
+       "profile",
+       "hash",
+       "my-sites",
+       "shop.cash",
+       "shop.pack",
+       "billing",
+       "invoices",
+       "day",
+       "estimate",
+       "inbox",
+       "media",
+       "notebook",
+       "sketchbook",
+       "encyclopedia",
+       "workshop",
+       "fast",
+       "ai-publish",
+       "bazaar",
+       "marketplace",
+       "purchases",
+       "bazaar.connect"
+      ]
+     }
+    },
+    "required": [
+     "place"
+    ]
+   }
+  },
+  {
+   "name": "shop.questionnaire",
+   "description": "Questions to ask the person before building a mini-site (shop + price list + business card). Ask them in order, briefly.",
+   "input_schema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "shop.recipes",
+   "description": "Kinds of sites the composer knows: goods, collection, handmade, services, single, rental, food.",
+   "input_schema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "shop.compose",
+   "description": "Build the whole site from the answers in one call: sections, texts, icons, colours from a recipe; photos and banner loaded; wallet checked (EIP-55). Returns sections with ids and what is still missing. Refuses to overwrite a site being built unless replace:true (the old one goes to \"my sites\"). Wallet and contacts carry over from the previous site when not given.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "about": {
+      "type": "string",
+      "description": "What the person sells, in their words: \"барахло из подвала\", \"моя коллекция VHS\""
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "goods",
+       "collection",
+       "handmade",
+       "services",
+       "single",
+       "rental",
+       "food"
+      ]
+     },
+     "name": {
+      "type": "string"
+     },
+     "place": {
+      "type": "string"
+     },
+     "delivery": {
+      "type": "string"
+     },
+     "lang": {
+      "type": "string",
+      "enum": [
+       "ru",
+       "en",
+       "ka"
+      ]
+     },
+     "style": {
+      "type": "string",
+      "enum": [
+       "mountain",
+       "sea",
+       "coffee",
+       "berry",
+       "mono"
+      ]
+     },
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "title": {
+         "type": "string"
+        },
+        "price": {
+         "type": [
+          "string",
+          "number"
+         ],
+         "description": "USDC, at most 2 decimals"
+        },
+        "qty": {
+         "type": "integer"
+        },
+        "text": {
+         "type": "string"
+        },
+        "unit": {
+         "type": "string"
+        },
+        "tags": {
+         "type": "array",
+         "items": {
+          "type": "string"
+         }
+        },
+        "photo": {
+         "type": "string",
+         "description": "Image: \"asset:<id>\" from the Inbox (intake.add), a data: URL, or an https URL"
+        },
+        "place": {
+         "type": "string"
+        },
+        "seller": {
+         "type": "string"
+        },
+        "receiver": {
+         "type": "string",
+         "description": "Own EVM address of this item (multi-seller)"
+        }
+       },
+       "required": [
+        "title"
+       ]
+      }
+     },
+     "banner": {
+      "type": "string",
+      "description": "Image: \"asset:<id>\" from the Inbox (intake.add), a data: URL, or an https URL"
+     },
+     "address": {
+      "type": "string",
+      "description": "EVM address for USDC on Base"
+     },
+     "contact": {
+      "type": "object",
+      "properties": {
+       "telegram": {
+        "type": "string"
+       },
+       "whatsapp": {
+        "type": "string"
+       },
+       "email": {
+        "type": "string"
+       },
+       "phone": {
+        "type": "string"
+       }
+      }
+     },
+     "replace": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "about"
+    ]
+   }
+  },
+  {
+   "name": "shop.photo",
+   "description": "Put a photo on an item, found by cellId or by part of its title.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "type": "string"
+     },
+     "sectionId": {
+      "type": "string"
+     },
+     "cellId": {
+      "type": "string"
+     },
+     "image": {
+      "type": "string",
+      "description": "Image: \"asset:<id>\" from the Inbox (intake.add), a data: URL, or an https URL"
+     }
+    },
+    "required": [
+     "image"
+    ]
+   }
+  },
+  {
+   "name": "shop.banner",
+   "description": "Set the banner of a section (index 0 = first screen).",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "index": {
+      "type": "integer"
+     },
+     "image": {
+      "type": "string",
+      "description": "Image: \"asset:<id>\" from the Inbox (intake.add), a data: URL, or an https URL"
+     }
+    },
+    "required": [
+     "image"
+    ]
+   }
+  },
+  {
+   "name": "shop.payment.set",
+   "description": "Wallet: shared address (USDC on Base) or a per-item receiver; order number in the amount on/off.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "address": {
+      "type": "string"
+     },
+     "mode": {
+      "type": "string",
+      "enum": [
+       "shared",
+       "individual"
+      ]
+     },
+     "orderTag": {
+      "type": "boolean"
+     },
+     "sectionId": {
+      "type": "string"
+     },
+     "cellId": {
+      "type": "string"
+     },
+     "receiver": {
+      "type": "string"
+     },
+     "seller": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  {
+   "name": "shop.set",
+   "description": "Change texts and settings: brand {name, place, stripLeft, stripRight, logo}, hero {title, sub, …}, contact, footer, theme, credit.",
+   "input_schema": {
+    "type": "object"
+   }
+  },
+  {
+   "name": "shop.section.add",
+   "description": "Add a section (banner + tab) with optional cells.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "tab": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     },
+     "kicker": {
+      "type": "string"
+     },
+     "cta": {
+      "type": "string"
+     },
+     "cells": {
+      "type": "array",
+      "items": {
+       "type": "object"
+      }
+     }
+    },
+    "required": [
+     "tab"
+    ]
+   }
+  },
+  {
+   "name": "shop.section.patch",
+   "description": "Edit a section by sectionId.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "sectionId": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "sectionId"
+    ]
+   }
+  },
+  {
+   "name": "shop.cell.add",
+   "description": "Add an item to a section.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "sectionId": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     },
+     "price": {
+      "type": [
+       "string",
+       "number"
+      ]
+     },
+     "unit": {
+      "type": "string"
+     },
+     "tags": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "place": {
+      "type": "string"
+     },
+     "seller": {
+      "type": "string"
+     },
+     "icon": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "sectionId",
+     "title"
+    ]
+   }
+  },
+  {
+   "name": "shop.cell.patch",
+   "description": "Edit an item (price, text, stock, hidden…).",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "sectionId": {
+      "type": "string"
+     },
+     "cellId": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "sectionId",
+     "cellId"
+    ]
+   }
+  },
+  {
+   "name": "shop.missing",
+   "description": "What is still needed before the site is useful: prices, photos, banner, wallet, contact — with the exact question to ask.",
+   "input_schema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "shop.finish",
+   "description": "Pack the site into ONE html file (no owner cabinet inside) and show the Pack tab. as:\"dataUrl\" returns the file to send in a messenger; as:\"download\" saves it. blockers lists what prevents payments.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "as": {
+      "type": "string",
+      "enum": [
+       "dataUrl",
+       "download",
+       "none"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "name": "shop.export",
+   "description": "Same file, or as:\"site\" — a zip with index.html for Netlify Drop / Cloudflare Pages / GitHub Pages.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "as": {
+      "type": "string",
+      "enum": [
+       "dataUrl",
+       "download",
+       "site"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "name": "shop.sites",
+   "description": "My sites (current + earlier ones).",
+   "input_schema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "shop.switch",
+   "description": "Open an earlier site.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "id"
+    ]
+   }
+  },
+  {
+   "name": "intake.add",
+   "description": "Bring a photo into the portal Inbox first (returns assetId); then use \"asset:<assetId>\" as an image.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "dataUrl": {
+      "type": "string"
+     },
+     "url": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  {
+   "name": "admin.open",
+   "description": "Open the shop admin panel (back office) on a page. If the result says unlocked:false, call admin.unlock.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "page": {
+      "type": "string",
+      "enum": [
+       "home",
+       "profile",
+       "wallets",
+       "money",
+       "hash",
+       "sites"
+      ]
+     }
+    },
+    "required": []
+   }
+  },
+  {
+   "name": "admin.unlock",
+   "description": "Enter the admin. The password is a placeholder for now: no check.",
+   "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   }
+  },
+  {
+   "name": "admin.status",
+   "description": "What is done and what is left: profile, wallets, current site and its missing items, todo commands.",
+   "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   }
+  },
+  {
+   "name": "admin.profile.get",
+   "description": "Owner data saved in the admin.",
+   "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   }
+  },
+  {
+   "name": "admin.profile.set",
+   "description": "Save owner data once; it flows into every new site (contacts, place, logo). applyToCurrent:true also writes it into the current site.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "firstName": {
+      "type": "string"
+     },
+     "lastName": {
+      "type": "string"
+     },
+     "business": {
+      "type": "string"
+     },
+     "place": {
+      "type": "string"
+     },
+     "telegram": {
+      "type": "string"
+     },
+     "whatsapp": {
+      "type": "string"
+     },
+     "email": {
+      "type": "string"
+     },
+     "phone": {
+      "type": "string"
+     },
+     "delivery": {
+      "type": "string"
+     },
+     "logo": {
+      "type": "string",
+      "description": "asset:<id>, data: or https: image"
+     },
+     "applyToCurrent": {
+      "type": "boolean"
+     }
+    },
+    "required": []
+   }
+  },
+  {
+   "name": "admin.wallets.list",
+   "description": "All wallets (USDC on Base) with labels; the default one goes into new sites.",
+   "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   }
+  },
+  {
+   "name": "admin.wallets.add",
+   "description": "Add a wallet. Address is checked with EIP-55; never invent addresses — only ones the person gave.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "label": {
+      "type": "string"
+     },
+     "address": {
+      "type": "string"
+     },
+     "isDefault": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "address"
+    ]
+   }
+  },
+  {
+   "name": "admin.wallets.patch",
+   "description": "Rename a wallet or make it default. Find it by id, label or address.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "label": {
+      "type": "string"
+     },
+     "address": {
+      "type": "string"
+     },
+     "newLabel": {
+      "type": "string"
+     },
+     "isDefault": {
+      "type": "boolean"
+     }
+    },
+    "required": []
+   }
+  },
+  {
+   "name": "admin.wallets.remove",
+   "description": "Take a wallet out (kept in history as \"снят\").",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "label": {
+      "type": "string"
+     },
+     "address": {
+      "type": "string"
+     }
+    },
+    "required": []
+   }
+  },
+  {
+   "name": "admin.apply",
+   "description": "Write the admin data (contacts, place, logo, default wallet) into the current site.",
+   "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   }
+  },
+  {
+   "name": "admin.accounting",
+   "description": "\"Открой бухгалтерию\": read every wallet from the Base chain → total incoming, balances, payments with order numbers. show:false to not switch the screen.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "show": {
+      "type": "boolean"
+     }
+    },
+    "required": []
+   }
+  },
+  {
+   "name": "admin.hash",
+   "description": "Check one payment by transaction hash when the order number in the amount was lost: how much USDC came, to which wallet, from whom, which item it looks like. handedOver:true marks it as handed over.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "tx": {
+      "type": "string"
+     },
+     "handedOver": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "tx"
+    ]
+   }
+  },
+  {
+   "name": "admin.publish",
+   "description": "\"Опубликовать для ИИ\": readiness checks, set the public site URL (https) used in schema.org / products.json, preview llms.txt. Opens the admin page.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "siteUrl": {
+      "type": "string"
+     },
+     "full": {
+      "type": "boolean"
+     },
+     "show": {
+      "type": "boolean"
+     }
+    },
+    "required": []
+   }
+  }
+ ]
+}

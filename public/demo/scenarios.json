@@ -1,0 +1,3413 @@
+{
+ "schema": "workshop.demo.v1",
+ "about": "Scenarios played by the ▶ Demo button. Each step is run in order by src/spaces/intake/demo.ts. See DEMO.md.",
+ "scenarios": [
+  {
+   "id": "receipts",
+   "icon": "🧾",
+   "title": "Чеки → сводка расходов",
+   "subtitle": "5 фото чеков → пакет → данные → сводка по дням и товарам",
+   "steps": [
+    {
+     "say": "Человек бросает в портал 5 фотографий чеков сразу."
+    },
+    {
+     "files": [
+      "receipt-nikora-07.jpg",
+      "receipt-carrefour-07.jpg",
+      "receipt-nikora-08.jpg",
+      "receipt-agrohub-08.jpg",
+      "receipt-gorgia-09.jpg"
+     ],
+     "category": "receipts"
+    },
+    {
+     "say": "Приёмная распознала JPEG, сделала из них пакет и определила категорию «Чеки». У категории свой промт и схема для агента.",
+     "wait": 3500
+    },
+    {
+     "ui": "select",
+     "asset": "$asset:receipt-nikora-07.jpg"
+    },
+    {
+     "say": "Так выглядит один чек. Текстового слоя в фото нет: прочитать его должен агент.",
+     "wait": 3000
+    },
+    {
+     "ui": "prompt"
+    },
+    {
+     "say": "Это промт и схема данных, которые агент получит вместе с каждым чеком.",
+     "wait": 4000
+    },
+    {
+     "ui": "batch"
+    },
+    {
+     "say": "Человек нажимает «Запустить с агентом»: пакет уходит на телефон."
+    },
+    {
+     "cmd": "intake.batch.send",
+     "args": {
+      "batchId": "$batch",
+      "text": "Раздели продукты и стройматериалы."
+     }
+    },
+    {
+     "say": "📱 Агент (симуляция): читаю чеки по одному и заполняю данные…",
+     "wait": 1500
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset:receipt-nikora-07.jpg",
+      "data": {
+       "date": "2026-11-07",
+       "time": "18:42",
+       "shop": "Nikora",
+       "items": [
+        {
+         "name": "Хлеб белый",
+         "qty": 2,
+         "unit": "шт",
+         "unitPrice": 1.2,
+         "total": 2.4
+        },
+        {
+         "name": "Молоко 3.2% 1л",
+         "qty": 1,
+         "unit": "шт",
+         "unitPrice": 3.45,
+         "total": 3.45
+        },
+        {
+         "name": "Огурцы",
+         "qty": 1.2,
+         "unit": "кг",
+         "unitPrice": 4.0,
+         "total": 4.8
+        },
+        {
+         "name": "Сыр сулугуни",
+         "qty": 0.45,
+         "unit": "кг",
+         "unitPrice": 16.9,
+         "total": 7.61
+        }
+       ],
+       "total": 18.26,
+       "currency": "GEL",
+       "tax": null,
+       "payment": "card",
+       "unclear": []
+      }
+     },
+     "wait": 700
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset:receipt-carrefour-07.jpg",
+      "data": {
+       "date": "2026-11-07",
+       "time": "20:15",
+       "shop": "Carrefour",
+       "items": [
+        {
+         "name": "Кофе зерно 1кг",
+         "qty": 1,
+         "unit": "шт",
+         "unitPrice": 42.0,
+         "total": 42.0
+        },
+        {
+         "name": "Бананы",
+         "qty": 1.1,
+         "unit": "кг",
+         "unitPrice": 4.2,
+         "total": 4.62
+        },
+        {
+         "name": "Вода 6x1.5л",
+         "qty": 1,
+         "unit": "уп",
+         "unitPrice": 7.8,
+         "total": 7.8
+        }
+       ],
+       "total": 54.42,
+       "currency": "GEL",
+       "tax": null,
+       "payment": "card",
+       "unclear": []
+      }
+     },
+     "wait": 700
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset:receipt-nikora-08.jpg",
+      "data": {
+       "date": "2026-11-08",
+       "time": "09:05",
+       "shop": "Nikora",
+       "items": [
+        {
+         "name": "Хлеб белый",
+         "qty": 1,
+         "unit": "шт",
+         "unitPrice": 1.2,
+         "total": 1.2
+        },
+        {
+         "name": "Яйца 10 шт",
+         "qty": 1,
+         "unit": "уп",
+         "unitPrice": 6.8,
+         "total": 6.8
+        },
+        {
+         "name": "Масло слив. 82%",
+         "qty": 1,
+         "unit": "шт",
+         "unitPrice": 8.9,
+         "total": 8.9
+        }
+       ],
+       "total": 16.9,
+       "currency": "GEL",
+       "tax": null,
+       "payment": "cash",
+       "unclear": []
+      }
+     },
+     "wait": 700
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset:receipt-agrohub-08.jpg",
+      "data": {
+       "date": "2026-11-08",
+       "time": "13:30",
+       "shop": "Agrohub",
+       "items": [
+        {
+         "name": "Томаты",
+         "qty": 1.5,
+         "unit": "кг",
+         "unitPrice": 5.5,
+         "total": 8.25
+        },
+        {
+         "name": "Зелень (кинза)",
+         "qty": 2,
+         "unit": "пучок",
+         "unitPrice": 1.5,
+         "total": 3.0
+        },
+        {
+         "name": "Мацони",
+         "qty": 2,
+         "unit": "шт",
+         "unitPrice": 2.9,
+         "total": 5.8
+        }
+       ],
+       "total": 17.05,
+       "currency": "GEL",
+       "tax": null,
+       "payment": "card",
+       "unclear": []
+      }
+     },
+     "wait": 700
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset:receipt-gorgia-09.jpg",
+      "data": {
+       "date": "2026-11-09",
+       "time": "11:10",
+       "shop": "Gorgia",
+       "items": [
+        {
+         "name": "Шпаклёвка финишная 25кг",
+         "qty": 2,
+         "unit": "меш",
+         "unitPrice": 38.0,
+         "total": 76.0
+        },
+        {
+         "name": "Шпатель 350мм",
+         "qty": 1,
+         "unit": "шт",
+         "unitPrice": 14.5,
+         "total": 14.5
+        },
+        {
+         "name": "Грунтовка 10л",
+         "qty": 1,
+         "unit": "шт",
+         "unitPrice": 46.0,
+         "total": 46.0
+        }
+       ],
+       "total": 136.5,
+       "currency": "GEL",
+       "tax": null,
+       "payment": "card",
+       "unclear": []
+      }
+     },
+     "wait": 900
+    },
+    {
+     "say": "Данные есть по всем пяти чекам (зелёные рамки). Портал сам считает сводку: по дням, по товарам, общую сумму."
+    },
+    {
+     "cmd": "intake.batch.summary",
+     "args": {
+      "batchId": "$batch",
+      "notes": "Продукты: 106.62 ₾ за 2 дня; стройматериалы (Gorgia): 136.50 ₾. Хлеб покупался два дня подряд."
+     }
+    },
+    {
+     "ui": "scroll",
+     "target": "ik-summary",
+     "wait": 5000
+    },
+    {
+     "say": "Сводку кладём на доску картинкой: её можно сравнивать и экспортировать."
+    },
+    {
+     "cmd": "intake.batch.route",
+     "args": {
+      "batchId": "$batch",
+      "to": "board"
+     },
+     "wait": 3500
+    },
+    {
+     "say": "И текстом в блокнот, на новую страницу."
+    },
+    {
+     "cmd": "intake.batch.route",
+     "args": {
+      "batchId": "$batch",
+      "to": "notebook"
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Готово: 5 чеков превратились в страницу расходов. ✓"
+    }
+   ]
+  },
+  {
+   "id": "invoices",
+   "icon": "📑",
+   "title": "Счета и инвойсы",
+   "subtitle": "2 PDF-счёта → страницы и текст → суммы к оплате и сроки",
+   "steps": [
+    {
+     "say": "Приходят два счёта в PDF: от поставщика плитки и от электрика."
+    },
+    {
+     "files": [
+      "invoice-tilehouse-1107.pdf",
+      "invoice-electro-1104.pdf"
+     ],
+     "category": "invoices"
+    },
+    {
+     "ui": "select",
+     "asset": "$asset:invoice-tilehouse-1107.pdf"
+    },
+    {
+     "say": "PDF разобран в браузере: страница картинкой + текстовый слой. Категорию «Счета» приёмная поняла по слову INVOICE.",
+     "wait": 3500
+    },
+    {
+     "ui": "tab",
+     "value": "text",
+     "wait": 3000
+    },
+    {
+     "say": "📱 Агент (симуляция): вынимаю номер, поставщика, сроки, НДС и сумму к оплате."
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset:invoice-tilehouse-1107.pdf",
+      "data": {
+       "number": "TH-2026-114",
+       "supplier": "Tile House LLC",
+       "buyer": "Revaz G.",
+       "date": "2026-11-07",
+       "due": "2026-11-21",
+       "items": [
+        {
+         "name": "Porcelain tile 60x60 Calacatta",
+         "qty": 14,
+         "unitPrice": 38,
+         "total": 532
+        },
+        {
+         "name": "Tile adhesive C2TE 25kg",
+         "qty": 6,
+         "unitPrice": 24.5,
+         "total": 147
+        },
+        {
+         "name": "Grout 5kg, white",
+         "qty": 2,
+         "unitPrice": 19,
+         "total": 38
+        }
+       ],
+       "subtotal": 717,
+       "tax": 129.06,
+       "total": 846.06,
+       "currency": "GEL",
+       "status": "unpaid"
+      }
+     },
+     "wait": 800
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset:invoice-electro-1104.pdf",
+      "data": {
+       "number": "EL-5531",
+       "supplier": "Electro Service",
+       "buyer": "Revaz G.",
+       "date": "2026-11-04",
+       "due": "2026-11-10",
+       "items": [
+        {
+         "name": "Kitchen wiring, labour (h)",
+         "qty": 6,
+         "unitPrice": 35,
+         "total": 210
+        },
+        {
+         "name": "Socket outlet IP44",
+         "qty": 5,
+         "unitPrice": 12,
+         "total": 60
+        },
+        {
+         "name": "Cable NYM 3x2.5, m",
+         "qty": 40,
+         "unitPrice": 2.6,
+         "total": 104
+        }
+       ],
+       "subtotal": 374,
+       "tax": 67.32,
+       "total": 441.32,
+       "currency": "GEL",
+       "status": "unpaid"
+      }
+     },
+     "wait": 800
+    },
+    {
+     "ui": "tab",
+     "value": "data",
+     "wait": 3000
+    },
+    {
+     "cmd": "intake.batch.summary",
+     "args": {
+      "batchId": "$batch",
+      "notes": "К оплате 1 287.38 GEL. Electro Service — срок 10.11, это завтра. Tile House — до 21.11."
+     }
+    },
+    {
+     "ui": "batch"
+    },
+    {
+     "ui": "scroll",
+     "target": "ik-summary",
+     "wait": 5000
+    },
+    {
+     "cmd": "intake.batch.route",
+     "args": {
+      "batchId": "$batch",
+      "to": "board"
+     },
+     "wait": 3000
+    },
+    {
+     "say": "Счета разобраны: суммы, сроки и напоминание о ближайшем платеже. ✓"
+    }
+   ]
+  },
+  {
+   "id": "manuals",
+   "icon": "📘",
+   "title": "Инструкция к инструменту",
+   "subtitle": "PDF-инструкция → страницы → характеристики и шаги → в блокнот",
+   "steps": [
+    {
+     "say": "Человек кидает инструкцию к перфоратору (4 страницы PDF)."
+    },
+    {
+     "files": [
+      "manual-hammer-drill.pdf"
+     ],
+     "category": "manuals"
+    },
+    {
+     "say": "Каждая страница превратилась в картинку: их можно листать.",
+     "wait": 2000
+    },
+    {
+     "ui": "page",
+     "value": 2,
+     "wait": 2000
+    },
+    {
+     "ui": "page",
+     "value": 4,
+     "wait": 2000
+    },
+    {
+     "say": "📱 Агент (симуляция): достаю характеристики, шаги работы и предупреждения, со ссылками на страницы."
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset",
+      "data": {
+       "product": "Перфоратор PowerMax",
+       "model": "PX-26",
+       "specs": [
+        {
+         "name": "Мощность",
+         "value": 850,
+         "unit": "Вт",
+         "page": 2
+        },
+        {
+         "name": "Энергия удара",
+         "value": 3.2,
+         "unit": "Дж",
+         "page": 2
+        },
+        {
+         "name": "Патрон",
+         "value": "SDS-plus",
+         "unit": "",
+         "page": 2
+        },
+        {
+         "name": "Бетон, макс. Ø",
+         "value": 26,
+         "unit": "мм",
+         "page": 2
+        },
+        {
+         "name": "Масса",
+         "value": 2.9,
+         "unit": "кг",
+         "page": 2
+        }
+       ],
+       "steps": [
+        {
+         "n": 1,
+         "text": "Вставить бур до щелчка",
+         "page": 3
+        },
+        {
+         "n": 2,
+         "text": "Выбрать режим",
+         "page": 3
+        },
+        {
+         "n": 3,
+         "text": "Установить ограничитель глубины",
+         "page": 3
+        }
+       ],
+       "warnings": [
+        "Очки и наушники обязательны",
+        "Проверить скрытую проводку"
+       ],
+       "parts": [
+        {
+         "name": "Доп. рукоятка"
+        },
+        {
+         "name": "Ограничитель глубины"
+        },
+        {
+         "name": "Буры 6/8/10 мм",
+         "qty": 3
+        }
+       ]
+      },
+      "reply": "Для бетона до 26 мм подходит; для плитки — режим без удара."
+     }
+    },
+    {
+     "ui": "tab",
+     "value": "data",
+     "wait": 4000
+    },
+    {
+     "say": "Полный текст инструкции записываем в блокнот, чтобы был под рукой."
+    },
+    {
+     "cmd": "intake.route",
+     "args": {
+      "assetId": "$asset",
+      "to": "notebook-text"
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Инструкция больше не нужна в отдельном окне: главное лежит в блокноте. ✓"
+    }
+   ]
+  },
+  {
+   "id": "drawings",
+   "icon": "📐",
+   "title": "Чертёж + DWG + энциклопедия",
+   "subtitle": "PNG-чертёж и DWG, который браузер не открывает → агент конвертирует → что такое контргайка",
+   "steps": [
+    {
+     "say": "Приходят чертёж кронштейна (PNG) и файл AutoCAD DWG."
+    },
+    {
+     "files": [
+      "drawing-bracket-KN120.png",
+      "bracket-KN120.dwg"
+     ],
+     "category": "drawings"
+    },
+    {
+     "ui": "select",
+     "asset": "$asset:bracket-KN120.dwg"
+    },
+    {
+     "say": "DWG браузер открыть не может: оригинал сохранён, статус «нужен агент».",
+     "wait": 3500
+    },
+    {
+     "say": "📱 Агент (симуляция): забираю оригинал (intake.page n=0), конвертирую в своём CAD-конвертере и возвращаю картинку."
+    },
+    {
+     "cmd": "intake.attach",
+     "args": {
+      "assetId": "$asset:bracket-KN120.dwg",
+      "pages": [
+       "@file:drawing-bracket-KN120.png"
+      ],
+      "text": "Кронштейн направляющей КН-120. Поз.1 Кронштейн, Поз.2 Гайка M12 контр. DIN 985, Поз.3 Болт M12x60. Сталь 3.",
+      "note": "agent-converted"
+     },
+     "wait": 3000
+    },
+    {
+     "say": "Теперь DWG виден как чертёж. Агент разбирает детали."
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset:bracket-KN120.dwg",
+      "data": {
+       "object": "Кронштейн направляющей КН-120",
+       "drawingNo": "KN-120-01",
+       "parts": [
+        {
+         "name": "Кронштейн",
+         "qty": 1,
+         "material": "Сталь 3"
+        },
+        {
+         "name": "Гайка контргайка M12",
+         "qty": 1,
+         "standard": "DIN 985",
+         "explain": "Самоконтрящаяся гайка с нейлоновым кольцом: не откручивается от вибрации."
+        },
+        {
+         "name": "Болт M12x60",
+         "qty": 1
+        }
+       ],
+       "dimensions": [
+        {
+         "what": "Длина",
+         "value": "120",
+         "tolerance": "±0.2"
+        },
+        {
+         "what": "Отверстия",
+         "value": "Ø12 H7 ×2"
+        }
+       ],
+       "notes": [
+        "Масштаб 1:2"
+       ]
+      }
+     }
+    },
+    {
+     "ui": "tab",
+     "value": "data",
+     "wait": 3500
+    },
+    {
+     "say": "Непонятная деталь? Спрашиваем энциклопедию: вопрос сохранится там, а не потеряется в чате."
+    },
+    {
+     "cmd": "intake.route",
+     "args": {
+      "assetId": "$asset:bracket-KN120.dwg",
+      "to": "encyclopedia",
+      "question": "Что такое контргайка DIN 985 и зачем она здесь?"
+     },
+     "wait": 3500
+    },
+    {
+     "cmd": "intake.open",
+     "args": {
+      "assetId": "$asset:bracket-KN120.dwg"
+     }
+    },
+    {
+     "cmd": "intake.route",
+     "args": {
+      "assetId": "$asset:bracket-KN120.dwg",
+      "to": "board"
+     },
+     "wait": 3000
+    },
+    {
+     "say": "Чертёж на доске, деталь объяснена, вопрос в энциклопедии. ✓"
+    }
+   ]
+  },
+  {
+   "id": "design",
+   "icon": "◩",
+   "title": "Дизайн-файл PSD",
+   "subtitle": "PSD → встроенное превью → агент даёт плоскую картинку, шрифты и палитру",
+   "steps": [
+    {
+     "say": "Дизайнер присылает постер в Photoshop (PSD)."
+    },
+    {
+     "files": [
+      "poster-sunrise.psd"
+     ],
+     "category": "design"
+    },
+    {
+     "say": "Приёмная нашла внутри PSD встроенное превью и показала его сразу. Полную раскладку слоёв сделает агент.",
+     "wait": 3500
+    },
+    {
+     "cmd": "intake.attach",
+     "args": {
+      "assetId": "$asset",
+      "pages": [
+       "@file:poster-sunrise-flat.png"
+      ],
+      "note": "agent-converted"
+     },
+     "wait": 1500
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset",
+      "data": {
+       "artboards": [
+        {
+         "name": "Poster A3",
+         "w": 900,
+         "h": 1200
+        }
+       ],
+       "layers": [
+        "Background gradient",
+        "Sun",
+        "Title",
+        "Subtitle"
+       ],
+       "fonts": [
+        "DejaVu Sans Bold",
+        "DejaVu Sans"
+       ],
+       "colors": [
+        "#1D2B4A",
+        "#F5B54A",
+        "#FFFFFF",
+        "#F5D9A8"
+       ],
+       "texts": [
+        "SUNRISE",
+        "Workshop · 2026"
+       ]
+      }
+     }
+    },
+    {
+     "ui": "tab",
+     "value": "data",
+     "wait": 3500
+    },
+    {
+     "cmd": "intake.route",
+     "args": {
+      "assetId": "$asset",
+      "to": "board"
+     },
+     "wait": 3000
+    },
+    {
+     "say": "Постер на доске, а палитра и шрифты в данных: можно сравнивать с другими вариантами. ✓"
+    }
+   ]
+  },
+  {
+   "id": "documents",
+   "icon": "📄",
+   "title": "Договор (Word)",
+   "subtitle": "DOCX → текст → стороны, сроки, суммы, обязательства → блокнот + метка календаря",
+   "steps": [
+    {
+     "say": "Приходит договор подряда в Word."
+    },
+    {
+     "files": [
+      "contract-kitchen.docx"
+     ],
+     "category": "documents"
+    },
+    {
+     "ui": "tab",
+     "value": "text",
+     "wait": 3500
+    },
+    {
+     "say": "📱 Агент (симуляция): выписываю стороны, сроки, деньги и обязательства (это не юридическая консультация)."
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset",
+      "data": {
+       "type": "Договор подряда № 17/11",
+       "parties": [
+        "Ревaз Г. (заказчик)",
+        "ИП «Мастер Дом» (подрядчик)"
+       ],
+       "dates": [
+        {
+         "date": "2026-11-14",
+         "what": "Аванс 30%"
+        },
+        {
+         "date": "2026-11-15",
+         "what": "Начало работ"
+        },
+        {
+         "date": "2026-12-05",
+         "what": "Окончание работ"
+        }
+       ],
+       "amounts": [
+        {
+         "value": 4500,
+         "currency": "GEL",
+         "what": "Цена"
+        },
+        {
+         "value": 1350,
+         "currency": "GEL",
+         "what": "Аванс"
+        }
+       ],
+       "obligations": [
+        {
+         "party": "Подрядчик",
+         "text": "Штукатурка и шпаклёвка 25 м², керамогранит 14 м²",
+         "clause": "1"
+        },
+        {
+         "party": "Подрядчик",
+         "text": "Гарантия 12 месяцев",
+         "clause": "4"
+        }
+       ],
+       "flags": [
+        "Пеня 0,1%/день, максимум 10%",
+        "Расторжение с уведомлением за 7 дней"
+       ]
+      }
+     }
+    },
+    {
+     "ui": "tab",
+     "value": "data",
+     "wait": 4000
+    },
+    {
+     "cmd": "intake.route",
+     "args": {
+      "assetId": "$asset",
+      "to": "notebook-text"
+     },
+     "wait": 2500
+    },
+    {
+     "say": "И метка дня начала работ, 15 ноября, к этой странице блокнота."
+    },
+    {
+     "cmd": "garage.stamp",
+     "args": {
+      "to": "notebook",
+      "date": "2026-11-15",
+      "caption": "старт ремонта"
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Договор прочитан, ключевое в блокноте, дата отмечена. ✓"
+    }
+   ]
+  },
+  {
+   "id": "products",
+   "icon": "🛍",
+   "title": "Сравнение кафеля",
+   "subtitle": "2 фото плитки → характеристики и цены → таблица сравнения на доске",
+   "steps": [
+    {
+     "say": "Человек кладёт два варианта плитки: керамогранит «под мрамор» и «под дуб»."
+    },
+    {
+     "files": [
+      "tile-calacatta-60x60.jpg",
+      "tile-oak-20x120.jpg"
+     ],
+     "category": "products"
+    },
+    {
+     "say": "📱 Агент (симуляция): нахожу их в магазине, беру цены и характеристики из документации.",
+     "wait": 2500
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset:tile-calacatta-60x60.jpg",
+      "data": {
+       "name": "Calacatta Gold 60×60",
+       "brand": "Tile House",
+       "price": 38,
+       "currency": "GEL",
+       "shop": "Tile House",
+       "url": "https://example.com/calacatta",
+       "specs": [
+        {
+         "name": "Размер",
+         "value": "60×60",
+         "unit": "см"
+        },
+        {
+         "name": "Толщина",
+         "value": 9,
+         "unit": "мм"
+        },
+        {
+         "name": "Водопоглощение",
+         "value": "<0.5",
+         "unit": "%"
+        },
+        {
+         "name": "Класс износа",
+         "value": "PEI 4",
+         "unit": ""
+        },
+        {
+         "name": "Цена",
+         "value": 38,
+         "unit": "₾/м²"
+        }
+       ],
+       "pros": [
+        "Почти не впитывает воду",
+        "Крупный формат — мало швов"
+       ],
+       "cons": [
+        "Скользкая в глянце"
+       ]
+      }
+     },
+     "wait": 900
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset:tile-oak-20x120.jpg",
+      "data": {
+       "name": "Oak Natural 20×120",
+       "brand": "Kerama",
+       "price": 52,
+       "currency": "GEL",
+       "shop": "Gorgia",
+       "url": "https://example.com/oak",
+       "specs": [
+        {
+         "name": "Размер",
+         "value": "20×120",
+         "unit": "см"
+        },
+        {
+         "name": "Толщина",
+         "value": 10,
+         "unit": "мм"
+        },
+        {
+         "name": "Водопоглощение",
+         "value": "<0.5",
+         "unit": "%"
+        },
+        {
+         "name": "Класс износа",
+         "value": "PEI 5",
+         "unit": ""
+        },
+        {
+         "name": "Цена",
+         "value": 52,
+         "unit": "₾/м²"
+        }
+       ],
+       "pros": [
+        "Тёплый вид дерева",
+        "Выше износостойкость"
+       ],
+       "cons": [
+        "Дороже на 37%",
+        "Сложнее укладка (длинный формат)"
+       ]
+      }
+     }
+    },
+    {
+     "cmd": "intake.batch.summary",
+     "args": {
+      "batchId": "$batch",
+      "notes": "На 14 м²: Calacatta ≈ 532 ₾, Oak ≈ 728 ₾. Для кухни с водой лучше Calacatta."
+     }
+    },
+    {
+     "ui": "batch"
+    },
+    {
+     "ui": "scroll",
+     "target": "ik-summary",
+     "wait": 5000
+    },
+    {
+     "say": "На доску: обе плитки рядом и таблица сравнения."
+    },
+    {
+     "cmd": "intake.route",
+     "args": {
+      "assetId": "$asset:tile-calacatta-60x60.jpg",
+      "to": "board"
+     },
+     "wait": 800
+    },
+    {
+     "cmd": "intake.route",
+     "args": {
+      "assetId": "$asset:tile-oak-20x120.jpg",
+      "to": "board"
+     },
+     "wait": 800
+    },
+    {
+     "cmd": "intake.batch.route",
+     "args": {
+      "batchId": "$batch",
+      "to": "board"
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Сравнение готово, его можно экспортировать или выложить постом. ✓"
+    }
+   ]
+  },
+  {
+   "id": "program",
+   "icon": "⌘",
+   "title": "Программные файлы (ZIP)",
+   "subtitle": "Архив проекта → распаковка → что это и чем открыть → найден ключ",
+   "steps": [
+    {
+     "say": "Приходит ZIP с каким-то проектом. Непонятно, что внутри."
+    },
+    {
+     "files": [
+      "project-estimator.zip"
+     ],
+     "category": "program"
+    },
+    {
+     "say": "Приёмная показала список файлов. Распаковываем прямо сюда.",
+     "wait": 2500
+    },
+    {
+     "cmd": "intake.extract",
+     "args": {
+      "assetId": "$asset"
+     },
+     "wait": 3000
+    },
+    {
+     "ui": "select",
+     "asset": "$asset:config.yaml"
+    },
+    {
+     "ui": "tab",
+     "value": "text",
+     "wait": 3000
+    },
+    {
+     "say": "📱 Агент (симуляция): объясняю, что это за проект, и предупреждаю о ключе в конфиге."
+    },
+    {
+     "cmd": "intake.reply",
+     "args": {
+      "assetId": "$asset:config.yaml",
+      "text": "Это конфиг маленького Python-калькулятора штукатурки. ВНИМАНИЕ: в config.yaml лежит API-ключ — не публикуйте файл. Запуск: python estimator/main.py."
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Архив разобран, риски видны. ✓"
+    }
+   ]
+  },
+  {
+   "id": "photos",
+   "icon": "🖼",
+   "title": "Фото комнаты → зоны и площади",
+   "subtitle": "Фото кухни → поверхности и площади для сметы → доска + метка дня",
+   "steps": [
+    {
+     "say": "Человек фотографирует кухню «до ремонта»."
+    },
+    {
+     "files": [
+      "kitchen-before.jpg"
+     ],
+     "category": "photos"
+    },
+    {
+     "say": "📱 Агент (симуляция): спрашиваю одну известную длину (стена 3,2 м), считаю площади, отмечаю повреждённую штукатурку.",
+     "wait": 2500
+    },
+    {
+     "cmd": "intake.data",
+     "args": {
+      "assetId": "$asset",
+      "data": {
+       "objects": [
+        "окно",
+        "кухонный гарнитур",
+        "пол ламинат"
+       ],
+       "zones": [
+        {
+         "name": "Кухня",
+         "surfaces": [
+          {
+           "type": "стена, задняя",
+           "areaM2": 7.4,
+           "material": "штукатурка",
+           "condition": "трещины, отслоение"
+          },
+          {
+           "type": "стена, левая",
+           "areaM2": 8.6,
+           "material": "штукатурка",
+           "condition": "норм."
+          },
+          {
+           "type": "стена, правая",
+           "areaM2": 9.0,
+           "material": "штукатурка",
+           "condition": "отслоение"
+          },
+          {
+           "type": "пол",
+           "areaM2": 14.0,
+           "material": "ламинат",
+           "condition": "износ"
+          }
+         ]
+        }
+       ],
+       "palette": [
+        "#E4DCCD",
+        "#D2C7B6",
+        "#A88B6A",
+        "#7D8A8F"
+       ],
+       "notes": [
+        "Стены итого ≈ 25 м² под штукатурку и шпаклёвку"
+       ]
+      }
+     }
+    },
+    {
+     "ui": "tab",
+     "value": "data",
+     "wait": 4000
+    },
+    {
+     "cmd": "intake.route",
+     "args": {
+      "assetId": "$asset",
+      "to": "board"
+     },
+     "wait": 1200
+    },
+    {
+     "cmd": "garage.stamp",
+     "args": {
+      "to": "board",
+      "date": "2026-11-09",
+      "caption": "замер кухни"
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Фото на доске с датой замера, площади готовы для сметы. ✓"
+    }
+   ]
+  },
+  {
+   "id": "notebook",
+   "icon": "✎",
+   "title": "Блокнот: агент пишет сам",
+   "subtitle": "Входящий буфер агента, картинка, избранное, метка календаря",
+   "steps": [
+    {
+     "say": "Агент может писать в блокнот сам, без вопроса человека."
+    },
+    {
+     "cmd": "garage.notebook.write",
+     "args": {
+      "text": "Итог дня: кухня — 25 м² стен под штукатурку, плитка Calacatta 14 м² ≈ 532 ₾. Счёт электрика оплатить до 10.11.",
+      "heading": "— от агента, 9 ноября —",
+      "mode": "new-leaf"
+     },
+     "wait": 3000
+    },
+    {
+     "say": "Прикрепляет фото к странице."
+    },
+    {
+     "cmd": "garage.notebook.attach",
+     "args": {
+      "dataUrl": "@file:kitchen-before.jpg",
+      "title": "Кухня до ремонта"
+     },
+     "wait": 2500
+    },
+    {
+     "say": "И ставит метку дня."
+    },
+    {
+     "cmd": "garage.stamp",
+     "args": {
+      "to": "notebook",
+      "caption": "итоги"
+     },
+     "wait": 3500
+    },
+    {
+     "say": "Вложения лежат полосой под текстом; экспорт JSON/MD/PDF включает их. ✓"
+    }
+   ]
+  },
+  {
+   "id": "estimate-kitchen",
+   "icon": "🧱",
+   "title": "Смета: ремонт кухни",
+   "subtitle": "Агент считает материалы с фото и ценами → портал ловит нехватку → правка руками → доска",
+   "steps": [
+    {
+     "say": "Человек говорит агенту: «посчитай стены кухни 25 м² под штукатурку и шпаклёвку и плитку на пол 14 м²»."
+    },
+    {
+     "ui": "service",
+     "value": "estimate",
+     "wait": 800
+    },
+    {
+     "say": "📱 Агент (симуляция): считаю расход, округляю до упаковок, беру цены и фото из магазинов."
+    },
+    {
+     "cmd": "estimate.create",
+     "args": {
+      "template": "renovation",
+      "title": "Кухня: стены и пол",
+      "currency": "GEL",
+      "target": {
+       "label": "Стены",
+       "value": 25,
+       "unit": "м²"
+      },
+      "items": [
+       {
+        "group": "Стены",
+        "name": "Штукатурка гипсовая Rotband 30 кг",
+        "image": "@file:p-plaster.jpg",
+        "shop": "Gorgia",
+        "url": "https://example.com/rotband",
+        "qty": 8,
+        "unit": "меш",
+        "unitPrice": 32,
+        "covers": {
+         "value": 25.7,
+         "unit": "м²"
+        },
+        "basis": "8,5 кг/м² × 10 мм × 25 м² + 10% = 234 кг → 8 меш"
+       },
+       {
+        "group": "Стены",
+        "name": "Шпаклёвка финишная 25 кг",
+        "image": "@file:p-putty.jpg",
+        "shop": "Gorgia",
+        "url": "https://example.com/finish",
+        "qty": 2,
+        "unit": "меш",
+        "unitPrice": 38,
+        "covers": {
+         "value": 22.7,
+         "unit": "м²"
+        },
+        "basis": "1 кг/м² × 2 слоя × 25 м² + 10%"
+       },
+       {
+        "group": "Стены",
+        "name": "Грунтовка глубокого проникновения 10 л",
+        "image": "@file:p-primer.jpg",
+        "shop": "Gorgia",
+        "qty": 1,
+        "unit": "шт",
+        "unitPrice": 46,
+        "covers": {
+         "value": 66,
+         "unit": "м²"
+        },
+        "basis": "0,15 л/м²"
+       },
+       {
+        "group": "Пол",
+        "name": "Керамогранит Calacatta 60×60",
+        "image": "@file:tile-calacatta-60x60.jpg",
+        "shop": "Tile House",
+        "url": "https://example.com/calacatta",
+        "qty": 15.4,
+        "unit": "м²",
+        "unitPrice": 38,
+        "covers": {
+         "value": 14,
+         "unit": "м² пола"
+        },
+        "basis": "14 м² + 10% подрезка"
+       },
+       {
+        "group": "Пол",
+        "name": "Клей для плитки C2TE 25 кг",
+        "image": "@file:p-adhesive.jpg",
+        "shop": "Tile House",
+        "qty": 3,
+        "unit": "меш",
+        "unitPrice": 24.5,
+        "covers": {
+         "value": 15,
+         "unit": "м² пола"
+        },
+        "basis": "5 кг/м² × 14 м²"
+       },
+       {
+        "group": "Инструмент",
+        "name": "Шпатель 350 мм",
+        "image": "@file:p-trowel.jpg",
+        "qty": 1,
+        "unit": "шт",
+        "unitPrice": 14.5,
+        "status": "have",
+        "note": "уже есть"
+       }
+      ],
+      "assumptions": [
+       "Слой штукатурки 10 мм",
+       "Запас 10%",
+       "Цены Gorgia / Tile House на 09.11.2026 (демо-данные)"
+      ]
+     },
+     "wait": 2500
+    },
+    {
+     "say": "Портал сам сложил итог и сравнил каждую строку с целью 25 м²: шпаклёвки хватит только на 22,7 м², она подсвечена красным.",
+     "wait": 5000
+    },
+    {
+     "say": "Человек меняет количество шпаклёвки с 2 на 3 мешка прямо в таблице."
+    },
+    {
+     "cmd": "estimate.item",
+     "args": {
+      "estimateId": "$estimate",
+      "by": "human",
+      "item": {
+       "name": "Шпаклёвка финишная 25 кг",
+       "group": "Стены",
+       "qty": 3
+      }
+     },
+     "wait": 2500
+    },
+    {
+     "say": "Покрытие пересчиталось (34 м²), строка стала зелёной, итог обновился. Человек жмёт «Пересчитать с агентом»."
+    },
+    {
+     "ui": "click",
+     "target": "es-request",
+     "wait": 1500
+    },
+    {
+     "say": "📱 Агент (симуляция): проверяю: 3 мешка верно; добавляю сетку для углов."
+    },
+    {
+     "cmd": "estimate.item",
+     "args": {
+      "estimateId": "$estimate",
+      "item": {
+       "group": "Стены",
+       "name": "Уголок перфорированный 3 м",
+       "qty": 4,
+       "unit": "шт",
+       "unitPrice": 3.2,
+       "covers": {
+        "value": 12,
+        "unit": "м углов"
+       },
+       "basis": "4 угла × 3 м"
+      }
+     },
+     "wait": 2000
+    },
+    {
+     "cmd": "estimate.route",
+     "args": {
+      "estimateId": "$estimate",
+      "to": "board"
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Смета на доске: фото, количество, суммы и на что хватит. ✓"
+    }
+   ]
+  },
+  {
+   "id": "estimate-fridge",
+   "icon": "🥕",
+   "title": "Смета: холодильник — на сколько дней хватит",
+   "subtitle": "Фото холодильника → продукты и дни → что закончится первым → список покупок",
+   "steps": [
+    {
+     "say": "Человек фотографирует холодильник: «на сколько дней нам вдвоём хватит и что купить?»"
+    },
+    {
+     "files": [
+      "fridge-today.jpg"
+     ],
+     "category": "photos"
+    },
+    {
+     "say": "📱 Агент (симуляция): узнаю продукты, считаю дни на 2 человек, отмечаю, что есть и что купить.",
+     "wait": 2500
+    },
+    {
+     "ui": "service",
+     "value": "estimate"
+    },
+    {
+     "cmd": "estimate.create",
+     "args": {
+      "template": "groceries",
+      "title": "Холодильник на 2 человек",
+      "currency": "GEL",
+      "target": {
+       "label": "Людей",
+       "value": 2,
+       "unit": "чел."
+      },
+      "sources": [
+       "$asset"
+      ],
+      "items": [
+       {
+        "group": "Есть",
+        "name": "Молоко 1 л",
+        "qty": 0.5,
+        "unit": "л",
+        "unitPrice": 3.45,
+        "status": "have",
+        "covers": {
+         "value": 1,
+         "unit": "дн."
+        }
+       },
+       {
+        "group": "Есть",
+        "name": "Сыр сулугуни",
+        "qty": 0.4,
+        "unit": "кг",
+        "unitPrice": 16.9,
+        "status": "have",
+        "covers": {
+         "value": 4,
+         "unit": "дн."
+        }
+       },
+       {
+        "group": "Есть",
+        "name": "Яйца",
+        "qty": 6,
+        "unit": "шт",
+        "unitPrice": 0.68,
+        "status": "have",
+        "covers": {
+         "value": 3,
+         "unit": "дн."
+        }
+       },
+       {
+        "group": "Есть",
+        "name": "Курица",
+        "qty": 0.9,
+        "unit": "кг",
+        "unitPrice": 11,
+        "status": "have",
+        "covers": {
+         "value": 2,
+         "unit": "дн."
+        }
+       },
+       {
+        "group": "Есть",
+        "name": "Огурцы, томаты",
+        "qty": 1.2,
+        "unit": "кг",
+        "unitPrice": 5,
+        "status": "have",
+        "covers": {
+         "value": 3,
+         "unit": "дн."
+        }
+       },
+       {
+        "group": "Купить",
+        "name": "Молоко 1 л",
+        "qty": 3,
+        "unit": "шт",
+        "unitPrice": 3.45,
+        "status": "missing",
+        "covers": {
+         "value": 6,
+         "unit": "дн."
+        },
+        "shop": "Nikora"
+       },
+       {
+        "group": "Купить",
+        "name": "Хлеб",
+        "qty": 2,
+        "unit": "шт",
+        "unitPrice": 1.2,
+        "status": "missing",
+        "covers": {
+         "value": 4,
+         "unit": "дн."
+        },
+        "shop": "Nikora"
+       },
+       {
+        "group": "Купить",
+        "name": "Гречка 1 кг",
+        "qty": 1,
+        "unit": "шт",
+        "unitPrice": 5.9,
+        "status": "missing",
+        "covers": {
+         "value": 7,
+         "unit": "дн."
+        },
+        "shop": "Nikora"
+       }
+      ],
+      "assumptions": [
+       "2 взрослых, 3 приёма пищи",
+       "Молоко: 0,5 л в день"
+      ]
+     },
+     "wait": 2500
+    },
+    {
+     "say": "Портал показывает: первым закончится молоко (1 день). К покупке 3 позиции, сумма только по ним.",
+     "wait": 5000
+    },
+    {
+     "cmd": "estimate.route",
+     "args": {
+      "estimateId": "$estimate",
+      "to": "notebook"
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Список покупок в блокноте. ✓"
+    }
+   ]
+  },
+  {
+   "id": "estimate-party",
+   "icon": "🎉",
+   "title": "Смета: день рождения на 12 гостей",
+   "subtitle": "Порции на гостей → чего не хватает → бюджет",
+   "steps": [
+    {
+     "say": "«Собери смету дня рождения на 12 гостей, бюджет до 600 лари»."
+    },
+    {
+     "ui": "service",
+     "value": "estimate"
+    },
+    {
+     "cmd": "estimate.create",
+     "args": {
+      "template": "event",
+      "title": "День рождения · 12 гостей",
+      "currency": "GEL",
+      "target": {
+       "label": "Гостей",
+       "value": 12,
+       "unit": "чел."
+      },
+      "items": [
+       {
+        "group": "Еда",
+        "name": "Хачапури по-аджарски",
+        "qty": 12,
+        "unit": "шт",
+        "unitPrice": 14,
+        "covers": {
+         "value": 12,
+         "unit": "чел."
+        }
+       },
+       {
+        "group": "Еда",
+        "name": "Шашлык свиной",
+        "qty": 3,
+        "unit": "кг",
+        "unitPrice": 32,
+        "covers": {
+         "value": 12,
+         "unit": "чел."
+        },
+        "basis": "250 г на гостя"
+       },
+       {
+        "group": "Еда",
+        "name": "Торт «Наполеон» 2 кг",
+        "qty": 1,
+        "unit": "шт",
+        "unitPrice": 85,
+        "covers": {
+         "value": 10,
+         "unit": "чел."
+        },
+        "basis": "200 г на порцию"
+       },
+       {
+        "group": "Напитки",
+        "name": "Лимонад Лагидзе 0,5 л",
+        "qty": 24,
+        "unit": "шт",
+        "unitPrice": 2.5,
+        "covers": {
+         "value": 12,
+         "unit": "чел."
+        }
+       },
+       {
+        "group": "Напитки",
+        "name": "Вино Саперави 0,75 л",
+        "qty": 5,
+        "unit": "шт",
+        "unitPrice": 22,
+        "covers": {
+         "value": 12,
+         "unit": "чел."
+        }
+       },
+       {
+        "group": "Декор",
+        "name": "Шары и гирлянда",
+        "qty": 1,
+        "unit": "набор",
+        "unitPrice": 45,
+        "covers": {
+         "value": 12,
+         "unit": "чел."
+        }
+       }
+      ],
+      "assumptions": [
+       "Бюджет до 600 GEL",
+       "Дети не учтены отдельно"
+      ]
+     },
+     "wait": 2500
+    },
+    {
+     "say": "Торта хватит только на 10 гостей: строка красная, в итоге «не хватает на цель».",
+     "wait": 4500
+    },
+    {
+     "say": "📱 Агент (симуляция): меняю на торт 2,5 кг, всё ещё в бюджете."
+    },
+    {
+     "cmd": "estimate.item",
+     "args": {
+      "estimateId": "$estimate",
+      "item": {
+       "group": "Еда",
+       "name": "Торт «Наполеон» 2 кг",
+       "qty": 1,
+       "unitPrice": 105,
+       "covers": {
+        "value": 12,
+        "unit": "чел."
+       },
+       "note": "заменён на 2,5 кг"
+      }
+     },
+     "wait": 3000
+    },
+    {
+     "cmd": "estimate.route",
+     "args": {
+      "estimateId": "$estimate",
+      "to": "board"
+     },
+     "wait": 3500
+    },
+    {
+     "say": "Итог в бюджете, всем хватает. ✓"
+    }
+   ]
+  },
+  {
+   "id": "media-picture",
+   "icon": "✂",
+   "title": "Медиа: картинка — подписать, вырезать, вставить",
+   "subtitle": "Фото кухни → стрелки и подписи на трещинах → копия фрагмента → на доску",
+   "steps": [
+    {
+     "say": "Берём фото кухни из Приёмной и открываем в редакторе."
+    },
+    {
+     "files": [
+      "kitchen-before.jpg"
+     ],
+     "category": "photos"
+    },
+    {
+     "ui": "click",
+     "target": "ik-to-picture",
+     "wait": 1800
+    },
+    {
+     "say": "Отмечаем повреждённую штукатурку: овал, стрелка и подпись."
+    },
+    {
+     "cmd": "picture.annotate",
+     "args": {
+      "objects": [
+       {
+        "type": "ellipse",
+        "r": {
+         "x": 440,
+         "y": 350,
+         "w": 180,
+         "h": 160
+        },
+        "color": "#e5383b"
+       },
+       {
+        "type": "arrow",
+        "a": {
+         "x": 180,
+         "y": 200
+        },
+        "b": {
+         "x": 440,
+         "y": 380
+        },
+        "color": "#e5383b"
+       },
+       {
+        "type": "text",
+        "at": {
+         "x": 60,
+         "y": 180
+        },
+        "text": "Трещины, отслоение",
+        "color": "#e5383b"
+       }
+      ]
+     },
+     "wait": 2500
+    },
+    {
+     "cmd": "picture.annotate",
+     "args": {
+      "objects": [
+       {
+        "type": "rect",
+        "r": {
+         "x": 1030,
+         "y": 500,
+         "w": 170,
+         "h": 140
+        },
+        "color": "#f5b54a"
+       },
+       {
+        "type": "text",
+        "at": {
+         "x": 1000,
+         "y": 480
+        },
+        "text": "Отслоение",
+        "color": "#b8860b"
+       },
+       {
+        "type": "highlight",
+        "r": {
+         "x": 380,
+         "y": 585,
+         "w": 420,
+         "h": 25
+        },
+        "color": "#3d7bfd"
+       }
+      ]
+     },
+     "wait": 2500
+    },
+    {
+     "say": "Скрываем лишнее (например, номер на фото), копируем фрагмент окна и вставляем его рядом слоем."
+    },
+    {
+     "cmd": "picture.annotate",
+     "args": {
+      "objects": [
+       {
+        "type": "pixelate",
+        "r": {
+         "x": 50,
+         "y": 30,
+         "w": 280,
+         "h": 40
+        }
+       }
+      ]
+     },
+     "wait": 1500
+    },
+    {
+     "cmd": "picture.copy",
+     "args": {
+      "rect": {
+       "x": 620,
+       "y": 330,
+       "w": 360,
+       "h": 230
+      }
+     },
+     "wait": 800
+    },
+    {
+     "cmd": "picture.paste",
+     "args": {
+      "at": {
+       "x": 1180,
+       "y": 120
+      }
+     },
+     "wait": 2500
+    },
+    {
+     "say": "Готово. Жмём «Что сделать с картинкой?»: появляются сценарии на выход."
+    },
+    {
+     "ui": "click",
+     "target": "md-make-picture",
+     "wait": 3500
+    },
+    {
+     "say": "Выбираем «На доску»."
+    },
+    {
+     "ui": "click",
+     "target": "md-out-board",
+     "wait": 4000
+    },
+    {
+     "say": "Размеченное фото на доске, а исходник не тронут. ✓"
+    }
+   ]
+  },
+  {
+   "id": "media-removebg",
+   "icon": "🪄",
+   "title": "Медиа: стереть фон",
+   "subtitle": "Фото кружки → «Стереть фон» → агент возвращает PNG без фона → доска",
+   "steps": [
+    {
+     "say": "Фото кружки на столе. Нужна кружка без фона, для карточки товара."
+    },
+    {
+     "files": [
+      "mug-photo.jpg"
+     ],
+     "category": "products"
+    },
+    {
+     "ui": "click",
+     "target": "ik-to-picture",
+     "wait": 1800
+    },
+    {
+     "ui": "click",
+     "target": "md-make-picture",
+     "wait": 2500
+    },
+    {
+     "say": "Выбираем «Стереть фон»: эту задачу делает агент, он получает картинку и промт."
+    },
+    {
+     "ui": "click",
+     "target": "md-out-remove-bg",
+     "wait": 3000
+    },
+    {
+     "say": "📱 Агент (симуляция): удаляю фон своим инструментом и возвращаю PNG с прозрачностью."
+    },
+    {
+     "cmd": "intake.add",
+     "args": {
+      "name": "mug · без фона.png",
+      "dataUrl": "@file:mug-nobg.png",
+      "open": false
+     },
+     "wait": 1200
+    },
+    {
+     "cmd": "media.job.reply",
+     "args": {
+      "jobId": "$lastjob",
+      "text": "Фон удалён, PNG в Приёмной."
+     }
+    },
+    {
+     "cmd": "intake.route",
+     "args": {
+      "assetId": "$last",
+      "to": "board"
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Кружка без фона на доске. ✓"
+    }
+   ]
+  },
+  {
+   "id": "media-video",
+   "icon": "🍳",
+   "title": "Медиа: видео → рецепт",
+   "subtitle": "Видео готовки → кадры на паузе → «Рецепт» → агент пишет рецепт в блокнот с кадрами",
+   "steps": [
+    {
+     "say": "Видео, как готовят шакшуку. Открываем его в кабинете Медиа."
+    },
+    {
+     "files": [
+      "shakshuka-cooking.mp4"
+     ],
+     "category": "other"
+    },
+    {
+     "ui": "click",
+     "target": "ik-to-video",
+     "wait": 2500
+    },
+    {
+     "say": "Ставим на паузу на важных моментах: кадр сохраняется с таймкодом."
+    },
+    {
+     "cmd": "video.capture",
+     "args": {
+      "t": 3,
+      "note": "лук и перец"
+     },
+     "wait": 1200
+    },
+    {
+     "cmd": "video.capture",
+     "args": {
+      "t": 9,
+      "note": "томаты и специи"
+     },
+     "wait": 1200
+    },
+    {
+     "cmd": "video.capture",
+     "args": {
+      "t": 15,
+      "note": "яйца в соус"
+     },
+     "wait": 1200
+    },
+    {
+     "cmd": "video.capture",
+     "args": {
+      "t": 21,
+      "note": "подача с зеленью"
+     },
+     "wait": 1500
+    },
+    {
+     "say": "Четыре кадра в ленте. Жмём «Что сделать из выбранных»."
+    },
+    {
+     "ui": "click",
+     "target": "md-make",
+     "wait": 3000
+    },
+    {
+     "say": "Выбираем «Рецепт»: агент получит кадры, таймкоды и промт."
+    },
+    {
+     "ui": "click",
+     "target": "md-out-recipe",
+     "wait": 3000
+    },
+    {
+     "say": "📱 Агент (симуляция): достаю расшифровку и пишу рецепт по шагам."
+    },
+    {
+     "cmd": "video.transcript",
+     "args": {
+      "videoId": "$curvideo",
+      "segments": [
+       {
+        "t": 0,
+        "text": "Обжариваем лук и сладкий перец 5 минут."
+       },
+       {
+        "t": 6,
+        "text": "Добавляем 4 томата, паприку, зиру, соль; тушим 10 минут."
+       },
+       {
+        "t": 12,
+        "text": "Делаем лунки и разбиваем 4 яйца, накрываем крышкой на 6 минут."
+       },
+       {
+        "t": 18,
+        "text": "Посыпаем кинзой и подаём с хлебом."
+       }
+      ]
+     },
+     "wait": 2500
+    },
+    {
+     "cmd": "video.output",
+     "args": {
+      "videoId": "$curvideo",
+      "output": "notebook"
+     },
+     "wait": 1500
+    },
+    {
+     "cmd": "garage.notebook.write",
+     "args": {
+      "heading": "Шакшука · 2 порции",
+      "text": "Ингредиенты: лук 1, перец сладкий 1, томаты 4, яйца 4, паприка 1 ч.л., зира ½ ч.л., соль, кинза.\n1. (0:03) Обжарить лук и перец 5 мин.\n2. (0:09) Томаты и специи, тушить 10 мин.\n3. (0:15) Лунки, яйца, под крышкой 6 мин.\n4. (0:21) Посыпать зеленью, подавать с хлебом.\nВремя: ~25 мин.",
+      "mode": "append"
+     },
+     "wait": 1500
+    },
+    {
+     "cmd": "media.job.reply",
+     "args": {
+      "jobId": "$lastjob",
+      "text": "Рецепт записан в блокнот с кадрами."
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Рецепт с кадрами шагов в блокноте. ✓"
+    }
+   ]
+  },
+  {
+   "id": "media-youtube",
+   "icon": "▶",
+   "title": "Медиа: ссылка YouTube → разбор кадра",
+   "subtitle": "Ссылка → пауза → кадр достаёт агент → расшифровка → «Разбор кадра» для кинокритика",
+   "steps": [
+    {
+     "say": "Человек вставляет ссылку на YouTube. Плеер открывается прямо в кабинете (в превью claude.ai YouTube заблокирован, в обычном браузере работает)."
+    },
+    {
+     "cmd": "video.open",
+     "args": {
+      "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+      "title": "Me at the zoo (2005)"
+     },
+     "wait": 3500
+    },
+    {
+     "say": "Пауза на 0:05. Пиксели YouTube-плеера страница прочитать не может, поэтому момент отмечается, а кадр по таймкоду достаёт агент (или включается «Захват вкладки»)."
+    },
+    {
+     "cmd": "video.capture",
+     "args": {
+      "t": 5
+     },
+     "wait": 2500
+    },
+    {
+     "say": "📱 Агент (симуляция): достаю кадр 0:05 и расшифровку."
+    },
+    {
+     "cmd": "video.frame",
+     "args": {
+      "videoId": "$curvideo",
+      "t": 5,
+      "dataUrl": "@file:yt-frame-agent.jpg"
+     },
+     "wait": 1500
+    },
+    {
+     "cmd": "video.transcript",
+     "args": {
+      "videoId": "$curvideo",
+      "segments": [
+       {
+        "t": 0,
+        "text": "Alright, so here we are in front of the elephants."
+       },
+       {
+        "t": 5,
+        "text": "The cool thing about these guys is that they have really, really long trunks."
+       },
+       {
+        "t": 12,
+        "text": "And that's cool. And that's pretty much all there is to say."
+       }
+      ]
+     },
+     "wait": 2500
+    },
+    {
+     "ui": "click",
+     "target": "md-make",
+     "wait": 2500
+    },
+    {
+     "say": "Выбираем «Разбор кадра»: задача уходит агенту вместе с кадром и таймкодом."
+    },
+    {
+     "ui": "click",
+     "target": "md-out-review",
+     "wait": 3500
+    },
+    {
+     "say": "Ссылка, кадр, расшифровка и задача для агента в одном окне. ✓"
+    }
+   ]
+  },
+  {
+   "id": "media-kids",
+   "icon": "🖍",
+   "title": "Медиа: детский редактор — наложить, наклеить, дорисовать",
+   "subtitle": "Рисунок + фото кота уменьшить и наложить + наклейки + рисуем мышкой → одна картинка",
+   "steps": [
+    {
+     "say": "Ребёнок нарисовал домик. Открываем рисунок в редакторе."
+    },
+    {
+     "files": [
+      "kid-drawing-4.jpg",
+      "cat-photo.jpg"
+     ],
+     "category": "photos"
+    },
+    {
+     "ui": "select",
+     "asset": "$asset:kid-drawing-4.jpg"
+    },
+    {
+     "ui": "click",
+     "target": "ik-to-picture",
+     "wait": 1800
+    },
+    {
+     "say": "Берём вторую фотографию (кот), уменьшаем и кладём на рисунок, это слой."
+    },
+    {
+     "cmd": "picture.paste",
+     "args": {
+      "dataUrl": "@file:cat-photo.jpg",
+      "at": {
+       "x": 40,
+       "y": 330
+      }
+     },
+     "wait": 1500
+    },
+    {
+     "say": "Наклейки: звезда, сердце, радуга. Каждая двигается и растягивается за угол."
+    },
+    {
+     "cmd": "picture.annotate",
+     "args": {
+      "objects": [
+       {
+        "type": "text",
+        "text": "⭐",
+        "at": {
+         "x": 600,
+         "y": 150
+        },
+        "size": 90,
+        "bg": false
+       },
+       {
+        "type": "text",
+        "text": "❤️",
+        "at": {
+         "x": 470,
+         "y": 290
+        },
+        "size": 60,
+        "bg": false
+       },
+       {
+        "type": "text",
+        "text": "🌈",
+        "at": {
+         "x": 640,
+         "y": 330
+        },
+        "size": 110,
+        "bg": false
+       }
+      ]
+     },
+     "wait": 2000
+    },
+    {
+     "say": "И дорисовываем мышкой: розовый дым из трубы и подпись."
+    },
+    {
+     "cmd": "picture.annotate",
+     "args": {
+      "objects": [
+       {
+        "type": "pen",
+        "pts": [
+         {
+          "x": 480,
+          "y": 230
+         },
+         {
+          "x": 500,
+          "y": 180
+         },
+         {
+          "x": 470,
+          "y": 140
+         },
+         {
+          "x": 510,
+          "y": 100
+         },
+         {
+          "x": 480,
+          "y": 60
+         }
+        ],
+        "color": "#ff6fb5",
+        "width": 14
+       },
+       {
+        "type": "text",
+        "text": "Мой дом и Мурзик",
+        "at": {
+         "x": 250,
+         "y": 60
+        },
+        "color": "#9b5de5",
+        "size": 38,
+        "bg": true
+       }
+      ]
+     },
+     "wait": 2500
+    },
+    {
+     "say": "Сохраняем: все слои склеиваются в одну картинку и уходят на доску."
+    },
+    {
+     "ui": "click",
+     "target": "md-make-picture",
+     "wait": 2500
+    },
+    {
+     "ui": "click",
+     "target": "md-out-board",
+     "wait": 4000
+    },
+    {
+     "say": "Одна картинка, внутри которой фото, наклейки и рисунок. ✓"
+    }
+   ]
+  },
+  {
+   "id": "media-gif",
+   "icon": "🌀",
+   "title": "Медиа: гифка из рисунков",
+   "subtitle": "4 рисунка ребёнка → гифка (солнце встаёт) → Ч/Б вариант → GIF на доску, MP4",
+   "steps": [
+    {
+     "say": "Мама кидает 4 рисунка ребёнка подряд."
+    },
+    {
+     "files": [
+      "kid-drawing-1.jpg",
+      "kid-drawing-2.jpg",
+      "kid-drawing-3.jpg",
+      "kid-drawing-4.jpg"
+     ],
+     "category": "photos"
+    },
+    {
+     "say": "Пакет из 4 картинок → «Гифка». Рисунки ставятся в ряд по порядку."
+    },
+    {
+     "cmd": "gif.load",
+     "args": {
+      "assetIds": [
+       "$asset:kid-drawing-1.jpg",
+       "$asset:kid-drawing-2.jpg",
+       "$asset:kid-drawing-3.jpg",
+       "$asset:kid-drawing-4.jpg"
+      ]
+     },
+     "wait": 3000
+    },
+    {
+     "say": "Скорость 0,4 с на кадр, «бумеранг», подпись снизу."
+    },
+    {
+     "cmd": "gif.set",
+     "args": {
+      "delay": 400,
+      "boomerang": true,
+      "bottom": "Доброе утро!",
+      "textSize": 10
+     },
+     "wait": 3500
+    },
+    {
+     "say": "Одной галочкой делаем черно-белый вариант."
+    },
+    {
+     "ui": "click",
+     "target": "gif-bw",
+     "wait": 3000
+    },
+    {
+     "ui": "click",
+     "target": "gif-bw",
+     "wait": 1000
+    },
+    {
+     "say": "Сохраняем GIF: файл ложится в Приёмную, оттуда на доску (на доске он анимирован)."
+    },
+    {
+     "ui": "click",
+     "target": "gif-export-gif",
+     "wait": 3500
+    },
+    {
+     "ui": "click",
+     "target": "gif-to-board",
+     "wait": 4000
+    },
+    {
+     "say": "Гифка на доске. Тот же набор можно сохранить в MP4 или WebM для соцсетей. ✓"
+    }
+   ]
+  },
+  {
+   "id": "media-meme",
+   "icon": "😂",
+   "title": "Медиа: мем из кадров видео",
+   "subtitle": "Кадры видео → «Гифка / мем» → подпись сверху и снизу → GIF",
+   "steps": [
+    {
+     "say": "Берём видео, ставим на паузу на смешных моментах."
+    },
+    {
+     "files": [
+      "shakshuka-cooking.mp4"
+     ],
+     "category": "other"
+    },
+    {
+     "ui": "click",
+     "target": "ik-to-video",
+     "wait": 2500
+    },
+    {
+     "cmd": "video.capture",
+     "args": {
+      "t": 13
+     },
+     "wait": 800
+    },
+    {
+     "cmd": "video.capture",
+     "args": {
+      "t": 15
+     },
+     "wait": 800
+    },
+    {
+     "cmd": "video.capture",
+     "args": {
+      "t": 17
+     },
+     "wait": 1200
+    },
+    {
+     "ui": "click",
+     "target": "md-make",
+     "wait": 2500
+    },
+    {
+     "say": "В «Что сделать» выбираем «Гифка / мем»."
+    },
+    {
+     "ui": "click",
+     "target": "md-out-gif",
+     "wait": 3000
+    },
+    {
+     "cmd": "gif.set",
+     "args": {
+      "top": "Когда сказал «одно яйцо»",
+      "bottom": "а разбил три",
+      "delay": 500,
+      "boomerang": false,
+      "textSize": 8,
+      "grayscale": false
+     },
+     "wait": 4000
+    },
+    {
+     "ui": "click",
+     "target": "gif-export-gif",
+     "wait": 3500
+    },
+    {
+     "ui": "click",
+     "target": "gif-to-board",
+     "wait": 4000
+    },
+    {
+     "say": "Мем готов: из видео без отдельного редактора. ✓"
+    }
+   ]
+  },
+  {
+   "id": "media-level",
+   "icon": "📐",
+   "title": "Медиа: выровнять горизонт и обрезать",
+   "subtitle": "Кривое фото → «Уровень» по линии горизонта → края подрезаны → кадрирование → доска",
+   "steps": [
+    {
+     "say": "Фото с заваленным горизонтом. Открываем в редакторе."
+    },
+    {
+     "files": [
+      "horizon-tilted.jpg"
+     ],
+     "category": "photos"
+    },
+    {
+     "ui": "click",
+     "target": "ik-to-picture",
+     "wait": 1500
+    },
+    {
+     "ui": "click",
+     "target": "pc-tool-level",
+     "wait": 1200
+    },
+    {
+     "say": "Инструмент «Уровень»: проводим линию по горизонту. Появляется сетка."
+    },
+    {
+     "cmd": "picture.level",
+     "args": {
+      "line": {
+       "a": {
+        "x": 80,
+        "y": 528
+       },
+       "b": {
+        "x": 1520,
+        "y": 692
+       }
+      }
+     },
+     "wait": 3500
+    },
+    {
+     "say": "Картинка повернулась на нужный угол, а края подрезались сами, без пустых углов. Тонко поправить можно ползунком или кнопками ±0,5°."
+    },
+    {
+     "say": "Теперь обрезаем по ровному кадру."
+    },
+    {
+     "cmd": "picture.crop",
+     "args": {
+      "rect": {
+       "x": 120,
+       "y": 140,
+       "w": 1360,
+       "h": 820
+      }
+     },
+     "wait": 2500
+    },
+    {
+     "ui": "click",
+     "target": "pc-to-board",
+     "wait": 4000
+    },
+    {
+     "say": "Ровный горизонт, кадр обрезан, на доске. ✓"
+    }
+   ]
+  },
+  {
+   "id": "billing-contractor",
+   "icon": "🧾",
+   "title": "Подрядчик: смета → предложение → счёт с QR → оплата",
+   "subtitle": "Один раз профиль и кошелёк → смета по часам → КП → счёт с QR (USDC + карта) → агент отправляет и напоминает",
+   "steps": [
+    {
+     "say": "Майк — подрядчик в Остине. Один раз заполняет профиль: имя, контакты и куда ему платить. EVM-адрес проверяется по контрольной сумме, рядом сразу QR."
+    },
+    {
+     "cmd": "billing.profile.set",
+     "args": {
+      "name": "Rivera Renovations LLC",
+      "email": "mike@riverareno.com",
+      "phone": "+1 512 555 0142",
+      "address": "1208 Oak St, Austin, TX 78704",
+      "taxId": "EIN 87-1234567",
+      "evm": {
+       "address": "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+       "network": "base",
+       "token": "USDC",
+       "qr": "request"
+      },
+      "cardLink": "https://buy.stripe.com/test_00g5kE",
+      "bank": "Chase · Routing 111000614\nAccount 2900 1188 77",
+      "currency": "USD",
+      "docLang": "en",
+      "ifEmpty": true
+     },
+     "wait": 5500
+    },
+    {
+     "say": "📱 Агент (симуляция): считаю ремонт ванной: работа по часам и материалы."
+    },
+    {
+     "cmd": "estimate.create",
+     "args": {
+      "template": "services",
+      "title": "Bathroom remodel, 65 sq ft",
+      "currency": "USD",
+      "items": [
+       {
+        "group": "Labor",
+        "name": "Demolition and haul-away",
+        "qty": 6,
+        "unit": "h",
+        "unitPrice": 75,
+        "covers": {
+         "value": 6,
+         "unit": "h"
+        }
+       },
+       {
+        "group": "Labor",
+        "name": "Tile installation, floor and shower walls",
+        "qty": 18,
+        "unit": "h",
+        "unitPrice": 85,
+        "covers": {
+         "value": 18,
+         "unit": "h"
+        }
+       },
+       {
+        "group": "Materials",
+        "name": "Porcelain tile 12x24",
+        "qty": 9,
+        "unit": "box",
+        "unitPrice": 42.5,
+        "basis": "65 sq ft + 10% waste, 8 sq ft/box"
+       },
+       {
+        "group": "Materials",
+        "name": "Thinset, grout, waterproofing membrane",
+        "qty": 1,
+        "unit": "set",
+        "unitPrice": 236
+       }
+      ],
+      "assumptions": [
+       "Plumbing fixtures supplied by the client",
+       "Payment: 50% on start, 50% on completion"
+      ]
+     },
+     "wait": 4500
+    },
+    {
+     "say": "Из сметы одним шагом — коммерческое предложение клиентке. Номер, сроки и итог портал ставит сам."
+    },
+    {
+     "cmd": "invoice.from_estimate",
+     "args": {
+      "estimateId": "$estimate",
+      "kind": "quote",
+      "client": {
+       "name": "Sarah Mitchell",
+       "email": "sarah.m@example.com",
+       "address": "44 Barton Hills Dr, Austin, TX"
+      }
+     },
+     "wait": 2500
+    },
+    {
+     "ui": "click",
+     "target": "bl-preview",
+     "wait": 6500
+    },
+    {
+     "say": "Клиентка согласилась. Делаем счёт: внизу QR на USDC в сети Base с суммой, адрес одной строкой (копируется), второй QR — оплата картой, и банк."
+    },
+    {
+     "cmd": "invoice.from_estimate",
+     "args": {
+      "estimateId": "$estimate",
+      "kind": "invoice",
+      "client": {
+       "name": "Sarah Mitchell",
+       "email": "sarah.m@example.com",
+       "address": "44 Barton Hills Dr, Austin, TX"
+      }
+     },
+     "wait": 1500
+    },
+    {
+     "ui": "click",
+     "target": "bl-preview",
+     "wait": 7000
+    },
+    {
+     "say": "Отправить можно с телефона (поделиться PDF), письмом или попросить агента отправить с вашей почты. Агент получает готовое письмо и PDF."
+    },
+    {
+     "cmd": "invoice.send",
+     "args": {
+      "invoiceId": "$invoice"
+     },
+     "wait": 2500
+    },
+    {
+     "cmd": "invoice.status",
+     "args": {
+      "invoiceId": "$invoice",
+      "status": "sent"
+     },
+     "wait": 1500
+    },
+    {
+     "say": "Прошло три недели, оплаты нет. Портал сам видит просрочку и предлагает напомнить — вежливый текст уже готов."
+    },
+    {
+     "cmd": "invoice.patch",
+     "args": {
+      "invoiceId": "$invoice",
+      "dueDate": "2026-10-20"
+     },
+     "wait": 3500
+    },
+    {
+     "cmd": "invoice.send",
+     "args": {
+      "invoiceId": "$invoice",
+      "what": "remind",
+      "after": 20
+     },
+     "wait": 2500
+    },
+    {
+     "say": "Клиентка заплатила по QR в USDC. Отмечаем оплату — статус и история сохранились."
+    },
+    {
+     "cmd": "invoice.status",
+     "args": {
+      "invoiceId": "$invoice",
+      "status": "paid",
+      "via": "USDC on Base"
+     },
+     "wait": 3500
+    },
+    {
+     "say": "Смета → предложение → счёт → деньги. Без Excel и без отдельного сервиса счетов. ✓"
+    }
+   ]
+  },
+  {
+   "id": "family-kids",
+   "icon": "🧒",
+   "title": "Семья: кружки детей → деньги, время → план на день",
+   "subtitle": "Агент собирает кружки двух детей → в месяц / в год / часов в неделю → план дня для мамы с метками",
+   "steps": [
+    {
+     "say": "Семья в Остине, двое детей. Мама говорит агенту: «Посчитай, сколько стоят кружки и сколько времени они съедают»."
+    },
+    {
+     "cmd": "estimate.create",
+     "args": {
+      "template": "kids",
+      "title": "Кружки: Маша и Тимур",
+      "currency": "USD",
+      "target": {
+       "label": "Детей",
+       "value": 2,
+       "unit": ""
+      },
+      "items": [
+       {
+        "group": "Маша",
+        "name": "Плавание — абонемент",
+        "who": "Маша",
+        "period": "month",
+        "qty": 1,
+        "unit": "мес",
+        "unitPrice": 140,
+        "hours": 14,
+        "schedule": "Пн, Ср, Пт 17:00–18:00",
+        "place": "Austin YMCA, 1100 W Rundberg Ln",
+        "duties": "возить, сушить форму"
+       },
+       {
+        "group": "Маша",
+        "name": "Плавание — очки и шапочка",
+        "who": "Маша",
+        "period": "once",
+        "qty": 1,
+        "unit": "компл.",
+        "unitPrice": 35
+       },
+       {
+        "group": "Тимур",
+        "name": "Футбол",
+        "who": "Тимур",
+        "period": "month",
+        "qty": 1,
+        "unit": "мес",
+        "unitPrice": 95,
+        "hours": 12,
+        "schedule": "Вт, Чт, Сб 17:30–19:00",
+        "place": "Krieg Fields, 501 Bastrop Hwy",
+        "duties": "возить; дежурство с водой раз в месяц"
+       },
+       {
+        "group": "Тимур",
+        "name": "Футбол — турнирный взнос",
+        "who": "Тимур",
+        "period": "year",
+        "qty": 1,
+        "unit": "год",
+        "unitPrice": 180,
+        "due": "$today+2",
+        "status": "missing"
+       }
+      ],
+      "assumptions": [
+       "Маша: 140 $/мес, ~3,2 ч в неделю с дорогой",
+       "Тимур: 110 $/мес с учётом взноса, ~2,8 ч в неделю",
+       "Вт и Чт — оба ребёнка в разных местах: договориться о карпуле с семьёй Лопес"
+      ]
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Портал сам считает: сколько в месяц и в год, что разово, и сколько часов в неделю семья тратит на кружки. У каждой строки — кто, когда, где и что делать родителям.",
+     "wait": 6500
+    },
+    {
+     "cmd": "day.from_estimate",
+     "args": {
+      "estimateId": "$estimate",
+      "days": 7
+     },
+     "wait": 800
+    },
+    {
+     "say": "📱 Агент (симуляция): добавляю утро и дела на сегодня."
+    },
+    {
+     "cmd": "day.add",
+     "args": {
+      "entries": [
+       {
+        "date": "$today",
+        "time": "08:10",
+        "title": "Отвезти детей в школу",
+        "who": "Маша, Тимур",
+        "place": "Barton Hills Elementary, 2108 Barton Hills Dr",
+        "forWhom": "Мама"
+       },
+       {
+        "date": "$today",
+        "time": "10:30",
+        "title": "Costco",
+        "why": "продукты на неделю + подарок Лизе на субботу",
+        "buy": [
+         "молоко x2",
+         "курица",
+         "фрукты",
+         "набор LEGO"
+        ],
+        "place": "Costco, 10401 Research Blvd",
+        "amount": 210,
+        "currency": "USD",
+        "forWhom": "Мама"
+       },
+       {
+        "date": "$today",
+        "time": "13:00",
+        "title": "Позвонить стоматологу",
+        "why": "перенести приём Тимура на пятницу",
+        "phone": "+1 512 555 0199",
+        "forWhom": "Мама"
+       }
+      ],
+      "forWhom": "Мама"
+     },
+     "wait": 6000
+    },
+    {
+     "say": "Это итоговый документ мамы: по пунктам, с метками — 💳 оплатить, 📍 место (открывается в картах), 🛒 купить, 👧 кто, 📞 позвонить. Кнопка «PDF на телефон» даёт файл под экран телефона или планшета в машине.",
+     "wait": 8000
+    },
+    {
+     "say": "Деньги, время и маршрут — на одном экране. ✓"
+    }
+   ]
+  },
+  {
+   "id": "family-bills",
+   "icon": "💡",
+   "title": "Дом: коммуналка → что оплатить → в план дня",
+   "subtitle": "Счета за свет, газ, воду, интернет → к оплате и сроки → «газ +32%» → напоминания в плане дня",
+   "steps": [
+    {
+     "say": "Счета приходят на почту и бумагой. Агент читает их и собирает в одну смету «Счета дома»."
+    },
+    {
+     "cmd": "estimate.create",
+     "args": {
+      "template": "utilities",
+      "title": "Счета дома — этот месяц",
+      "currency": "USD",
+      "items": [
+       {
+        "name": "Austin Energy — электричество",
+        "period": "month",
+        "qty": 1,
+        "unit": "счёт",
+        "unitPrice": 164.2,
+        "due": "$today+1",
+        "basis": "960 kWh × $0.171",
+        "status": "missing"
+       },
+       {
+        "name": "Texas Gas Service — газ",
+        "period": "month",
+        "qty": 1,
+        "unit": "счёт",
+        "unitPrice": 48.9,
+        "due": "$today+4",
+        "status": "check",
+        "note": "+32% к прошлому месяцу"
+       },
+       {
+        "name": "Austin Water — вода и канализация",
+        "period": "month",
+        "qty": 1,
+        "unit": "счёт",
+        "unitPrice": 87.4,
+        "due": "$today-3",
+        "status": "ok"
+       },
+       {
+        "name": "Spectrum — интернет",
+        "period": "month",
+        "qty": 1,
+        "unit": "счёт",
+        "unitPrice": 79.99,
+        "due": "$today",
+        "status": "missing",
+        "note": "autopay выключен"
+       },
+       {
+        "name": "Страховка дома (State Farm)",
+        "period": "year",
+        "qty": 1,
+        "unit": "полис",
+        "unitPrice": 1860,
+        "due": "$today+40",
+        "status": "missing"
+       }
+      ],
+      "assumptions": [
+       "Газ +32%: похолодало; проверить термостат и подключить budget billing — ровный платёж весь год",
+       "Свет: тариф Time-of-Use дешевле, если стирать и сушить после 19:00",
+       "Интернет: включить autopay — Spectrum даёт скидку $5/мес"
+      ]
+     },
+     "wait": 4500
+    },
+    {
+     "say": "Портал показывает: сколько в месяц и в год, сколько ещё оплатить и ближайший срок. Оплаченное — зелёным, подозрительное — «проверить».",
+     "wait": 6500
+    },
+    {
+     "say": "Одна кнопка — и неоплаченные счета с ближайшими сроками попадают в план дня с меткой 💳."
+    },
+    {
+     "cmd": "day.gather",
+     "args": {
+      "days": 7
+     },
+     "wait": 1000
+    },
+    {
+     "cmd": "day.open",
+     "args": {
+      "date": "$today"
+     },
+     "wait": 6000
+    },
+    {
+     "say": "Счета разобраны, сроки — в календаре дня. ✓"
+    }
+   ]
+  },
+  {
+   "id": "fast",
+   "icon": "⚡",
+   "title": "Быстро: 3 фото → один PDF",
+   "subtitle": "Бросил файлы → «Что получить?» → одна кнопка → скачать. Без лишних экранов",
+   "steps": [
+    {
+     "say": "Человеку просто нужно отправить сканы одним файлом. Он бросает три фото в окно браузера."
+    },
+    {
+     "fast": [
+      "receipt-nikora-07.jpg",
+      "receipt-gorgia-09.jpg",
+      "kitchen-before.jpg"
+     ],
+     "wait": 2500
+    },
+    {
+     "say": "Открывается одно окно с одним вопросом: «Что получить?». Кнопки только те, что подходят этим файлам.",
+     "wait": 4500
+    },
+    {
+     "ui": "click",
+     "target": "fast-pdf",
+     "wait": 4000
+    },
+    {
+     "say": "Готово: один PDF, три страницы. Скачать или сразу отправить с телефона. Полная Приёмная — по ссылке внизу, если нужно больше.",
+     "wait": 6000
+    },
+    {
+     "ui": "close-fast",
+     "wait": 500
+    },
+    {
+     "say": "Так же: PDF → картинки, склеить, разделить, сжать, Word, текст, HEIC с iPhone → JPG. ✓"
+    }
+   ]
+  },
+  {
+   "id": "docs-versions",
+   "icon": "🔢",
+   "title": "Документ с номером: расписание поменялось → v2 → переслать",
+   "subtitle": "План дня D-…-v1 ушёл семье → футбол перенесли → бот выпускает v2 с пометками → пересылает Тимуру и мужу",
+   "steps": [
+    {
+     "say": "У мамы есть контакты семьи: Тимур (телефон) и муж (почта). Один раз."
+    },
+    {
+     "cmd": "docs.contacts",
+     "args": {
+      "set": [
+       {
+        "name": "Тимур",
+        "phone": "+1 512 555 0110"
+       },
+       {
+        "name": "Муж",
+        "email": "alex@example.com"
+       }
+      ]
+     },
+     "wait": 800
+    },
+    {
+     "cmd": "day.add",
+     "args": {
+      "entries": [
+       {
+        "date": "$today",
+        "time": "08:10",
+        "title": "Отвезти детей в школу",
+        "who": "Маша, Тимур",
+        "place": "Barton Hills Elementary, 2108 Barton Hills Dr",
+        "source": {
+         "kind": "agent",
+         "key": "demo-school"
+        }
+       },
+       {
+        "date": "$today",
+        "time": "13:00",
+        "title": "Позвонить стоматологу",
+        "phone": "+1 512 555 0199",
+        "source": {
+         "kind": "agent",
+         "key": "demo-dentist"
+        }
+       },
+       {
+        "date": "$today",
+        "time": "17:30",
+        "end": "19:00",
+        "title": "Футбол",
+        "who": "Тимур",
+        "place": "Krieg Fields, 501 Bastrop Hwy",
+        "why": "взять воду на команду",
+        "source": {
+         "kind": "agent",
+         "key": "demo-football"
+        }
+       }
+      ]
+     },
+     "wait": 1500
+    },
+    {
+     "say": "План выпускается документом с номером: D-…-v1. Его отправили Тимуру и мужу — это записано в истории."
+    },
+    {
+     "cmd": "docs.reissue_send",
+     "args": {
+      "kind": "day",
+      "date": "$today",
+      "to": [
+       "Тимур",
+       "Муж"
+      ],
+      "via": "agent"
+     },
+     "wait": 4500
+    },
+    {
+     "say": "Днём тренер пишет: из-за дождя футбол переносится на 18:00 и на другое поле. Мама говорит боту: «Поменяй расписание и перешли Тимуру и мужу»."
+    },
+    {
+     "cmd": "day.add",
+     "args": {
+      "entries": [
+       {
+        "date": "$today",
+        "time": "18:00",
+        "end": "19:30",
+        "title": "Футбол",
+        "who": "Тимур",
+        "place": "Zilker Park, Field 3",
+        "why": "взять воду на команду",
+        "source": {
+         "kind": "agent",
+         "key": "demo-football"
+        }
+       },
+       {
+        "date": "$today",
+        "time": "16:30",
+        "title": "Забрать форму из химчистки",
+        "place": "Cleaners, 1801 S Lamar Blvd",
+        "amount": 18,
+        "currency": "USD",
+        "source": {
+         "kind": "agent",
+         "key": "demo-cleaners"
+        }
+       }
+      ]
+     },
+     "wait": 4500
+    },
+    {
+     "say": "Портал сразу видит: после v1 изменилось. Новый номер обязателен — бот выпускает v2 с пометкой и пересылает."
+    },
+    {
+     "cmd": "docs.reissue_send",
+     "args": {
+      "kind": "day",
+      "date": "$today",
+      "to": [
+       "Тимур",
+       "Муж"
+      ],
+      "via": "agent",
+      "note": "Футбол перенесли из-за дождя"
+     },
+     "wait": 3000
+    },
+    {
+     "ui": "scroll",
+     "target": "doc-versions",
+     "wait": 5500
+    },
+    {
+     "say": "В PDF v2 сверху: «заменяет v1, что изменилось»; у футбола метка ИЗМЕНЕНО, у химчистки НОВОЕ. Старая версия осталась в истории — видно, кто какую получил. ✓"
+    }
+   ]
+  },
+  {
+   "id": "shop",
+   "icon": "🛍",
+   "title": "Мой магазин: витрина в одном файле",
+   "subtitle": "Примеры: сноуборд, украшения, вещи нескольких продавцов → «Собрать свой» → один HTML-файл в мессенджер",
+   "steps": [
+    {
+     "say": "Новая комната — «Мой магазин». Человек сразу видит готовые витрины и понимает, что можно сделать."
+    },
+    {
+     "cmd": "shop.open",
+     "args": {
+      "preset": "bakuriani"
+     },
+     "wait": 5500
+    },
+    {
+     "say": "Сноуборд Бакуриани — лаборатория, превращённая в шаблон: баннеры, услуги с ценами в USDC, корзина и оплата по QR.",
+     "wait": 5000
+    },
+    {
+     "cmd": "shop.open",
+     "args": {
+      "preset": "jewelry"
+     },
+     "wait": 4500
+    },
+    {
+     "say": "Украшения: у каждой вещи своё место — где посмотреть или забрать; ссылка открывает карту.",
+     "wait": 4500
+    },
+    {
+     "cmd": "shop.open",
+     "args": {
+      "preset": "market"
+     },
+     "wait": 4500
+    },
+    {
+     "say": "Вещи нескольких продавцов: у каждой вещи свой продавец и свой EVM-адрес. Корзина делится на отдельные QR — деньги идут прямо продавцу.",
+     "wait": 6000
+    },
+    {
+     "cmd": "shop.open",
+     "args": {
+      "preset": "car"
+     },
+     "wait": 4000
+    },
+    {
+     "say": "Хоть машина, хоть услуги мастера. Кнопка «Собрать свой» запускает 5 шагов: баннер → свой сервис → свой товар → EVM-адрес → упаковать.",
+     "wait": 6500
+    },
+    {
+     "say": "В конце — один HTML-файл: внутри фото, корзина и оплата, кабинета владельца нет. Отправили в мессенджер — человек открыл и увидел магазин, даже без интернета. ✓"
+    }
+   ]
+  },
+  {
+   "id": "shop-admin",
+   "icon": "🔐",
+   "title": "Админка магазина: данные, кошельки, бухгалтерия",
+   "subtitle": "Вход → мои данные → кошельки → новый сайт из пресета с моими данными → бухгалтерия → проверка по хешу",
+   "steps": [
+    {
+     "say": "У магазина есть админка: витрину настраиваете в конструкторе, а данные, кошельки и деньги — тут."
+    },
+    {
+     "cmd": "admin.open",
+     "args": {
+      "page": "home"
+     },
+     "wait": 2500
+    },
+    {
+     "say": "Пароль пока заглушка: кнопка «Войти» просто открывает панель.",
+     "wait": 1500
+    },
+    {
+     "cmd": "admin.unlock",
+     "wait": 1800
+    },
+    {
+     "cmd": "admin.profile.set",
+     "args": {
+      "firstName": "Гиорги",
+      "lastName": "Беридзе",
+      "business": "Гараж Гиорги",
+      "place": "Тбилиси, Ваке",
+      "telegram": "giorgi_garage",
+      "delivery": "Самовывоз из гаража"
+     }
+    },
+    {
+     "cmd": "admin.wallets.add",
+     "args": {
+      "label": "Основной",
+      "address": "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+     }
+    },
+    {
+     "cmd": "admin.wallets.add",
+     "args": {
+      "label": "Аня",
+      "address": "0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359"
+     }
+    },
+    {
+     "cmd": "admin.open",
+     "args": {
+      "page": "home"
+     },
+     "wait": 3500
+    },
+    {
+     "say": "Один раз заполнили — на главной видно, что готово. Теперь любой сайт за минуту.",
+     "wait": 3000
+    },
+    {
+     "cmd": "shop.compose",
+     "args": {
+      "about": "покрышки из гаража",
+      "replace": true,
+      "items": [
+       {
+        "title": "Michelin 205/55 R16, 4 шт",
+        "price": 120
+       },
+       {
+        "title": "Зимние Nokian R15",
+        "price": 90
+       }
+      ]
+     },
+     "wait": 4500
+    },
+    {
+     "say": "Контакты, город и основной кошелёк подставились сами — без повторного ввода.",
+     "wait": 3500
+    },
+    {
+     "cmd": "admin.open",
+     "args": {
+      "page": "wallets"
+     },
+     "wait": 3500
+    },
+    {
+     "cmd": "admin.open",
+     "args": {
+      "page": "hash"
+     },
+     "wait": 2500
+    },
+    {
+     "say": "Покупатель потерял номер заказа? Вставьте хеш транзакции — админка скажет, сколько пришло и на какой кошелёк. ✓"
+    }
+   ]
+  },
+  {
+   "id": "bazaar",
+   "icon": "🧺",
+   "title": "Базар: покупаю из прайс-листов и каталогов",
+   "subtitle": "Отдельно от «Моего магазина»: лавки из присланных HTML + каталоги, которые приносит агент; поиск по всем; оплата USDC",
+   "steps": [
+    {
+     "say": "Базар — сторона покупателя. Сюда бросают присланные прайс-листы (HTML из «Моего магазина»), и каждый становится лавкой."
+    },
+    {
+     "cmd": "bazaar.open",
+     "args": {
+      "tab": "stalls"
+     },
+     "wait": 2500
+    },
+    {
+     "say": "Каталоги сервисов приносит агент (MCP / UCP / API). Здесь — демо-лавка с выдуманными товарами.",
+     "wait": 2500
+    },
+    {
+     "cmd": "bazaar.stall.add",
+     "args": {
+      "name": "Демо-каталог (пример)",
+      "protocol": "manual",
+      "note": "Демо: выдуманные товары, чтобы показать три маршрута оплаты.",
+      "items": [
+       {
+        "id": "pot",
+        "title": "Кастрюля 5 л, нержавейка (демо)",
+        "price": 25,
+        "pay": {
+         "kind": "evm",
+         "to": "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+        }
+       },
+       {
+        "id": "sofa",
+        "title": "Диван трёхместный (демо)",
+        "price": 400,
+        "pay": {
+         "kind": "link",
+         "url": "https://example.com/sofa"
+        }
+       },
+       {
+        "id": "api",
+        "title": "Прогноз погоды API, 1 запрос (демо)",
+        "price": "0.01",
+        "pay": {
+         "kind": "x402",
+         "url": "https://example.com/x402/weather"
+        }
+       }
+      ]
+     },
+     "wait": 3500
+    },
+    {
+     "cmd": "bazaar.search",
+     "args": {
+      "q": "кастрюля",
+      "show": true
+     },
+     "wait": 3000
+    },
+    {
+     "say": "Один поиск по всем лавкам. У каждого товара свой маршрут: платит человек (USDC), у продавца по ссылке, или агент (x402).",
+     "wait": 3000
+    },
+    {
+     "cmd": "bazaar.order",
+     "args": {
+      "stall": "Демо-каталог (пример)",
+      "items": [
+       {
+        "item": "pot"
+       }
+      ]
+     },
+     "wait": 4500
+    },
+    {
+     "say": "Счёт с QR и номером заказа в сумме. Оплатили с Coinbase Wallet или MetaMask — Базар найдёт платёж, или вставьте хеш.",
+     "wait": 3500
+    },
+    {
+     "cmd": "bazaar.open",
+     "args": {
+      "tab": "connect"
+     },
+     "wait": 4500
+    },
+    {
+     "say": "«Подключения»: у каждого источника свой стандарт и кто платит. «Агент и лимиты»: агент платит только в ваших рамках. ✓"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+.dv{background:#ffffffd0;border-radius:14px;padding:9px 11px;margin-top:10px;font:13px system-ui,sans-serif;color:#203c4a;display:flex;flex-direction:column;gap:8px;position:relative}
+.dv button{font:inherit;color:inherit;cursor:pointer;border:1px solid #d9dccf;background:#fff;border-radius:9px;padding:6px 11px}
+.dv button:disabled{opacity:.45;cursor:default}
+.dv-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.dv-no{flex:1;min-width:200px}.dv-no small{opacity:.7;margin-left:4px}
+.dv .dv-primary{background:#3a4ea0;border-color:#3a4ea0;color:#fff;font-weight:600}
+.dv-pending{background:#fff4d6;border:1px solid #e0a526;border-radius:10px;padding:8px 10px}
+.dv-pending ul{margin:4px 0 6px;padding-left:18px;font-size:12.5px}
+.dv-issue{display:flex;gap:6px}.dv-issue input{flex:1;border:1px solid #e3cf9e;border-radius:8px;padding:6px 8px;font:12.5px system-ui}
+.dv-send{border-top:1px solid #20394f14;padding-top:8px;display:flex;flex-direction:column;gap:7px}
+.dv-people{display:flex;flex-wrap:wrap;gap:5px;align-items:center}.dv-people button{border-radius:999px;display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;padding:4px 12px}
+.dv-people button small{font-size:10px;opacity:.6}.dv-people button[aria-pressed=true]{background:#203c4a!important;color:#fff!important;border-color:#203c4a}
+.dv-add{display:flex;gap:5px;flex-wrap:wrap}.dv-add input{border:1px solid #e0ddd4;border-radius:8px;padding:5px 8px;font:12.5px system-ui;width:140px}
+.dv-via{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.dv-via span{font-size:12px;opacity:.75;margin-right:auto}
+.dv-hist summary{cursor:pointer;font-size:12.5px;opacity:.8}
+.dv-h{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:8px;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid #20394f10}
+.dv-h small{opacity:.6}.dv-h span{opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dv-h em{font-style:normal;opacity:.7;font-size:11.5px}.dv-h button{padding:2px 8px}
+.dv-flash{position:absolute;right:10px;top:-14px;background:#203c4a;color:#fff;border-radius:999px;padding:4px 12px;font-size:12px}
+.dv-fmt{display:inline-flex;border:1px solid #d9dccf;border-radius:9px;overflow:hidden}.dv .dv-fmt button{border:0;border-radius:0;padding:6px 10px;background:#fff}.dv .dv-fmt button[aria-pressed=true]{background:#203c4a!important;color:#fff!important}
+/* The room styles every pressed button as white glass; selected choices here must stay dark to read as selected. */
+.native-clouds .nc-workshop .nw-shell :is(.dv-fmt,.dv-people,.dy-people,.bl-kind) button[aria-pressed=true]{background:#203c4a!important;color:#fff!important;border-color:#203c4a!important;box-shadow:none}
+.native-clouds .nc-workshop .nw-shell .bl-plans button[aria-pressed=true]{background:#fff!important;border-color:#3a4ea0!important;box-shadow:0 0 0 2px #3a4ea055!important}
+.native-clouds .nc-workshop .nw-shell .dy-n[aria-pressed=true]{background:#2e9d63!important;border-color:#2e9d63!important;color:#fff!important}
+.native-clouds .nc-workshop .nw-shell .dy-tagpick button[aria-pressed=true]{background:#fff!important;opacity:1}

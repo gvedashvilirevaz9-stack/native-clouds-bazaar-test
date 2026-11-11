@@ -1,0 +1,87 @@
+/* Local embedded Garage presentation only. Original Garage selectors are untouched. */
+.nc-room.nc-workshop{inset:38px 20px 94px;overflow:visible;pointer-events:none;animation:none}
+.nw-shell{--nw-glass:rgba(243,249,255,.22);--nw-line:rgba(255,255,255,.5);width:100%;height:100%;padding:0!important;margin:0 auto!important;max-width:1600px!important;background:transparent!important;color:#203c4a;display:flex;flex-direction:column;gap:10px;pointer-events:none;font-family:system-ui,sans-serif}
+.nw-shell button{cursor:pointer;min-height:32px;color:inherit;font-family:inherit}
+.nw-shell button:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.nw-context,.nw-work{pointer-events:auto;border:1px solid var(--nw-line);background:var(--nw-glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 12px 36px #20394f0d;border-radius:18px}
+.nw-context{flex-shrink:0;position:relative;z-index:4;padding:12px 18px 14px}
+.nw-heading{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.18em;color:#345360;gap:10px}
+.nw-heading small{font-size:9px;opacity:.65}.nw-heading>button{position:absolute;right:12px;top:9px;border:0;border-radius:10px;width:32px;background:#ffffff55;font-size:18px;z-index:1}
+.nw-shell .gr-calblock{background:transparent!important;border:0;box-shadow:none;margin:8px 0 0;padding:0;color:inherit;display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,1.16fr) minmax(0,1fr);grid-template-rows:minmax(46px,auto) minmax(44px,auto);column-gap:20px;row-gap:10px;align-items:center}
+.nw-shell .gr-cal-top{grid-column:2;grid-row:1;justify-content:center;flex-wrap:nowrap;gap:clamp(8px,1vw,16px);margin:0;min-width:0}
+.nw-clock{display:flex;flex-direction:column;align-items:flex-start;gap:3px;white-space:nowrap;min-width:95px}.nw-clock time{font-size:clamp(32px,2.7vw,44px);line-height:1;font-weight:300;letter-spacing:-.04em;font-variant-numeric:tabular-nums}.nw-clock span{font-size:12px;line-height:1.2;opacity:.8}
+.nw-shell .gr-datestrip{gap:4px;min-width:0;flex:0 1 auto}.nw-shell .gr-day{min-width:clamp(30px,2.6vw,44px);height:56px;padding:6px 4px;border-radius:11px}.nw-shell .gr-day.on{background:#ffffff99;color:#183e37;border-color:#ffffffb0}.nw-shell .gr-day small{font-size:clamp(10px,.7vw,12px);line-height:1.2}.nw-shell .gr-day strong{font-size:clamp(16px,1.125vw,18px);line-height:1.2}
+.nw-shell .gr-datestrip>button:not(.gr-day){border:0;background:transparent;color:inherit;width:24px;flex:0 0 24px}.nw-shell .gr-search-btn{display:none}
+.nw-shell .gr-presets{grid-column:1;grid-row:1;align-self:center;margin:0;gap:5px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.nw-shell .gr-presets button{justify-content:center;background:#ffffff35;border:1px solid #ffffff66;border-radius:10px;font-size:12px;white-space:normal;line-height:1.25;min-height:40px;padding:6px 9px;color:inherit}.nw-shell .gr-presets button span{display:none}.nw-shell .gr-presets button.on{background:#ffffffc9;color:#203c4a;border-color:#fff;box-shadow:0 0 16px #ffffff55}.nw-shell .gr-chips{grid-column:1;grid-row:2;min-width:0;margin:0;gap:5px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#ffffff60 transparent}.nw-shell .gr-chips button{flex:1 1 0;min-width:0;max-width:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#ffffff35;border:1px solid #ffffff50;color:inherit;border-radius:8px;padding:4px 7px;font-size:11px;min-height:29px}.nw-shell .gr-chips button.on{background:#ffffff9c}.nw-shell .gr-preset-hint{display:none}
+/* One surface, two rows, three zones. The upper-right cell stays free for future services. */
+.nw-shell:not([data-workshop-service=notebook]) .nw-context :is(.gr-presets,.gr-chips){visibility:hidden;pointer-events:none}
+.nw-services{display:contents}
+.nw-service-tabs{grid-column:2;grid-row:2;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));align-items:stretch;gap:6px;min-width:0}
+.nw-utilities{grid-column:3;grid-row:2;display:flex;align-items:center;justify-content:flex-end;gap:5px;min-width:0;flex-wrap:wrap}
+.nw-services button{border:1px solid transparent;border-radius:11px;background:transparent;font-size:13px;padding:8px 14px;white-space:nowrap}.nw-service-tabs button{min-height:44px;padding:8px 10px}.nw-service-tabs button span{margin-right:8px;opacity:.7}.nw-service-tabs button[aria-pressed=true]{background:#ffffffa0;box-shadow:0 2px 12px #31536b0c;border-color:#fff8}.nw-utilities button{font-size:12px;opacity:.85}.nw-services button:hover,.nw-services button[aria-expanded=true]{background:#ffffff88}
+.nw-utility-panel{position:absolute;right:10px;top:calc(100% + 8px);width:360px;max-width:calc(100vw - 48px);max-height:55vh;overflow:auto;overscroll-behavior:contain;background:#edf3f4f2;border:1px solid #fff;border-radius:16px;padding:12px;box-shadow:0 15px 45px #24425526}
+.nw-shell .nw-utility-panel .gr-side{border:0;background:transparent;padding:16px 0 0;width:100%}.nw-shell .nw-utility-close{float:right;padding:0;min-width:30px}.nw-utility-panel .gr-side li .t{color:#29434a}.nw-utility-panel .gr-side li{background:#ffffff70}
+.nw-work{width:clamp(620px,65vw,1120px);max-width:100%;flex:1;min-height:240px;align-self:center;display:flex;flex-direction:column;overflow:hidden;position:relative;transition:width .25s ease;background:#ffffff24}
+.nw-wide .nw-work{width:100%}.nw-full .nw-work{position:absolute;inset:0;width:100%;height:100%;align-self:stretch;max-width:none;z-index:6}.nw-full .nw-context,.nw-full .nw-services{visibility:hidden}
+.nw-work-header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;gap:12px;border-bottom:1px solid #ffffff40;flex-shrink:0}.nw-work-header strong{font-size:13px;font-weight:600}.nw-work-header small{display:block;font-size:10px;opacity:.65;margin-top:2px}.nw-sizes{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;min-width:0}.nw-sizes button{border:1px solid #ffffff77;background:#ffffff44;padding:5px 10px;border-radius:9px;font-size:11px}.nw-sizes button[aria-pressed=true]{background:#ffffffc9;color:#203c4a;box-shadow:0 0 16px #ffffff55}
+.nw-body{position:relative;flex:1;min-height:0;overflow:auto;padding:12px;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#526a7b77 transparent}
+.nw-shell .gr-chrome{background:transparent!important;padding:6px 12px;border:0;border-bottom:1px solid #ffffff44;border-radius:0;flex-shrink:0}.nw-shell .gr-chrome-tabs,.nw-shell .gr-chrome-date{display:none}.nw-shell .gr-chrome-row2{grid-template-columns:1fr auto;min-height:30px}.nw-shell .gr-chrome-slot.gr-chrome-date{display:none}.nw-shell .gr-plate{background:#ffffff55;border-color:#ffffff88;color:#234238;border-radius:8px;font-family:inherit}.nw-shell .gr-btn-create{background:#ffffffc9;color:#203c4a;box-shadow:0 0 16px #ffffff55}
+.nw-shell .gr-board-wrap{height:100%;min-height:300px}.nw-shell .gr-vp{min-height:280px;background-color:transparent}.nw-shell .gr-toolbar{background:#ffffff30;border-color:#ffffff66;gap:4px;padding:6px;border-radius:10px 10px 0 0}.nw-shell .gr-toolbar button{font-size:11px;min-height:28px}.nw-shell .gr-board-wrap.is-full{position:absolute;inset:0;z-index:8;background:#cad9e6f5}
+.nw-shell .gr-page,.nw-shell .gr-notebook{background:transparent;border-color:#ffffff50;box-shadow:none}.nw-shell .gr-page-editor{background:#ffffff38!important;min-height:260px;border-color:#ffffff44;color:#203c4a}.nw-shell .gr-white-sheet:empty:before{color:#3e5a68}.nw-shell [contenteditable],.nw-shell textarea{user-select:text;-webkit-user-select:text}.nw-shell .gr-page-tools{flex-wrap:wrap}
+.nw-library{padding:0;overflow:visible}.native-clouds .nw-library .ps-w{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0;max-height:none;transform:none;zoom:1}.native-clouds .nw-library .ps-w-b{zoom:1!important;min-height:0}.native-clouds .nw-library .ps-w-h{display:none}.native-clouds .nw-library .ask-topbar{opacity:1!important;pointer-events:auto!important;flex-wrap:wrap;gap:5px;background:#ffffff38!important}.nw-library .ps-w-rb,.nw-library .ps-w-rs{display:none}.nw-library .nc-courier{left:50%!important;top:10%!important;translate:-50% 0;width:min(75%,500px);z-index:9}.nw-library .nc-courier img{max-height:260px}.nw-library-open{display:block;margin:80px auto;padding:16px 25px;background:#ffffff80;border:1px solid #fff;border-radius:12px}.nw-library .hiw-frame{min-height:100%}
+@media(min-width:1900px){.nw-shell{max-width:1800px!important}.nw-context{padding:13px 22px 16px}.nw-work{width:1120px}.nw-wide .nw-work,.nw-full .nw-work{width:100%}}
+@media(max-width:1100px){.nc-room.nc-workshop{inset:38px 12px 90px}.nw-shell .gr-calblock{grid-template-columns:minmax(0,1fr) minmax(390px,1fr);column-gap:14px}.nw-utilities{grid-column:1/-1;grid-row:3}.nw-shell .gr-cal-top{gap:8px}.nw-shell .gr-presets button{font-size:11px}.nw-work{width:80vw}}
+@media(max-width:700px){.nc-room.nc-workshop{inset:38px 7px 86px}.nw-shell{gap:7px}.nw-context{padding:9px 10px}.nw-shell .gr-calblock{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;gap:8px}.nw-shell .gr-presets{grid-column:1;grid-row:1;gap:4px;padding-right:27px}.nw-shell .gr-chips{grid-column:1;grid-row:2}.nw-shell .gr-cal-top{grid-column:1;grid-row:3;gap:7px}.nw-service-tabs{grid-column:1;grid-row:4}.nw-utilities{grid-column:1;grid-row:5}.nw-clock{min-width:55px}.nw-clock time{font-size:28px}.nw-clock span{font-size:10px}.nw-shell .gr-datestrip{overflow:auto;width:auto}.nw-shell .gr-day{min-width:24px;padding:4px 3px}.nw-shell .gr-presets button{font-size:10px;padding:4px 8px;min-height:34px}.nw-services button{font-size:11px;padding:6px 8px}.nw-work{width:100%}.nw-work-header{padding:8px;align-items:flex-start}.nw-work-header small{max-width:160px}.nw-sizes button{padding:4px 6px;font-size:10px}.nw-body{padding:6px}.nw-library{padding:0}.nw-utility-panel{right:0}}
+@media(prefers-reduced-motion:reduce){.nw-work{transition:none}}
+.nw-library .hiw-frame{min-height:0}
+.native-clouds .nw-library :is(.ask-topbar,.ask-menu){color:#203c4a!important;background:#ffffff38!important}
+.native-clouds .nw-library .ask-menu button{color:#203c4a!important;text-shadow:none}
+.native-clouds .nw-library .ask-menu button[aria-pressed=true]{background:#ffffffaa!important;border-color:#ffffff99}
+
+/* Workshop-only white controls. Do not recolor the original Garage or diagram artwork. */
+.native-clouds .nc-workshop .nw-shell :is(button.on,button[aria-pressed=true],.gr-btn-create,.gr-btn-primary,.gr-btn-black,.gr-chip.ok,.gr-btn-up){background:#ffffffc9!important;border-color:#fff!important;color:#203c4a!important;box-shadow:0 0 16px #ffffff55}
+.nw-shell button:focus-visible{outline-color:#fff!important;box-shadow:0 0 16px #ffffff88}
+.nw-shell .gr-tag{background:#fff;color:#203c4a}.nw-shell .gr-pol.by-agent,.nw-shell .gr-agent-slot{border-color:#fff;outline-color:#fff}
+.nw-work-header{position:relative;z-index:12;flex-wrap:wrap;overflow:visible}.nw-work-title{min-width:130px}
+.nw-body{z-index:0}
+.nw-global-library{position:relative}.nw-provider-panel{position:absolute;top:calc(100% + 10px);right:0;width:310px;max-width:calc(100vw - 50px);padding:12px;background:#eaf1fcf5;border:1px solid #fff;border-radius:14px;box-shadow:0 15px 40px #203c4a22;color:#203c4a;z-index:20}
+.nw-provider-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.nw-provider-title button{min-width:30px}
+.nw-provider-panel .ask-top-l{display:flex;flex-wrap:wrap;gap:6px}.nw-provider-panel .ask-top-l button{flex:1 0 40%;padding:8px;background:#ffffff88;color:#203c4a}
+.native-clouds .nw-library .nc-arrival[data-arrival-motion=off]>.ps-w{animation:none!important}
+@media(max-width:700px){.nw-work-header{gap:7px}.nw-sizes{width:100%;justify-content:flex-start}.nw-provider-panel{left:0;right:auto}}
+
+/* Calm Workshop chrome: retain layout and reveal only the local control zone.
+   :focus-visible keeps keyboard/TV access without sticky mouse-click focus. */
+.nc-room.nc-workshop:has(.nw-full){inset:0}
+.nc-workshop .nw-shell .nw-work{border-color:transparent;box-shadow:none;border-radius:18px}
+.nc-workshop .nw-shell .nw-work-header{background:transparent;border-color:transparent;transition:background .18s,border-color .18s}
+.nc-workshop .nw-shell .nw-sizes{opacity:0;pointer-events:none;transition:opacity .18s}
+.nc-workshop .nw-shell .nw-work-header:is(:hover,:has(:focus-visible),:has([aria-expanded=true])){background:#ffffff20;border-color:#ffffff55}
+.nc-workshop .nw-shell .nw-work-header:is(:hover,:has(:focus-visible),:has([aria-expanded=true])) .nw-sizes{opacity:1;pointer-events:auto}
+.native-clouds .nc-workshop .nw-library .ps-w{border-color:transparent!important;box-shadow:none!important;border-radius:0}
+.nc-workshop .nw-library .ask-presets{opacity:0;transition:opacity .18s}
+.nc-workshop .nw-library .ask-presets>*{pointer-events:none}
+.nc-workshop .nw-library .ask-presets:is(:hover,:has(:focus-visible)){opacity:1}
+.nc-workshop .nw-library .ask-presets:is(:hover,:has(:focus-visible))>*{pointer-events:auto}
+.native-clouds.nc-controls-on .nw-shell .nw-sizes,
+.native-clouds.nc-controls-on .nw-library .ask-presets{opacity:1;pointer-events:auto}
+.native-clouds.nc-controls-on .nw-library .ask-presets>*{pointer-events:auto}
+@media(hover:none),(pointer:coarse){
+ .nc-workshop .nw-shell .nw-sizes,.nc-workshop .nw-library .ask-presets{opacity:1;pointer-events:auto}
+ .nc-workshop .nw-library .ask-presets>*{pointer-events:auto}
+}
+@media(prefers-reduced-motion:reduce){.nc-workshop .nw-work-header,.nc-workshop .nw-sizes,.nc-workshop .nw-library .ask-presets{transition:none}}
+
+/* Notebook and Sketchbook use the same parcel entrance as the library.
+   The editors stay mounted, but cannot receive focus behind a closed parcel. */
+.nw-service-stage{position:relative;display:flex;flex:1;min-height:0;overflow:hidden}
+.nw-service-content{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0}
+.nw-service-stage[data-delivered=false]>.nw-service-content{visibility:hidden;pointer-events:none}
+.nw-service-stage[data-delivered=true]>.nw-service-content{animation:nw-unpack .65s cubic-bezier(.16,.8,.24,1) both}
+.nc-workshop .nw-service-courier{left:50%!important;top:10%;translate:-50% 0;width:min(75%,500px);z-index:9;max-height:85%;text-align:center}
+.nc-workshop .nw-service-courier img{max-height:min(260px,45vh);object-fit:contain}
+.nw-courier-notebook{animation-name:nc-flight-depth}.nw-courier-sketchbook{animation-name:nc-flight-left}
+@keyframes nw-unpack{from{opacity:0;filter:blur(8px)}to{opacity:1;filter:blur(0)}}
+@media(max-width:700px){.nc-workshop .nw-service-courier{width:min(88%,500px)}.nw-service-courier>span{padding:10px 14px;font-size:13px}}
+@media(prefers-reduced-motion:reduce){.nw-service-stage>.nw-service-content{animation:none!important}}

@@ -1,0 +1,29 @@
+.fs-veil{position:fixed;inset:0;z-index:9000;background:#16233066;backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px;font-family:system-ui,sans-serif;color:#203c4a}
+.fs{width:min(640px,100%);max-height:calc(100vh - 32px);overflow:auto;background:#fbfaf6;border-radius:22px;box-shadow:0 20px 60px #0004;padding:16px 18px 12px;display:flex;flex-direction:column;gap:12px}
+.fs button{font:inherit;color:inherit;cursor:pointer}
+.fs header{display:flex;justify-content:space-between;align-items:center}.fs header b{font-size:17px}
+.fs-x{border:0;background:#eceae3;border-radius:50%;width:30px;height:30px;font-size:18px}
+.fs-drop{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px dashed #b9c1d6;background:#fff;border-radius:18px;padding:36px 12px}
+.fs-drop b{font-size:34px;color:#3a4ea0}.fs-drop strong{font-size:16px}.fs-drop small{opacity:.65}
+.fs-files{display:flex;flex-wrap:wrap;gap:6px}
+.fs-file{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #e6e3da;border-radius:999px;padding:4px 6px 4px 10px;font-size:12.5px}
+.fs-file em{font-style:normal;opacity:.55;font-size:11px}.fs-file button{border:0;background:#eceae3;border-radius:50%;width:18px;height:18px;line-height:1;font-size:12px}
+.fs-more{border:1px dashed #b9c1d6;background:transparent;border-radius:999px;padding:3px 12px}
+.fs h3{margin:2px 0 0;font-size:20px}
+.fs-acts{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.fs-acts button{display:grid;grid-template-columns:34px 1fr;grid-template-rows:auto auto;column-gap:8px;text-align:left;background:#fff;border:1px solid #e6e3da;border-radius:14px;padding:11px 12px;align-items:center}
+.fs-acts b{grid-row:span 2;font-size:24px}.fs-acts strong{font-size:14.5px}.fs-acts small{font-size:11.5px;opacity:.65}
+.fs-acts .is-first{background:#3a4ea0;color:#fff;border-color:#3a4ea0}.fs-acts .is-first small{opacity:.85}
+.fs-acts button:hover{box-shadow:0 3px 12px #20394f1c}
+.fs-none{font-size:13.5px;background:#fbefd6;border-radius:12px;padding:10px 12px}
+.fs-busy{display:flex;align-items:center;gap:10px;font-size:13.5px;background:#fff;border-radius:12px;padding:16px}
+.fs-spin{width:18px;height:18px;border-radius:50%;border:3px solid #d5dbec;border-top-color:#3a4ea0;animation:fs-spin .8s linear infinite}@keyframes fs-spin{to{transform:rotate(360deg)}}
+.fs-res{background:#fff;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;border:1px solid #d7ecdf}
+.fs-res-file{display:flex;gap:10px;align-items:center}.fs-res-file b{font-size:30px}.fs-res-file strong{display:block;font-size:15px;word-break:break-all}.fs-res-file small{opacity:.7;font-size:12.5px}
+.fs-res-act{display:flex;flex-wrap:wrap;gap:6px}.fs-res-act button{border:1px solid #e0ddd4;background:#fff;border-radius:10px;padding:8px 12px;font-size:13px}
+.fs-res-act .fs-primary{background:#2e9d63;border-color:#2e9d63;color:#fff;font-weight:650;font-size:15px;padding:9px 20px}
+.fs-note{margin:0;font-size:12.5px;background:#f3f5fa;border-radius:8px;padding:6px 10px}
+.fs-err{margin:0;font-size:13px;color:#8c2727}
+.fs footer{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid #ebe8df;padding-top:8px;font-size:12px}
+.fs-link{border:0;background:none;text-decoration:underline;font-size:12.5px;padding:0}
+.fs-pref{margin-left:auto;opacity:.7;display:flex;gap:5px;align-items:center}

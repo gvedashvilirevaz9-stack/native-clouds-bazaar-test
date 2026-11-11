@@ -1,0 +1,81 @@
+.native-clouds{--nc-body:transparent;--nc-header:transparent;--nc-buttons:transparent;--nc-border:transparent;color:#203d4b;background:#91b5da}
+/* The sky is decoration, not selectable document content. pointer-events:none
+   alone still lets Chromium paint the alpha images as blue selection boxes. */
+.native-clouds{user-select:none;-webkit-user-select:none}
+.native-clouds :is(.ps-w-b,.nc-tools input,.nc-tools textarea){user-select:text;-webkit-user-select:text}
+.native-clouds :is(.nc-sky,.nc-sky *,.ps-bg,.ps-bg *,.nc-courier,.nc-courier *,.nc-brand,.nc-brand *){user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+.nc-sky{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1;background:linear-gradient(180deg,#a4c6e921,transparent 55%,#ffe9dd22)}
+.nc-horizon{position:absolute;inset:0;background:radial-gradient(ellipse at 66% 76%,#fff4de66,transparent 56%)}
+.nc-cloud{position:absolute;max-width:none;height:auto;opacity:.64;animation:nc-drift 95s ease-in-out infinite alternate;will-change:transform;filter:blur(.8px)}
+.nc-cloud[data-depth=high]{opacity:.44;filter:blur(2px)}.nc-cloud[data-depth=low]{opacity:.78;filter:blur(1px)}
+.nc-cloud:nth-child(even){animation-name:nc-drift-reverse}
+@keyframes nc-drift{0%{transform:translate(-5vw,-3vh) scale(.92)}38%{transform:translate(3vw,1vh) scale(1.03)}72%{transform:translate(-1vw,4vh) scale(.98)}100%{transform:translate(7vw,-1vh) scale(1.08)}}
+@keyframes nc-drift-reverse{0%{transform:translate(5vw,2vh) scale(1.06)}46%{transform:translate(-2vw,-3vh) scale(.96)}100%{transform:translate(-7vw,2vh) scale(1.02)}}
+.native-clouds .ps-bg [data-kind=clouds]{display:none}
+.native-clouds .ps-w{background:var(--nc-body)!important;border:1px solid var(--nc-border)!important;box-shadow:none!important;backdrop-filter:blur(0);overflow:hidden;border-radius:24px;transition:background .35s,box-shadow .35s,backdrop-filter .35s}
+.native-clouds .ps-w:not(.ps-w-avatar){color:var(--nc-text,#203d4b);text-shadow:0 1px 12px #fff3}
+.native-clouds .ps-w:hover,.native-clouds .ps-w:focus-within,.native-clouds.nc-controls-on .ps-w{box-shadow:0 20px 65px #213b5518!important;border-color:#ffffff88!important;backdrop-filter:blur(20px);background:color-mix(in srgb,var(--nc-body),#ffffff33)!important}
+.native-clouds .ps-w-h{background:var(--nc-header)!important;opacity:0;transition:opacity .25s;pointer-events:none}
+.native-clouds .ps-w:is(:hover,:focus-within)>.ps-w-h,.native-clouds.nc-controls-on .ps-w-h{opacity:1;pointer-events:auto}
+.native-clouds .ps-w-b,.native-clouds .ps-data,.native-clouds .hiw-desk,.native-clouds .ask-card,.native-clouds .hiw-desk>header,.native-clouds .s402-shell,.native-clouds .s402-tile{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+.native-clouds .ps-w button{background:var(--nc-buttons)!important;color:inherit}
+.native-clouds .ps-w:not(:hover):not(:focus-within) .ask-topbar{opacity:0;pointer-events:none}
+.native-clouds .ps-stow{display:none}
+.native-clouds .ps-w .ps-w-rb,.native-clouds .ps-w .ps-w-rs{opacity:0}
+.native-clouds .ps-w:hover .ps-w-rb,.native-clouds .ps-w:hover .ps-w-rs{opacity:1}
+.native-clouds .ps-w-avatar{z-index:15;overflow:visible!important;background:transparent!important;backdrop-filter:none!important;box-shadow:none!important}
+.native-clouds .ps-w-avatar .pa-head,.native-clouds .ps-w-avatar .pa-bottom{opacity:0;transition:opacity .2s}
+.native-clouds .ps-w-avatar:hover .pa-head,.native-clouds .ps-w-avatar:focus-within .pa-head{opacity:1}
+.native-clouds .ps-w-avatar .av-toolbar{opacity:0;transition:opacity .25s;pointer-events:none}
+.native-clouds .ps-w-avatar:is(:hover,:focus-within) .av-toolbar,.native-clouds.nc-controls-on .av-toolbar{opacity:1;pointer-events:auto}
+.native-clouds .nc-service-cards .ac-background,.native-clouds .nc-service-cards .ac-shade{display:none}
+.native-clouds .nc-service-cards .ac-glass{background:transparent;border:none;backdrop-filter:none;box-shadow:none;color:var(--nc-text,#203d4b);padding:16px}
+.native-clouds .nc-service-cards .ac-title h2{font-size:23px;color:inherit}
+.native-clouds .nc-service-cards .ac-kicker,.native-clouds .nc-service-cards .s402-source,.native-clouds .nc-service-cards .s402-foot{color:inherit}
+.native-clouds .nc-service-cards .s402-card{border-radius:0;min-height:0;padding:0;color:var(--nc-text,#203d4b)}
+.native-clouds .nc-service-cards :is(.s402-say,.ac-source,.s402-section){color:inherit}
+.native-clouds .hiw-frame,.native-clouds .hiw-index,.native-clouds .hiw-index button{background:transparent!important;border-color:#ffffff44!important}
+.native-clouds .ps-w:not(:hover):not(:focus-within) :is(.ps-w-b,.nc-service-cards){scrollbar-color:transparent transparent}
+.native-clouds .nc-service-cards .s402-card .s402-actions,.native-clouds .nc-service-cards details{opacity:0;pointer-events:none;transition:opacity .25s}
+.native-clouds .ps-w:is(:hover,:focus-within) .s402-actions,.native-clouds .ps-w:is(:hover,:focus-within) details{opacity:1;pointer-events:auto}
+.native-clouds .ps-clock{font-size:60px}.native-clouds .ps-clock small{font-size:16px}
+.native-clouds .ps-wx{font-size:18px}.native-clouds .ps-fin{font-size:20px}
+.nc-arrival{display:contents}.nc-arrival[data-delivered=false]>.ps-w{visibility:hidden;pointer-events:none;opacity:0}
+.nc-arrival[data-delivered=true]>.ps-w:not(.ps-w-avatar){animation:nc-emerge 1.15s cubic-bezier(.16,.8,.24,1) both}
+@keyframes nc-emerge{from{opacity:0;filter:blur(16px);transform:translate(var(--nc-from-x,0),var(--nc-from-y,80px)) scale(.14)}to{opacity:1;filter:blur(0);transform:translate(0,0) scale(1)}}
+.nc-courier{position:absolute;z-index:7000;width:clamp(245px,31vw,520px);padding:0;border:0;background:none;cursor:pointer;color:#254046;animation:nc-flight 2s cubic-bezier(.2,.7,.2,1) both;filter:drop-shadow(0 18px 22px #40537625)}
+.nc-courier img{display:block;width:100%;max-height:360px;object-fit:contain;pointer-events:none}
+.nc-courier>span{display:inline-flex;align-items:center;gap:12px;padding:12px 20px;background:#fcf8eddb;border:1px solid #cbb27b77;border-radius:30px;box-shadow:0 5px 24px #bfb08722;backdrop-filter:blur(15px);font:500 15px/1.2 system-ui}
+.nc-courier small{font-size:11px;max-width:180px}.nc-courier b{color:#a98743}.nc-courier:focus-visible{outline:3px solid #a48438;outline-offset:8px;border-radius:28px}
+@keyframes nc-flight{from{opacity:0;transform:translate(55vw,-18vh) scale(.1)}60%{opacity:1}to{opacity:1;transform:translate(0,0) scale(1)}}
+.nc-courier-manta{animation-name:nc-flight-depth}.nc-courier-sail{animation-name:nc-flight-left}
+@keyframes nc-flight-depth{from{opacity:0;transform:translateY(-20vh) scale(.04)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes nc-flight-left{from{opacity:0;transform:translate(-70vw,-8vh) scale(.3)}to{opacity:1;transform:translate(0,0) scale(1)}}
+.nc-brand{position:absolute;bottom:30px;left:34px;z-index:8000;pointer-events:none;color:#354d61}.nc-brand span{display:block;font-size:11px;letter-spacing:.26em}.nc-brand small{display:block;margin-top:6px;font-size:10px;opacity:.65}
+.nc-dock{position:absolute;z-index:9001;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:5px;border:1px solid #fff8;border-radius:30px;padding:6px;background:#ffffff55;backdrop-filter:blur(20px);box-shadow:0 10px 35px #233d4f12}
+.nc-dock button{border:0;background:transparent;padding:10px 16px;border-radius:23px;color:#243e4c;white-space:nowrap;cursor:pointer}.nc-dock button:hover{background:#ffffff99}
+.nc-tools{position:absolute;z-index:9200;right:24px;bottom:85px;width:350px;max-width:calc(100vw - 32px);max-height:78vh;overflow:auto;background:#f6f7f0f2;backdrop-filter:blur(30px);box-shadow:0 20px 70px #183a4833;border:1px solid #fff;border-radius:22px;padding:18px;color:#243e44;text-shadow:none;font:13px/1.45 system-ui}
+.nc-tools header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.nc-tools header b{font-size:18px}.nc-tools button{cursor:pointer;color:inherit;border:1px solid #b4c7c455;background:#e1e9e366;border-radius:10px;padding:9px 12px;font:inherit}.nc-tools button:hover,.nc-tools button[aria-pressed=true]{background:#294d43;color:#fff}.nc-tools button:disabled{opacity:.5;cursor:wait}.nc-tools nav,.nc-shortcuts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.nc-tools label{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0}.nc-tools select,.nc-tools input:not([type=checkbox]):not([type=color]){min-width:0;width:100%;padding:10px;border:1px solid #cad3ca;background:#fff9;border-radius:9px;color:inherit}.nc-tools form{display:grid;gap:9px;border-top:1px solid #c5d1c7;padding-top:10px}.nc-tools form small,.nc-tools>small{font-size:11px;opacity:.7}.nc-service-list{display:grid;gap:6px}.nc-service-list button{display:flex;justify-content:space-between;text-align:left}.nc-service-list small{opacity:.65}.nc-swatches{display:flex;gap:5px;flex-wrap:wrap;margin:16px 0}.nc-swatches button{height:28px;width:28px;border:1px solid #6788;padding:0;border-radius:50%}.nc-service-status{padding:25px;display:flex;align-items:center;gap:14px;font-size:16px}.nc-loader{width:20px;height:20px;border:2px solid #4567;border-right-color:transparent;border-radius:50%;animation:nc-spin 1s linear infinite}.nc-service-cards{height:100%;overflow:auto}.nc-service-cards .s402-card{background:transparent!important;box-shadow:none!important;border-color:transparent!important}.nc-service-cards .s402-actions{opacity:.4}.nc-service-cards:hover .s402-actions{opacity:1}
+@keyframes nc-spin{to{transform:rotate(360deg)}}
+@media(hover:none){.native-clouds .ps-w-h{opacity:1;pointer-events:auto}.native-clouds .ps-w{border-color:#fff5!important}.native-clouds .ps-w .ask-topbar{opacity:1!important;pointer-events:auto!important}}
+@media(max-width:700px){.nc-brand{display:none}.nc-tools{right:16px;bottom:90px}.nc-dock{max-width:95vw}.nc-dock button{padding:9px}.nc-courier{width:60vw;left:20%!important}}
+@media(prefers-reduced-motion:reduce){.nc-cloud,.nc-courier,.nc-arrival>.ps-w{animation:none!important}.nc-loader{animation-duration:3s}}
+/* Scene contract: sky/ships < room < player < bot < navigation.
+   Keep the bot's size and ordinary widget controls; only the presentation changes. */
+.native-clouds{--nc-room-z:8500;--nc-player-z:9000;--nc-bot-z:13000;--nc-dock-z:14000;--nc-tools-z:15000}
+.native-clouds .ps-w-avatar{z-index:var(--nc-bot-z)!important}
+.native-clouds .nc-dock{z-index:var(--nc-dock-z)}
+.native-clouds .nc-tools{z-index:var(--nc-tools-z)}
+/* Body portals escape the desktop stacking context and the communication bar. */
+.nc-global-dock{position:fixed;z-index:14000;font:13px/1.35 system-ui,sans-serif;user-select:none}
+.nc-global-tools{position:fixed;z-index:15000}
+/* Reuse the existing account/language controller in the persistent bottom dock. */
+.nc-global-dock{align-items:center;overflow:visible}
+.nc-account-host .room-ai{position:relative;top:auto;left:auto;z-index:auto}
+.nc-account-host .room-ai-trigger{font-size:12px;padding:8px 10px;background:#ffffff50;border:1px solid #ffffff88;color:#243e4c}
+.nc-account-overlay{position:fixed;inset:0;z-index:16000;pointer-events:none}
+.nc-account-overlay .room-ai-card{pointer-events:auto;text-align:left;white-space:normal}
+.nc-account-overlay .room-ai-card:not([style]){position:absolute;bottom:88px;left:50%;transform:translateX(-50%);margin:0;width:min(300px,calc(100vw - 48px))}
+@media(max-width:550px){.nc-global-dock{gap:0;padding:4px}.nc-global-dock>button{padding:8px;font-size:11px}.nc-account-host .room-ai-trigger{padding:7px;gap:3px}.nc-account-overlay .room-ai-card:not([style]){bottom:76px}}
+.nc-room{position:absolute;inset:48px 24px 100px;z-index:var(--nc-room-z);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#56756d66 transparent;animation:nc-room-enter .55s ease both;color:#203d4b}
+

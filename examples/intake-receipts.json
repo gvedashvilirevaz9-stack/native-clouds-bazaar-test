@@ -1,0 +1,16 @@
+[
+  {"command": "intake.batches", "args": {}},
+  {"command": "intake.batch.read", "args": {"batchId": "<batchId from intake.batches>"}},
+  {"command": "intake.page", "args": {"assetId": "<assetId>", "n": 1}},
+  {"command": "intake.data", "args": {"assetId": "<assetId>", "data": {
+    "date": "2026-11-07", "time": "18:42", "shop": "Nikora",
+    "items": [
+      {"name": "Хлеб", "qty": 2, "unit": "шт", "unitPrice": 1.2, "total": 2.4},
+      {"name": "Молоко 1л", "qty": 1, "unit": "шт", "unitPrice": 3.5, "total": 3.5},
+      {"name": "Огурцы", "qty": 1.2, "unit": "кг", "unitPrice": 4.0, "total": 4.8}
+    ],
+    "total": 10.7, "currency": "GEL", "tax": null, "payment": "card", "unclear": []
+  }}},
+  {"command": "intake.batch.summary", "args": {"batchId": "<batchId>", "notes": "Хлеб покупался два дня подряд."}},
+  {"command": "intake.batch.route", "args": {"batchId": "<batchId>", "to": "board"}}
+]

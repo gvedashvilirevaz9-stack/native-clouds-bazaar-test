@@ -1,0 +1,389 @@
+{
+ "about": "Bazaar = buying side, separate from My shop. Stalls from price-list files and from catalogs an agent brings. See BAZAAR.md.",
+ "playbook": [
+  "\"Купи мне X\": bazaar.search {q:X}. Found → bazaar.order → show the person the order (QR in the panel). Not found → search with your own tools (MCP/UCP), bring results with bazaar.stall.add, search again.",
+  "Pay: the person pays in the panel, or bazaar.pay if allowed; then bazaar.check. If the person/agent paid elsewhere → bazaar.confirm {order, tx}.",
+  "After payment: bazaar.message → give the person the text to send to the seller (contains the hash).",
+  "Never raise limits or switch yourself on; never invent wallet addresses or prices."
+ ],
+ "tools": [
+  {
+   "name": "bazaar.open",
+   "description": "Open the Bazaar (buying side) on a tab.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "tab": {
+      "type": "string",
+      "enum": [
+       "stalls",
+       "orders",
+       "connect",
+       "agent"
+      ]
+     },
+     "stall": {
+      "type": "string"
+     },
+     "q": {
+      "type": "string"
+     }
+    },
+    "required": []
+   }
+  },
+  {
+   "name": "bazaar.import",
+   "description": "Add a price list someone sent (HTML from \"My shop\", products.json or nativeclouds.pricelist.v1) as a stall. Kept in memory; a newer file of the same shop replaces the old one.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string"
+     },
+     "dataUrl": {
+      "type": "string"
+     },
+     "url": {
+      "type": "string",
+      "description": "https only"
+     },
+     "assetId": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     }
+    },
+    "required": []
+   }
+  },
+  {
+   "name": "bazaar.stalls",
+   "description": "List stalls (files and connected catalogs).",
+   "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   }
+  },
+  {
+   "name": "bazaar.stall.add",
+   "description": "Bring a catalog from an outside service you can reach (MCP server of a shop, UCP/ACP, API). Plain data only; addresses are re-checked.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "protocol": {
+      "type": "string",
+      "enum": [
+       "mcp",
+       "ucp",
+       "acp",
+       "x402",
+       "api",
+       "manual"
+      ]
+     },
+     "endpoint": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     },
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "id": {
+         "type": "string"
+        },
+        "title": {
+         "type": "string"
+        },
+        "text": {
+         "type": "string"
+        },
+        "price": {
+         "type": [
+          "string",
+          "number"
+         ]
+        },
+        "unit": {
+         "type": "string"
+        },
+        "image": {
+         "type": "string"
+        },
+        "url": {
+         "type": "string"
+        },
+        "pay": {
+         "type": "object",
+         "properties": {
+          "kind": {
+           "type": "string",
+           "enum": [
+            "evm",
+            "link",
+            "x402",
+            "none"
+           ]
+          },
+          "to": {
+           "type": "string"
+          },
+          "url": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "kind"
+         ]
+        }
+       },
+       "required": [
+        "title"
+       ]
+      }
+     }
+    },
+    "required": [
+     "name",
+     "items"
+    ]
+   }
+  },
+  {
+   "name": "bazaar.stall.remove",
+   "description": "Remove a stall.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "stall": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "stall"
+    ]
+   }
+  },
+  {
+   "name": "bazaar.search",
+   "description": "One search over all stalls. When nothing is found, returns where else to look (connectors).",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "q": {
+      "type": "string"
+     },
+     "stall": {
+      "type": "string"
+     },
+     "show": {
+      "type": "boolean"
+     },
+     "limit": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "q"
+    ]
+   }
+  },
+  {
+   "name": "bazaar.items",
+   "description": "Items of one stall.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "stall": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "stall"
+    ]
+   }
+  },
+  {
+   "name": "bazaar.order",
+   "description": "Create an order: one payment per seller address; the order number is in the last 4 decimals of the amount.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "stall": {
+      "type": "string"
+     },
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "item": {
+         "type": "string"
+        },
+        "qty": {
+         "type": "number"
+        }
+       },
+       "required": [
+        "item"
+       ]
+      }
+     },
+     "buyer": {
+      "type": "object",
+      "properties": {
+       "name": {
+        "type": "string"
+       },
+       "contact": {
+        "type": "string"
+       },
+       "comment": {
+        "type": "string"
+       }
+      },
+      "required": []
+     }
+    },
+    "required": [
+     "stall",
+     "items"
+    ]
+   }
+  },
+  {
+   "name": "bazaar.pay",
+   "description": "Ask the browser wallet to pay (the wallet still asks the person). Allowed only within the person's limits (Агент и лимиты).",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "order": {
+      "type": "string"
+     },
+     "group": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "order"
+    ]
+   }
+  },
+  {
+   "name": "bazaar.check",
+   "description": "Look for the payment in the chain.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "order": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "order"
+    ]
+   }
+  },
+  {
+   "name": "bazaar.confirm",
+   "description": "Confirm a payment by transaction hash (USDC to this seller, amount not less than the price).",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "order": {
+      "type": "string"
+     },
+     "tx": {
+      "type": "string"
+     },
+     "group": {
+      "type": "number"
+     }
+    },
+    "required": [
+     "order",
+     "tx"
+    ]
+   }
+  },
+  {
+   "name": "bazaar.orders",
+   "description": "My purchases.",
+   "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   }
+  },
+  {
+   "name": "bazaar.message",
+   "description": "Text for the seller with the order and hashes.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "order": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "order"
+    ]
+   }
+  },
+  {
+   "name": "bazaar.connectors",
+   "description": "How each source connects and who pays (standard, status in this build).",
+   "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   }
+  },
+  {
+   "name": "bazaar.policy.get",
+   "description": "Agent spending rules and how much was spent today.",
+   "input_schema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+   }
+  },
+  {
+   "name": "bazaar.policy.set",
+   "description": "Make the rules stricter only (lower limits, switch the agent off). Raising limits is done by the person.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "enabled": {
+      "type": "boolean"
+     },
+     "perOrderMax": {
+      "type": "string"
+     },
+     "perDayMax": {
+      "type": "string"
+     },
+     "needConfirmAbove": {
+      "type": "string"
+     },
+     "onlyStalls": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    },
+    "required": []
+   }
+  }
+ ]
+}
