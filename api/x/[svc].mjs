@@ -3,7 +3,8 @@
 import bitrefill from '../_lib/bitrefill.mjs';
 import travala from '../_lib/travala.mjs';
 import cabin from '../_lib/cabin.mjs';
-const SVC = {bitrefill, travala, cabin};
+import cryptorefills from '../_lib/cryptorefills.mjs';
+const SVC = {bitrefill, travala, cabin, cryptorefills};
 export default function handler(req, res) {
   const h = SVC[String(req.query?.svc || '')]; if (!h) return res.status(404).json({error: 'UNKNOWN_SERVICE'});
   return h(req, res);
