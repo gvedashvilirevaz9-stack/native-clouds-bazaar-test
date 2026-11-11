@@ -8,6 +8,9 @@ export type Product = {title: string; price: string | null; currency?: string | 
   available?: boolean | null; seller?: string | null; store?: string; category?: string; variants?: {title: string; price: string; available: boolean}[]; vendor?: string | null};
 
 const money = (v: string | null | undefined, cur?: string | null) => !v ? '' : cur && cur !== 'USD' ? `${Number(v).toLocaleString()} ${cur}` : `$${Number(v).toFixed(2)}`;
+// Same picture, different link (CDN size, ?v=, protocol): compare by the file name without size suffixes.
+const imgKey = (u: string) => u.replace(/^https?:/, '').split('?')[0].replace(/_(\d+x\d*|\d*x\d+|pico|icon|thumb|small|compact|medium|large|grande|original|master)(@\dx)?(?=\.[a-z]+$)/i, '').replace(/-\d+x\d+(?=\.[a-z]+$)/i, '').toLowerCase().split('/').pop() || u;
+const mergeImgs = (have: string[], more: string[]) => { const out = [...have]; const seen = new Set(have.map(imgKey)); for (const m of more) { const k = imgKey(m); if (!seen.has(k)) { seen.add(k); out.push(m); } } return out; };
 const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
 
 export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p: Product; onClose: () => void; onPrev?: () => void; onNext?: () => void; onSave?: (p: Product) => void; idx?: number; total?: number}) {
@@ -19,7 +22,7 @@ export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p
     if (!thin || !/^https:\/\//.test(p.url)) return;
     let alive = true; setLoading(true);
     fetch(`/api/product?url=${encodeURIComponent(p.url)}`).then(r => r.json()).then(d => { if (!alive || d.error) return;
-      setFull(x => ({...x, images: d.images?.length ? d.images : x.images, description: d.description || x.description, options: d.options?.length ? d.options : x.options,
+      setFull(x => ({...x, images: mergeImgs((x.images?.length ? x.images : [x.image]).filter(Boolean) as string[], d.images || []), description: d.description || x.description, options: d.options?.length ? d.options : x.options,
         compareAt: x.compareAt || d.compareAt, rating: x.rating ?? d.rating, reviews: x.reviews ?? d.reviews, variants: d.variants, vendor: d.vendor, available: x.available ?? d.available})); })
       .catch(() => undefined).finally(() => alive && setLoading(false));
     return () => { alive = false; };
@@ -30,6 +33,9 @@ export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p
     window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); });
   const move = (e: React.MouseEvent) => { const r = stage.current!.getBoundingClientRect(); setPos(`${((e.clientX - r.left) / r.width * 100).toFixed(1)}% ${((e.clientY - r.top) / r.height * 100).toFixed(1)}%`); };
   const src = imgs[i]; const desc = full.description || '';
+  // Swap the big picture only after the new file is loaded: no blank flash, no reload of the same picture.
+  const [shown, setShown] = useState<string | undefined>(src);
+  useEffect(() => { if (!src || src === shown) return; let ok = true; const im = new Image(); im.onload = im.onerror = () => { if (ok) setShown(src); }; im.src = src; if (im.complete) setShown(src); return () => { ok = false; }; }, [src]);
   const shop = full.seller || full.vendor || host(full.url);
 
   const isFav = saved || bazaar.isFavorite(full.title, full.url);
@@ -41,8 +47,8 @@ export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p
       <button type="button" className="bz-pv-x" onClick={onClose} aria-label="Закрыть">×</button>
       <div className="bz-pv-gal">
         <div ref={stage} className={'bz-pv-stage' + (zoom ? ' z' : '')} onMouseMove={zoom ? move : undefined} onClick={e => { if (!src) return; if (!zoom) move(e); setZoom(!zoom); }} data-testid="bz-pv-stage">
-          {src && <div className="bz-pv-img" style={{backgroundImage: `url("${src.replace(/"/g, '%22')}")`, backgroundPosition: zoom ? pos : 'center', backgroundSize: zoom ? '240%' : 'contain'}}/>}
-          {!src && <span className="bz-pv-noimg">нет фото</span>}
+          {shown && <div className="bz-pv-img" style={{backgroundImage: `url("${shown.replace(/"/g, '%22')}")`, backgroundPosition: zoom ? pos : 'center', backgroundSize: zoom ? '240%' : 'contain'}}/>}
+          {!shown && <span className="bz-pv-noimg">нет фото</span>}
           <button type="button" className="bz-pv-arr l" style={{visibility: imgs.length > 1 ? 'visible' : 'hidden'}} onClick={e => { e.stopPropagation(); go(-1); }} aria-label="Предыдущее фото">‹</button>
           <button type="button" className="bz-pv-arr r" style={{visibility: imgs.length > 1 ? 'visible' : 'hidden'}} onClick={e => { e.stopPropagation(); go(1); }} aria-label="Следующее фото">›</button>
           <span className="bz-pv-hint">{zoom ? 'ведите мышью · клик — уменьшить' : 'клик — увеличить'}{imgs.length > 1 ? ` · ${i + 1} / ${imgs.length}` : ''}</span>
