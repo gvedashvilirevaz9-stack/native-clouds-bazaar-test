@@ -47,6 +47,12 @@ export const TOOLS = {
     inputSchema: O({q: str('what to find, in English works best, e.g. "toy cars"'), source: {type: 'string', enum: ['shopify', 'channel3']}, country: str('ships to, ISO code e.g. US, GE (optional)'), max_price: str('max price in USD (optional)'), limit: {type: 'number'}}, ['q']),
     run: ({q, source = 'shopify', country, max_price, limit}) => globalSearch(source, q, {limit, country, maxPrice: max_price}),
   },
+  woo_catalog_search: {
+    description: 'Search ALL verified WooCommerce stores at once (our own list of ~80 stores across clothing, jewelry, beauty, home, furniture, toys, food, pets, electronics, sport, music, digital). Optional category. No key.',
+    inputSchema: O({q: str('what to find'), category: str('optional, one of: Одежда и обувь, Украшения и аксессуары, Красота и здоровье, Дом и сад, Мебель, Игрушки и коллекции, Еда и напитки, Питомцы, Электроника и техника, Спорт и отдых, Музыка и хобби, Цифровые товары')}, ['q']),
+    async run({q, category}) { const mod = await import('../woo-multi.mjs'); let out; const res = {setHeader() { return res; }, status() { return res; }, json(j) { out = j; return res; }};
+      await mod.default({url: `/api/woo-multi?q=${encodeURIComponent(q)}${category ? '&cat=' + encodeURIComponent(category) : ''}`}, res); if (out?.error) throw new Error(out.error); return out; },
+  },
   woo_store_search: {
     description: 'Search products in ANY WooCommerce store by its web address (public Store API, no key). Checkout on the store page.',
     inputSchema: O({store: str('store domain, e.g. "porterandyork.com"'), q: str('what to find')}, ['store', 'q']),

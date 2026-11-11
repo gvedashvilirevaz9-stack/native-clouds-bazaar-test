@@ -124,3 +124,6 @@
 @media (max-width:820px){.bz-room{inset:8px 8px 80px;border-radius:20px}.bz-providers{grid-template-columns:repeat(2,1fr)}}
 .bz-prov[aria-pressed=true]{background:color-mix(in srgb,var(--pc),transparent 18%);text-shadow:0 1px 8px #0003}
 .bz-prov-glow{background:radial-gradient(90% 80% at 50% 110%,color-mix(in srgb,var(--pc),#fff 35%) 0%,transparent 70%),radial-gradient(70% 60% at 15% -10%,#ffffff66 0%,transparent 70%)}
+.bz-cats{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 10px}
+.bz-cats button{padding:5px 11px;border-radius:999px;border:1px solid #ffffffcc;background:#ffffff66;color:#203d4b;font:inherit;font-size:12px;cursor:pointer}
+.bz-cats button[aria-pressed=true]{background:#9a63d6;border-color:#9a63d6;color:#fff}

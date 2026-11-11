@@ -25,6 +25,7 @@ const toEn = (q: string) => q.toLowerCase().split(/\s+/).map(w => RU[w] || w).jo
 
 type Item = {title: string; price: string | null; available: boolean | null; image: string | null; url: string; vendor: string | null; store: string; seller?: string | null; currency?: string | null};
 const GLOBAL = 'global';
+const WOO_CATS = ['Одежда и обувь', 'Украшения и аксессуары', 'Красота и здоровье', 'Дом и сад', 'Мебель', 'Игрушки и коллекции', 'Еда и напитки', 'Питомцы', 'Электроника и техника', 'Спорт и отдых', 'Музыка и хобби', 'Цифровые товары'];
 // The person's own list of stores (kept in this browser). Starts with the six examples.
 const KEY = 'bz.stores.v1';
 const DEFAULT_WOO: Store[] = [{domain: 'porterandyork.com', name: 'Porter & York', icon: '🥩', ru: 'мясо', hint: 'steak', engine: 'woo'}];
@@ -82,11 +83,19 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
   const [engine, setEngine] = useState<Engine>('shopify');
   const STORES = ALL.filter(x => engineOf(x) === engine);
   const setList = (v: Store[]) => setAllList([...ALL.filter(x => engineOf(x) !== engine), ...v]);
-  const [pick, setPick] = useState<string>(GLOBAL); const [total, setTotal] = useState<number | null>(null); const [own, setOwn] = useState(''); const [q, setQ] = useState('');
+  const [pick, setPick] = useState<string>(GLOBAL); const [cat, setCat] = useState(''); const [total, setTotal] = useState<number | null>(null); const [own, setOwn] = useState(''); const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false); const [items, setItems] = useState<Item[]>([]); const [notes, setNotes] = useState<string[]>([]); const [done, setDone] = useState(false);
   const run = async () => {
     const query = toEn(q); if (!query) return; setBusy(true); setNotes([]); setItems([]); setDone(false);
     setTotal(null);
+    if (pick === GLOBAL && engine === 'woo' && !own.trim()) {
+      try { const j = await (await fetch(`/api/woo-multi?q=${encodeURIComponent(query)}${cat ? '&cat=' + encodeURIComponent(cat) : ''}`)).json();
+        if (j.error) setNotes(['Каталог WooCommerce не ответил: ' + j.error]);
+        setItems((j.items || []).map((i: any) => ({...i, vendor: null, seller: i.store, store: GLOBAL}))); setTotal(null);
+        if (!j.error && !(j.items || []).length) setNotes([`Проверил ${j.searched} магазинов — такого нет. Попробуйте по-английски или другую категорию.`]);
+      } catch { setNotes(['Поиск работает на сайте Vercel (нужен сервер /api).']); }
+      setBusy(false); setDone(true); return;
+    }
     if (pick === GLOBAL && engine === 'shopify' && !own.trim()) {
       try { const j = await (await fetch(`/api/global-search?source=shopify&q=${encodeURIComponent(query)}`)).json();
         if (j.error) setNotes([j.error.startsWith('HTTP_429') ? 'Shopify просит подождать (лимит бесплатного поиска). Повторите через минуту.' : 'Общий каталог Shopify не ответил: ' + j.error]);
@@ -110,16 +119,18 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
   return <div className="bz-sec bz-online" data-testid="bz-online">
     <div className="bz-providers" role="tablist" aria-label="Где искать">{PROVIDERS.map(p => <button key={p.id} type="button" role="tab" disabled={!p.on} data-testid={'bz-prov-' + p.id}
       aria-pressed={p.id === engine} style={{'--pc': p.color} as React.CSSProperties} className={'bz-prov' + (p.on ? '' : ' off')}
-      onClick={() => { if (p.id === 'files') { onFiles?.(); return; } setEngine(p.id as Engine); setPick(p.id === 'shopify' ? GLOBAL : 'all'); setItems([]); setDone(false); setNotes([]); }}>
+      onClick={() => { if (p.id === 'files') { onFiles?.(); return; } setEngine(p.id as Engine); setPick(GLOBAL); setItems([]); setDone(false); setNotes([]); }}>
       <span className="bz-prov-glow"/><b>{p.name}</b><small>{p.sub}</small>{!p.on && <i>скоро</i>}</button>)}</div>
-    <p className="bz-note">{engine === 'shopify' ? '«Весь Shopify» — поиск сразу по всем магазинам на Shopify, бесплатно и без ключей. Или выберите магазин на панели.' : 'WooCommerce — движок для многих магазинов на WordPress. Общего каталога у него нет: добавьте магазин по адресу сайта и ищите внутри.'} Пишите по-русски или по-английски.</p>
+    <p className="bz-note">{engine === 'shopify' ? '«Весь Shopify» — поиск сразу по всем магазинам на Shopify, бесплатно и без ключей. Или выберите магазин на панели.' : 'WooCommerce — движок магазинов на WordPress. Своего общего каталога у него нет, поэтому мы собрали свой: 82 проверенных магазина по категориям. Любой другой магазин можно добавить по адресу.'} Пишите по-русски или по-английски.</p>
     <div className="bz-storechips">
       {engine === 'shopify' && <button type="button" aria-pressed={pick === GLOBAL && !own} onClick={() => { setPick(GLOBAL); setOwn(''); }} data-testid="bz-online-global"><b>🌍</b>Весь Shopify<small>все магазины</small></button>}
+      {engine === 'woo' && <button type="button" aria-pressed={pick === GLOBAL && !own} onClick={() => { setPick(GLOBAL); setOwn(''); }} data-testid="bz-online-wooall"><b>🌐</b>Каталог WooCommerce<small>82 проверенных магазина</small></button>}
       {STORES.length > 1 && <button type="button" aria-pressed={pick === 'all' && !own} onClick={() => { setPick('all'); setOwn(''); }}>Мои магазины сразу ({STORES.length})</button>}
       {STORES.map(s => <span key={s.domain} className="bz-chip"><button type="button" aria-pressed={pick === s.domain && !own} onClick={() => { setPick(s.domain); setOwn(''); if (!q && s.hint) setQ(s.hint); }}><b>{s.icon}</b>{s.name}{s.ru && <small>{s.ru}</small>}</button>
-        <button type="button" className="bz-chip-x" title="Убрать с панели" aria-label={'Убрать ' + s.name} onClick={() => { setList(STORES.filter(x => x.domain !== s.domain)); if (pick === s.domain) setPick(engine === 'shopify' ? GLOBAL : 'all'); }}>×</button></span>)}
+        <button type="button" className="bz-chip-x" title="Убрать с панели" aria-label={'Убрать ' + s.name} onClick={() => { setList(STORES.filter(x => x.domain !== s.domain)); if (pick === s.domain) setPick(GLOBAL); }}>×</button></span>)}
       <AddStore key={engine} engine={engine} stores={STORES} onAdd={st => { setList([...STORES, st]); setPick(st.domain); }}/>
     </div>
+    {engine === 'woo' && pick === GLOBAL && <div className="bz-cats">{['', ...WOO_CATS].map(c => <button key={c || 'all'} type="button" aria-pressed={cat === c} onClick={() => setCat(c)}>{c || 'Все категории'}</button>)}</div>}
     <div className="bz-search">
       <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && void run()} placeholder="Что ищем? диван, кастрюля, кроссовки…" data-testid="bz-online-q"/>
       <button type="button" className="bz-btn acc" disabled={busy || !q.trim()} onClick={() => void run()} data-testid="bz-online-go">{busy ? 'Ищу…' : 'Найти'}</button>
@@ -128,7 +139,7 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
     {done && !items.length && !notes.length && <p className="bz-note" data-testid="bz-online-none">{pick === GLOBAL ? 'Ничего не нашлось. Попробуйте по-английски или другое слово.' : 'В этих магазинах такого нет. Попробуйте «Весь Shopify».'}</p>}
     {total != null && items.length > 0 && <p className="bz-note">Найдено примерно {total.toLocaleString()} · показаны первые {items.length}</p>}
     {stores.map(st => <div key={st} className="bz-storeblock">
-      <div className="bz-storehead"><b>{st === GLOBAL ? '🌍 Весь Shopify' : `${STORES.find(s => s.domain === st)?.icon || '🛒'} ${STORES.find(s => s.domain === st)?.name || st}`}</b>{st !== GLOBAL && <small>{st}</small>}<button type="button" className="bz-btn" onClick={() => toBazaar(st)}>＋ Сохранить как лавку в Базаре</button></div>
+      <div className="bz-storehead"><b>{st === GLOBAL ? (engine === 'woo' ? '🌐 Каталог WooCommerce' : '🌍 Весь Shopify') : `${STORES.find(s => s.domain === st)?.icon || '🛒'} ${STORES.find(s => s.domain === st)?.name || st}`}</b>{st !== GLOBAL && <small>{st}</small>}<button type="button" className="bz-btn" onClick={() => toBazaar(st)}>＋ Сохранить как лавку в Базаре</button></div>
       <div className="bz-cards">{items.filter(i => i.store === st).map((i, k) => <a key={k} className="bz-card" href={i.url} target="_blank" rel="noreferrer" data-testid="bz-online-card">
         <span className="bz-card-img" style={i.image ? {backgroundImage: `url("${i.image.replace(/"/g, '%22')}")`} : undefined}/>
         <b>{i.title}</b><span className="bz-card-p">{i.currency && i.currency !== 'USD' ? `${Number(i.price).toFixed(2)} ${i.currency}` : `$${Number(i.price).toFixed(2)}`}{i.available === false ? ' · нет в наличии' : ''}</span>{i.seller && <small className="bz-card-s">{i.seller}</small>}<small>Купить в магазине ↗</small>
