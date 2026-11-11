@@ -360,5 +360,11 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bz-eye.shut{opacity:1;color:#5a7584}
 .bz-mkwrap.folded .bz-eye{top:0}
 /* Center the content column in any window width */
-.bz-body>.bz-sec,.bz-body>.bz-online,.bz-body>div>.bz-sec{margin-left:auto;margin-right:auto;width:100%}
+.bz-body>.bz-sec,.bz-body>.bz-online,.bz-body>div>.bz-sec{width:100%}
+.bz-room.al-center .bz-body>.bz-sec,.bz-room.al-center .bz-body>.bz-online,.bz-room.al-center .bz-body>div>.bz-sec{margin-left:auto;margin-right:auto}
+.bz-room.al-right .bz-body>.bz-sec,.bz-room.al-right .bz-body>.bz-online,.bz-room.al-right .bz-body>div>.bz-sec{margin-left:auto;margin-right:0}
+.bz-title b{display:flex;align-items:center;gap:10px}
+.bz-align{display:inline-flex;gap:2px;padding:2px;border-radius:10px;background:#ffffff59;border:1px solid #ffffffaa;box-shadow:inset 0 1px 0 #fff}
+.bz-align button{display:grid;place-items:center;width:24px;height:22px;border:0;border-radius:8px;background:transparent;color:#3d5868;cursor:pointer}
+.bz-align button:hover{background:#ffffff99}.bz-align button[aria-pressed=true]{background:#fff;color:#0f3a63;box-shadow:0 2px 6px #1e3a5a22}
 @media (min-width:2000px){.bz-online,.bz-crypto,.bz-sec[data-testid=bz-connect]{max-width:1680px}}
