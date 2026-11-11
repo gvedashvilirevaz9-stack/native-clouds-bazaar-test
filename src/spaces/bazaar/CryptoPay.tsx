@@ -36,7 +36,7 @@ function ManualPay() {
   const go = async () => { setBusy(true); setMsg(''); setTx(''); try { const h = await payUsdc(to.trim(), u!); setTx(h); setMsg('✓ Отправлено. Хеш ниже — покажите его получателю.'); setOk(false); } catch (e: any) { setMsg(e?.code === 4001 ? 'Вы отменили в кошельке.' : String(e?.message || e)); } setBusy(false); };
   return <div className="bz-box" data-testid="bz-manual">
     <h3>Оплатить на адрес вручную</h3>
-    <p className="bz-note">Для счёта, где сервис дал адрес и сумму в USDC (Base), — например, Bitrefill или продавец в переписке.</p>
+    <p className="bz-note">Перевести USDC (сеть Base) на адрес кошелька 0x… — например, продавцу из переписки. Для Bitrefill не нужно: там оплата встроена выше.</p>
     <div className="bz-grid2">
       <label>Адрес получателя<input value={to} onChange={e => { setTo(e.target.value); setOk(false); }} placeholder="0x…" data-testid="bz-mp-to"/></label>
       <label>Сумма, USDC<input value={amt} onChange={e => { setAmt(e.target.value.replace(/[^\d.,]/g, '')); setOk(false); }} placeholder="10.00" inputMode="decimal" data-testid="bz-mp-amt"/></label>
