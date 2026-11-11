@@ -78,7 +78,7 @@ export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p
           {desc ? <p className="bz-pv-text">{desc}</p> : <p className="bz-pv-text muted">{loading ? '' : 'Магазин не прислал описания.'}</p>}
         </div>
         <div className="bz-pv-actions">
-          <a className="bz-btn acc" href={full.url} target="_blank" rel="noreferrer" data-testid="bz-pv-go">Перейти в магазин ↗</a>
+          {/^https?:\/\//.test(full.url || '') ? <a className="bz-btn acc" href={full.url} target="_blank" rel="noreferrer" data-testid="bz-pv-go">{/wolt\.com/.test(full.url) ? 'Открыть в Wolt ↗' : /openstreetmap\.org/.test(full.url) ? 'Открыть на карте ↗' : 'Перейти в магазин ↗'}</a> : <span className="bz-btn" aria-disabled="true">Ссылки нет</span>}
           {onSave && <button type="button" className={'bz-btn' + (isFav ? ' on' : '')} onClick={() => { onSave(full); setSaved(true); }} data-testid="bz-pv-save">{isFav ? '★ В избранном' : '☆ В избранное'}</button>}
           <button type="button" className="bz-btn" onClick={() => navigator.clipboard?.writeText(full.url)}>Копировать ссылку</button>
         </div>

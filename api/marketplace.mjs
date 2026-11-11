@@ -43,8 +43,8 @@ export default async function handler(req, res) {
     if (cc && scope !== 'world') {
       const int = intents(q); const have = (s.sections || []).some(x => /wolt/i.test(x.provider || '') || (x.items || []).some(i => i.provider === 'Wolt'));
       if ((int.food && !have) || int.store) {
-        let anchor = {lat: regions[cc].lat, lon: regions[cc].lon, cc}; const cityName = cityHit?.en || regions[cc].city;
-        if (cityHit && cityHit.en !== regions[cc].city) { try { const g = await geocode(cityHit.en, []); if (g?.lat) anchor = {lat: g.lat, lon: g.lon, cc}; } catch { /* capital */ } }
+        const cityName = cityHit?.en || regions[cc].city; let anchor = {lat: regions[cc].lat, lon: regions[cc].lon, cc, city: cityName};
+        if (cityHit && cityHit.en !== regions[cc].city) { try { const g = await geocode(cityHit.en, []); if (g?.lat) anchor = {lat: g.lat, lon: g.lon, cc, city: cityName}; } catch { /* capital */ } }
         const log = r.sources || (r.sources = []); const place = countryName(cc, lang) + ' · ' + (cityHit?.ru || cityName);
         const [food, stores] = await Promise.all([int.food && !have ? woltFood(anchor, int.dishTags, log) : [], int.store ? woltStores(anchor, int.retailTags, log) : []]);
         if (food.length) extra.push({id: 'x-wolt-food', title: place + ' · 🛵 Еда с доставкой', provider: 'Wolt', slot: 'local', country: cc, kind: 'venues', status: {ok: true}, items: food});

@@ -23,14 +23,14 @@ export const intents = (q) => { const dish = DISH.find(([re]) => re.test(q)); co
 
 const text = (v) => [v.name, v.short_description, ...(v.tags || []), ...(v.venue_preview_items || []).map(p => p.name)].join(' ').toLowerCase();
 const loc = (v) => Array.isArray(v.location) && v.location.length === 2 ? {lat: +v.location[1], lon: +v.location[0]} : {};
-const citySlugOf = (list) => (list.find(i => i.link?.target)?.link?.target || '').match(/\/geo\/([^/]+)\//)?.[1] || null;
+const citySlugOf = (list, anchor) => (list.find(i => i.link?.target)?.link?.target || '').match(/\/geo\/([^/]+)\//)?.[1] || String(anchor.city || '').toLowerCase().replace(/[^a-z]+/g, '-') || null;
 
 /** Wolt restaurants near a point. Only places that match the dish when a dish was asked (honest: no padding). */
 export async function woltFood(anchor, tags, log) {
   const t = Date.now();
   try {
     const r = await get(`https://restaurant-api.wolt.com/v1/pages/restaurants?lat=${anchor.lat}&lon=${anchor.lon}`);
-    const list = (r.sections || []).flatMap(s => s.items || []).filter(i => i?.venue?.slug); const slug = citySlugOf(list);
+    const list = (r.sections || []).flatMap(s => s.items || []).filter(i => i?.venue?.slug); const slug = citySlugOf(list, anchor);
     let v = list.map(i => ({...i.venue, image: i.image?.url || null})).filter(x => x.online !== false);
     if (tags.length) v = v.filter(x => tags.some(w => text(x).includes(w)));
     v.sort((a, b) => (b.rating?.score || 0) * Math.log10(10 + (b.rating?.volume || 0)) - (a.rating?.score || 0) * Math.log10(10 + (a.rating?.volume || 0)));
@@ -46,7 +46,7 @@ export async function woltStores(anchor, tags, log) {
   const t = Date.now();
   try {
     const r = await get(`https://restaurant-api.wolt.com/v1/pages/retail?lat=${anchor.lat}&lon=${anchor.lon}`);
-    const list = (r.sections || []).flatMap(s => s.items || []).filter(i => i?.venue?.slug); const slug = citySlugOf(list); const seen = new Set();
+    const list = (r.sections || []).flatMap(s => s.items || []).filter(i => i?.venue?.slug); const slug = citySlugOf(list, anchor); const seen = new Set();
     let v = list.map(i => ({...i.venue, image: i.image?.url || null})).filter(x => x.online !== false && !seen.has(x.slug) && seen.add(x.slug));
     if (tags.length) { const f = v.filter(x => tags.some(w => (text(x) + ' ' + (x.product_line || '')).includes(w))); if (f.length) v = f; }
     const items = v.slice(0, 12).map(x => ({id: 'woltr-' + x.slug, title: x.name, subtitle: [x.short_description, x.address].filter(Boolean).join(' · ').slice(0, 140), kind: 'venue',
