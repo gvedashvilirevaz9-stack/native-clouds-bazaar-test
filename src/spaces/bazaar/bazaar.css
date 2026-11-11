@@ -377,3 +377,4 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bf-phone{display:flex;flex-direction:column;gap:4px;font-size:13px;max-width:360px}.bf-phone input{height:40px;border-radius:12px;border:1px solid #ffffffee;background:#fff;padding:0 12px;font:inherit}.bf-phone small{opacity:.65}
 .bf-code{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.bf-code code{font-size:16px;padding:6px 10px;border-radius:10px;background:#fff;user-select:all}
 .bf-raw pre{max-height:240px;overflow:auto;font-size:11px;background:#ffffffaa;padding:10px;border-radius:12px}
+.bf-gone{opacity:.45;filter:grayscale(1);cursor:not-allowed}

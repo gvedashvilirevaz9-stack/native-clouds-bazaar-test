@@ -18,8 +18,8 @@ const TOPUP: Record<string, string[]> = {GE: ['Magti', 'Silknet', 'Beeline'], AM
   TR: ['Turkcell', 'Vodafone', 'Turk Telekom'], US: ['T-Mobile', 'AT&T', 'Verizon', 'Lyca Mobile', 'Cricket'], DE: ['Vodafone', 'Telekom', 'O2', 'Lyca Mobile'], AE: ['Etisalat', 'du', 'Virgin Mobile']};
 // Labels that differ from what Bitrefill calls the product (Geocell is a Silknet brand since 2018).
 const ALIAS: Record<string, string> = {Geocell: 'Silknet'};
-const COUNTRIES = ['GE', 'AM', 'AZ', 'KZ', 'TR', 'US', 'DE', 'AE'];
-const CNAME: Record<string, string> = {GE: 'Georgia', AM: 'Armenia', AZ: 'Azerbaijan', KZ: 'Kazakhstan', TR: 'Turkey', US: 'United States', DE: 'Germany', AE: 'United Arab Emirates'};
+const COUNTRIES = ['GE', 'AM', 'AZ', 'KZ', 'TR', 'US', 'DE', 'AE', 'GB', 'FR', 'ES', 'IT', 'NL', 'PL', 'ALL'];
+const CNAME: Record<string, string> = {GB: 'United Kingdom', FR: 'France', ES: 'Spain', IT: 'Italy', NL: 'Netherlands', PL: 'Poland', ALL: '', GE: 'Georgia', AM: 'Armenia', AZ: 'Azerbaijan', KZ: 'Kazakhstan', TR: 'Turkey', US: 'United States', DE: 'Germany', AE: 'United Arab Emirates'};
 const hex = (s: string) => '0x' + Array.from(new TextEncoder().encode(s), b => b.toString(16).padStart(2, '0')).join('');
 const loadTok = () => { try { const t = JSON.parse(sessionStorage.getItem(KEY) || 'null'); return t && t.exp > Date.now() ? t : null; } catch { return null; } };
 const loadOrd = (): Buy[] => { try { return JSON.parse(localStorage.getItem(ORD) || '[]'); } catch { return []; } };
@@ -41,12 +41,13 @@ export function BitrefillPanel() {
   const [busy, setBusy] = useState(''); const [msg, setMsg] = useState(''); const [raw, setRaw] = useState<any>(null); const [orders, setOrdersS] = useState<Buy[]>(loadOrd);
   const setOrders = (v: Buy[]) => { setOrdersS(v); saveOrd(v); };
   const [live, setLive] = useState<Record<string, string[]>>({});
+  const [gone, setGone] = useState<Set<string>>(new Set());
   const presets = live[kind + cc] || (kind === 'topups' ? TOPUP[cc] || PRESETS.topups : PRESETS[kind]);
   const valid = tok && w.address && tok.address.toLowerCase() === w.address.toLowerCase();
   const H = (): Record<string, string> => (valid ? {'X-Access-Token': tok!.token} : {});
   const post = async (op: string, b: any) => { const r = await fetch(`${API}?op=${op}`, {method: 'POST', headers: {'content-type': 'application/json', ...H()}, body: JSON.stringify(b)}); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.error || 'HTTP ' + r.status), {j}); return j; };
   const get = async (qs: string) => { const r = await fetch(`${API}?${qs}`, {headers: H()}); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.error || 'HTTP ' + r.status), {j}); return j; };
-  const fail = (e: any) => { const m = String(e?.message || e); setMsg(e?.code === 4001 ? 'Вы отменили в кошельке.' : m.includes('404') ? 'Bitrefill не нашёл этот товар или номинал (404). Подробности — в «Техническом ответе» ниже.' : m.includes('400') ? 'Bitrefill не принял запрос (400). Подробности — ниже.' : m); if (e?.j) setRaw(e.j); };
+  const fail = (e: any) => { const m = String(e?.message || e); setMsg(e?.code === 4001 ? 'Вы отменили в кошельке.' : m.startsWith('UNAVAILABLE:') ? `Bitrefill сейчас не продаёт этот товар: нет в наличии или закрыт для покупки из вашего региона. Попробуйте «${m.slice(12)}» в другой стране — кнопка ниже.` : m.includes('404') ? 'Bitrefill не нашёл этот товар или номинал (404). Подробности — в «Техническом ответе» ниже.' : m.includes('400') ? 'Bitrefill не принял запрос (400). Подробности — ниже.' : m); if (e?.j) setRaw(e.j); };
 
   /** Sign in to Bitrefill with the wallet: one message, no money. */
   const connect = async () => {
@@ -62,17 +63,17 @@ export function BitrefillPanel() {
     } catch (e) { fail(e); }
     setBusy('');
   };
-  const search = async (text = q, k = kind) => {
+  const search = async (text = q, k = kind, c = cc) => {
     if (!text.trim()) return; setBusy('search'); setMsg(''); setSel(null); setPkg(null); setRaw(null);
     try {
       // Bitrefill searches top-ups by country/operator slug, not always by brand name: try the word, then the whole country, then the country name.
-      const word = text.trim(); const tries = [word, ...(k !== 'gift-cards' ? ['', CNAME[cc] || cc, word.toLowerCase() + ' ' + (CNAME[cc] || '')] : [word.toLowerCase()])];
+      const word = text.trim(); const tries = [word, ...(k !== 'gift-cards' ? ['', CNAME[c] || cc, word.toLowerCase() + ' ' + (CNAME[c] || '')] : [word.toLowerCase()])];
       let list: Prod[] = []; let last: any = null; let used = word;
-      for (const t of tries) { const j = await get(`op=search&kind=${k}&q=${encodeURIComponent(t)}&country=${cc}`); last = j; list = arr(j).map(norm).filter(p => p.slug); used = t; if (list.length) break; }
+      for (const t of tries) { const j = await get(`op=search&kind=${k}&q=${encodeURIComponent(t)}${c === 'ALL' ? '' : '&country=' + c}`); last = j; list = arr(j).map(norm).filter(p => p.slug); used = t; if (list.length) break; }
       const w0 = word.toLowerCase(); const hit = list.filter(p => (p.name + ' ' + p.slug).toLowerCase().includes(w0));
       setItems(hit.length ? hit : list);
       if (!list.length) { setMsg('Ничего не нашлось. Попробуйте другую страну или вкладку.'); setRaw(last); }
-      else if (!hit.length && used !== word) setMsg(`«${word}» отдельно не нашёлся — показываю всё, что Bitrefill даёт по стране ${cc}.`);
+      else if (!hit.length && used !== word) setMsg(`«${word}» отдельно не нашёлся — показываю всё, что Bitrefill даёт по стране ${c}.`);
     }
     catch (e: any) { setItems([]); if (String(e.message).includes('402')) setMsg('Сначала войдите в Bitrefill кошельком — поиск станет бесплатным.'); else fail(e); }
     setBusy('');
@@ -88,7 +89,10 @@ export function BitrefillPanel() {
       const extra = kind === 'topups' && phone ? {refill_input: phone.replace(/[^\d+]/g, '')} : {};
       // Bitrefill wants the product slug and package_value exactly as returned; fall back to the other id on 404.
       let inv: any; try { inv = await post('create', {items: [{product_id: sel.slug, package_value: pkg.value, ...extra}]}); }
-      catch (e: any) { if (!String(e.message).includes('404') || !sel.id || sel.id === sel.slug) throw e; inv = await post('create', {items: [{product_id: sel.id, package_value: pkg.value, ...extra}]}); }
+      catch (e: any) { if (!String(e.message).includes('404')) throw e;
+        if (sel.id && sel.id !== sel.slug) { try { inv = await post('create', {items: [{product_id: sel.id, package_value: pkg.value, ...extra}]}); } catch { /* still unavailable */ } }
+        if (!inv) { setGone(g => new Set(g).add(sel.slug)); const brand = sel.name.split(/\s+/)[0];
+          throw Object.assign(new Error(`UNAVAILABLE:${brand}`), {j: e.j}); } }
       const invoice = inv.invoice_id; if (!invoice) throw Object.assign(new Error('Счёт не создан'), {j: inv});
       const rq = await post('pay-start', {invoice_id: invoice});
       const eth = await coinbase(); const [from] = await eth.request({method: 'eth_requestAccounts'}) as string[];
@@ -117,7 +121,7 @@ export function BitrefillPanel() {
     if (!valid || kind === 'gift-cards') return; const key = 'bz.bitrefill.p.' + kind + cc;
     try { const c = JSON.parse(sessionStorage.getItem(key) || 'null'); if (c) { setLive(v => ({...v, [kind + cc]: c})); return; } } catch { /* */ }
     let alive = true;
-    (async () => { for (const t of [CNAME[cc] || cc, '']) { try { const j = await get(`op=search&kind=${kind}&q=${encodeURIComponent(t)}&country=${cc}`); const names = arr(j).map((p: any) => String(p.name || p.slug || ''))
+    (async () => { for (const t of [CNAME[cc] || cc, '']) { try { const j = await get(`op=search&kind=${kind}&q=${encodeURIComponent(t)}${cc === 'ALL' ? '' : '&country=' + cc}`); const names = arr(j).map((p: any) => String(p.name || p.slug || ''))
       .map(n => n.replace(new RegExp('\\s*(' + (CNAME[cc] || cc) + '|USA|PIN|Bundle|Top ?up|eSIM)\\b.*$', 'i'), '').trim()).filter(Boolean); const uniq = [...new Set(names)].slice(0, 10);
       if (uniq.length) { if (alive) setLive(v => ({...v, [kind + cc]: uniq})); sessionStorage.setItem(key, JSON.stringify(uniq)); return; } } catch { /* next */ } } })();
     return () => { alive = false; };
@@ -138,10 +142,10 @@ export function BitrefillPanel() {
         <button type="button" className="mp-ask" disabled={!!busy || !q.trim()} onClick={() => void search()} aria-label="Найти">{busy === 'search' ? '…' : '→'}</button>
       </div>
     </div>
-    {msg && <p className="bz-note" data-testid="bf-msg">{msg}</p>}
-    {items.length > 0 && !sel && <div className="bz-cards">{items.map(p => <button key={p.slug} type="button" className="bz-card" onClick={() => void open(p)}>
+    {msg && <p className="bz-note" data-testid="bf-msg">{msg}{msg.includes('в другой стране') && <> <button type="button" className="bz-link" onClick={() => { const b = (msg.match(/«(.+?)»/) || [])[1] || q; setCc('ALL'); setSel(null); setQ(b); void search(b, kind, 'ALL'); }}>Искать «{(msg.match(/«(.+?)»/) || [])[1]}» во всех странах →</button></>}</p>}
+    {items.length > 0 && !sel && <div className="bz-cards">{items.map(p => <button key={p.slug} type="button" className={'bz-card' + (gone.has(p.slug) ? ' bf-gone' : '')} disabled={gone.has(p.slug)} title={gone.has(p.slug) ? 'Сейчас недоступно в Bitrefill' : undefined} onClick={() => void open(p)}>
       <span className={'bz-card-img' + (p.image ? '' : ' art t1')}>{p.image ? <img src={p.image} alt="" loading="lazy"/> : <span className="bz-glyph">{KINDS.find(k => k.id === kind)!.icon}</span>}</span>
-      <b>{p.name}</b><small>{p.country || ''} {p.pkgs.length ? `· ${p.pkgs.length} номиналов` : ''}</small><small>Выбрать ⤢</small></button>)}</div>}
+      <b>{p.name}</b><small>{p.country || ''} {p.pkgs.length ? `· ${p.pkgs.length} номиналов` : ''}</small><small>{gone.has(p.slug) ? 'сейчас недоступно' : 'Выбрать ⤢'}</small></button>)}</div>}
     {sel && <div className="bz-box bz-svcdetail bf-buy" style={{'--pc': '#3f7bf2'} as React.CSSProperties} data-testid="bf-buy">
       <div className="bz-svcdetail-h"><b>{sel.name}</b><button type="button" className="bz-link" onClick={() => setSel(null)}>← к списку</button></div>
       {busy === 'detail' ? <p>Загружаю номиналы…</p> : <div className="mp-opts">{sel.pkgs.map(x => <button key={String(x.value)} type="button" className="mp-chip" aria-pressed={pkg?.value === x.value} onClick={() => setPkg(x)}><b>{x.label}</b>{x.price && <small>≈ {x.price} USDC</small>}</button>)}</div>}
