@@ -66,3 +66,23 @@ https://<app>.vercel.app/api/mcp?key=<MCP_TOKEN>
 ## Кошелёк агента (временно)
 Отдельный EVM-адрес со своим ключом, только для x402 и только в лимитах: `AGENT_PRIVATE_KEY`, `AGENT_NETWORKS` (по умолчанию base-sepolia),
 `AGENT_MAX_PER_CALL_USDC` (0.10), `MCP_TOKEN`. Личный Coinbase-кошелёк агент не трогает. Позже заменяется системой владельца.
+
+## TODO · Travala (отели за USDC) — отложено, код готов
+Статус: сервер готов (`api/_lib/travala.mjs`, маршрут `/api/x/travala?op=…`): вход в аккаунт Travala (OAuth 2.1 + PKCE,
+сам регистрирует приложение), запросы к Travel MCP (`op=tools`, `op=call`), оплата брони — x402 с кошелька человека.
+Почему не работает на тестовом сайте: Travala пускает возврат после входа только на «разрешённые HTTPS-домены» или на
+локальный адрес (`http://127.0.0.1…` / `localhost`). Ответ их сервера: `invalid_redirect_uri — redirect_uris must contain
+1-10 URLs, each HTTPS to an allowed host or HTTP on loopback`.
+
+Что сделать при переносе в портал (для Codex):
+1. Перенести `api/_lib/travala.mjs` и маршрут `/api/x/travala` (или эквивалент в серверном слое портала).
+2. На локальном стенде (`http://127.0.0.1:8825`) адрес возврата будет `http://127.0.0.1:8825/api/x/travala?op=callback` —
+   loopback Travala разрешает, ключ и письма не нужны. Cookie `Secure` для http://127.0.0.1 убрать (как в my-shop/auth).
+3. Кнопка «Войти в Travala» открывает `/api/x/travala?op=login` в окне; после «Разрешить» окно шлёт `postMessage({source:'travala',ok:true})`.
+4. Дальше `op=tools` → список инструментов (travala_search_hotel → travala_search_package → travala_book → x402 оплата).
+
+Для боевого HTTPS-адреса портала: написать в Travala (поддержка / партнёрская программа для разработчиков Travel MCP),
+приложить: название приложения (Native Clouds), финальный домен портала и точный адрес возврата
+`https://<домен>/api/x/travala?op=callback`, просьбу добавить домен в список разрешённых для OAuth Travel MCP
+(scopes mcp:read mcp:book mcp:pay mcp:cancel). Заодно попросить agent_id для 10% cbBTC-ребейта разработчику.
+Тест: бронь с бесплатной отменой → сразу отмена (песочницы у Travala нет).
