@@ -8,6 +8,10 @@ export type Product = {title: string; price: string | null; currency?: string | 
   available?: boolean | null; seller?: string | null; store?: string; category?: string; variants?: {title: string; price: string; available: boolean}[]; vendor?: string | null};
 
 const money = (v: string | null | undefined, cur?: string | null) => !v ? '' : cur && cur !== 'USD' ? `${Number(v).toLocaleString()} ${cur}` : `$${Number(v).toFixed(2)}`;
+/** Ask the shop's image server for a smaller file when it can resize (Shopify CDN: ?width=). Cards get ~400px, the big view ~1600px, not the 4000px original. */
+export const sized = (u: string | null | undefined, w: number) => { if (!u) return u || ''; const abs = u.startsWith('//') ? 'https:' + u : u;
+  if (/cdn\.shopify\.com|\/cdn\/shop\//.test(abs)) { try { const x = new URL(abs); x.searchParams.set('width', String(w)); return x.toString(); } catch { return abs; } }
+  return abs; };
 // Same picture, different link (CDN size, ?v=, protocol): compare by the file name without size suffixes.
 const imgKey = (u: string) => u.replace(/^https?:/, '').split('?')[0].replace(/_(\d+x\d*|\d*x\d+|pico|icon|thumb|small|compact|medium|large|grande|original|master)(@\dx)?(?=\.[a-z]+$)/i, '').replace(/-\d+x\d+(?=\.[a-z]+$)/i, '').toLowerCase().split('/').pop() || u;
 const mergeImgs = (have: string[], more: string[]) => { const out = [...have]; const seen = new Set(have.map(imgKey)); for (const m of more) { const k = imgKey(m); if (!seen.has(k)) { seen.add(k); out.push(m); } } return out; };
@@ -35,7 +39,7 @@ export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p
   const src = imgs[i]; const desc = full.description || '';
   // Swap the big picture only after the new file is loaded: no blank flash, no reload of the same picture.
   const [shown, setShown] = useState<string | undefined>(src);
-  useEffect(() => { if (!src || src === shown) return; let ok = true; const im = new Image(); im.onload = im.onerror = () => { if (ok) setShown(src); }; im.src = src; if (im.complete) setShown(src); return () => { ok = false; }; }, [src]);
+  useEffect(() => { if (!src || src === shown) return; let ok = true; const im = new Image(); im.onload = im.onerror = () => { if (ok) setShown(src); }; im.src = sized(src, 1600); if (im.complete) setShown(src); return () => { ok = false; }; }, [src]);
   const shop = full.seller || full.vendor || host(full.url);
 
   const isFav = saved || bazaar.isFavorite(full.title, full.url);
@@ -47,13 +51,13 @@ export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p
       <button type="button" className="bz-pv-x" onClick={onClose} aria-label="Закрыть">×</button>
       <div className="bz-pv-gal">
         <div ref={stage} className={'bz-pv-stage' + (zoom ? ' z' : '')} onMouseMove={zoom ? move : undefined} onClick={e => { if (!src) return; if (!zoom) move(e); setZoom(!zoom); }} data-testid="bz-pv-stage">
-          {shown && <div className="bz-pv-img" style={{backgroundImage: `url("${shown.replace(/"/g, '%22')}")`, backgroundPosition: zoom ? pos : 'center', backgroundSize: zoom ? '240%' : 'contain'}}/>}
+          {shown && <div className="bz-pv-img" style={{backgroundImage: `url("${sized(shown, 1600).replace(/"/g, '%22')}")`, backgroundPosition: zoom ? pos : 'center', backgroundSize: zoom ? '240%' : 'contain'}}/>}
           {!shown && <span className="bz-pv-noimg">нет фото</span>}
           <button type="button" className="bz-pv-arr l" style={{visibility: imgs.length > 1 ? 'visible' : 'hidden'}} onClick={e => { e.stopPropagation(); go(-1); }} aria-label="Предыдущее фото">‹</button>
           <button type="button" className="bz-pv-arr r" style={{visibility: imgs.length > 1 ? 'visible' : 'hidden'}} onClick={e => { e.stopPropagation(); go(1); }} aria-label="Следующее фото">›</button>
           <span className="bz-pv-hint">{zoom ? 'ведите мышью · клик — уменьшить' : 'клик — увеличить'}{imgs.length > 1 ? ` · ${i + 1} / ${imgs.length}` : ''}</span>
         </div>
-        <div className="bz-pv-thumbs">{imgs.length > 1 ? imgs.map((t, k) => <button key={k} type="button" aria-pressed={k === i} onClick={() => { setI(k); setZoom(false); }} style={{backgroundImage: `url("${t.replace(/"/g, '%22')}")`}} aria-label={`Фото ${k + 1}`}/>) : <span className="bz-pv-thumbs-empty">{loading ? 'загружаю фото…' : 'одно фото'}</span>}</div>
+        <div className="bz-pv-thumbs">{imgs.length > 1 ? imgs.map((t, k) => <button key={k} type="button" aria-pressed={k === i} onClick={() => { setI(k); setZoom(false); }} aria-label={`Фото ${k + 1}`}><img src={sized(t, 160)} alt="" loading="lazy" decoding="async"/></button>) : <span className="bz-pv-thumbs-empty">{loading ? 'загружаю фото…' : 'одно фото'}</span>}</div>
       </div>
       <div className="bz-pv-info">
         <div className="bz-pv-head">

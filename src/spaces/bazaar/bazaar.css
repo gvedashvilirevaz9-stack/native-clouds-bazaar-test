@@ -204,3 +204,6 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bz-pv-note{display:none}
 @media (max-width:860px){.bz-pv{height:100%;grid-template-columns:1fr;grid-template-rows:46% 54%;overflow:auto}.bz-pv-info{padding-right:0}.bz-pv-actions{flex-wrap:wrap}}
 .bz-pv-veil{position:fixed;inset:0;border-radius:inherit}
+.bz-card-img img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
+.bz-card-img{overflow:hidden}
+.bz-pv-thumbs button{padding:0;overflow:hidden}.bz-pv-thumbs img{width:100%;height:100%;object-fit:cover;display:block}

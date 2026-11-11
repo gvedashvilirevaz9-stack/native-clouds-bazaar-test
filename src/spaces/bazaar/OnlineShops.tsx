@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import type React from 'react';
 import {bazaar} from './store';
-import {ProductView, type Product} from './ProductView';
+import {ProductView, sized, type Product} from './ProductView';
 
 type Engine = 'shopify' | 'woo';
 type Source = 'all' | Engine;
@@ -163,7 +163,7 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
     {blocks.filter(b => b.items.length).map((b, bi) => <div key={b.key} className="bz-storeblock">
       <div className="bz-storehead"><b>{b.title}</b>{b.sub && <small>{b.sub}</small>}<button type="button" className="bz-btn" onClick={() => toBazaar(b)}>＋ Сохранить как лавку</button></div>
       <div className="bz-cards">{b.items.map((i, k) => <button type="button" key={k} className="bz-card" onClick={() => setView({b: bi, k})} data-testid="bz-online-card">
-        <span className="bz-card-img" style={i.image ? {backgroundImage: `url("${i.image.replace(/"/g, '%22')}")`} : undefined}>{(i.images?.length || 0) > 1 && <em className="bz-card-n">{i.images!.length} фото</em>}</span>
+        <span className="bz-card-img">{i.image && <img src={sized(i.image, 400)} alt="" loading="lazy" decoding="async"/>}{(i.images?.length || 0) > 1 && <em className="bz-card-n">{i.images!.length} фото</em>}</span>
         <b>{i.title}</b><span className="bz-card-p">{price(i)}{i.compareAt && <s> {price({...i, price: i.compareAt})}</s>}{i.available === false ? ' · нет в наличии' : ''}</span>{i.seller && <small className="bz-card-s">{i.seller}</small>}<small>Смотреть ⤢</small>
       </button>)}</div>
     </div>)}
