@@ -12,7 +12,7 @@ const body = (req) => (typeof req.body === 'string' ? (() => { try { return JSON
 const cc = (v) => String(v || '').toLowerCase().replace(/[^a-z]/g, '').slice(0, 2);
 const items = (v) => (Array.isArray(v) ? v : []).slice(0, 3).map(i => ({product_id: String(i.product_id || ''), beneficiary_account: String(i.beneficiary_account || '').slice(0, 120), ...(i.product_value ? {product_value: String(i.product_value).slice(0, 20)} : {})}));
 async function out(res, r) { const t = await r.text(); let j; try { j = JSON.parse(t); } catch { j = {raw: t.slice(0, 800)}; } return res.status(r.ok ? 200 : r.status).json(r.ok ? j : {error: 'CRYPTOREFILLS_' + r.status, detail: j}); }
-const call = (path, {method = 'GET', json, headers = {}} = {}) => fetch(API + path, {method, headers: {Accept: 'application/json', ...(json ? {'Content-Type': 'application/json'} : {}), 'X-Preferred-Network': 'base', ...headers}, body: json ? JSON.stringify(json) : undefined, signal: AbortSignal.timeout(28000)});
+const call = (path, {method = 'GET', json, headers = {}} = {}) => fetch(API + path, {method, headers: {Accept: 'application/json', 'User-Agent': 'NativeCloudsBazaar/1.0 (+https://native-clouds-bazaar-test.vercel.app)', ...(json ? {'Content-Type': 'application/json'} : {}), 'X-Preferred-Network': 'base', ...headers}, body: json ? JSON.stringify(json) : undefined, signal: AbortSignal.timeout(28000)});
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   const q = req.query || {}; const op = String(q.op || ''); const b = body(req);
