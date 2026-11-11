@@ -6,11 +6,12 @@ import {bazaar, useBazaar, type Order, type Stall, type CatalogItem} from './sto
 import {parseCartridge} from './cartridge';
 import {payGroup, checkGroup, confirmHash, orderPaid} from './pay';
 import {CONNECTORS, STATUS_RU, FLOW_RU} from './connectors';
+import {OnlineShops} from './OnlineShops';
 import {html} from '../shop/export';
 import {payUri, units, txUrl} from '../shop/chain';
 import './bazaar.css';
 
-type Tab = 'stalls' | 'orders' | 'connect' | 'agent';
+type Tab = 'stalls' | 'online' | 'orders' | 'connect' | 'agent';
 export const bazaarNav: {tab: Tab; stall: string | null; order: string | null} = {tab: 'stalls', stall: null, order: null};
 const short = (a: string) => a.slice(0, 6) + '…' + a.slice(-4);
 function qr(text: string) { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createDataURL(5, 2); }
@@ -140,7 +141,7 @@ export function BazaarRoom({onClose}: {onClose: () => void}) {
   return <div className="bz-room" data-testid="bazaar-room" onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={e => { e.preventDefault(); e.stopPropagation(); setDrag(false); void take(e.dataTransfer.files); }}>
     <header className="bz-top">
       <div className="bz-title"><b>🧺 Базар</b><small>здесь вы покупаете: лавки из присланных прайс-листов и каталоги сервисов</small></div>
-      <nav className="bz-tabs">{([['stalls', '🏪 Лавки'], ['orders', '🧾 Мои покупки'], ['connect', '🔌 Подключения'], ['agent', '🤖 Агент и лимиты']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={tab === k} data-testid={'bz-tab-' + k} onClick={() => { setTab(k); if (k === 'stalls') setOpen(null); }}>{l}{k === 'orders' && st.orders.length ? ` (${st.orders.length})` : ''}</button>)}</nav>
+      <nav className="bz-tabs">{([['stalls', '🏪 Лавки'], ['online', '🛒 Магазины онлайн'], ['orders', '🧾 Мои покупки'], ['connect', '🔌 Подключения'], ['agent', '🤖 Агент и лимиты']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={tab === k} data-testid={'bz-tab-' + k} onClick={() => { setTab(k); if (k === 'stalls') setOpen(null); }}>{l}{k === 'orders' && st.orders.length ? ` (${st.orders.length})` : ''}</button>)}</nav>
       <button type="button" className="bz-x" onClick={onClose} aria-label="Закрыть">×</button>
     </header>
     {drag && <div className="bz-dropping">Отпустите — прайс-лист станет лавкой</div>}
@@ -170,6 +171,7 @@ export function BazaarRoom({onClose}: {onClose: () => void}) {
       {tab === 'orders' && <div className="bz-sec" data-testid="bz-orders"><h2>Мои покупки</h2>
         {st.orders.length ? st.orders.slice().reverse().map(o => <div key={o.id} className="bz-ord-row"><button type="button" className="bz-link" onClick={() => { setOpen(o.stall); setOrderId(o.id); setTab('stalls'); }}>#{o.code} · {o.stallName}</button>
           <span>{o.items.map(i => i.title).join(', ').slice(0, 80)}</span><b>{o.groups.reduce((a, g) => a + Number(g.total), 0)} USDC</b><span>{orderPaid(o) ? '✓ оплачено' : 'ждёт оплаты'}</span><small>{new Date(o.created).toLocaleString()}</small></div>) : <p className="bz-note">Пока ничего.</p>}</div>}
+      {tab === 'online' && <OnlineShops/>}
       {tab === 'connect' && <Connections/>}
       {tab === 'agent' && <AgentLimits/>}
     </div>
