@@ -379,3 +379,4 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bf-raw pre{max-height:240px;overflow:auto;font-size:11px;background:#ffffffaa;padding:10px;border-radius:12px}
 .bf-gone{opacity:.45;filter:grayscale(1);cursor:not-allowed}
 .bf-where{display:inline-flex;align-items:center;white-space:nowrap;font-size:13px;font-weight:600}
+.bz-pv-cart{background:#0052ff!important;border-color:#0052ff!important}

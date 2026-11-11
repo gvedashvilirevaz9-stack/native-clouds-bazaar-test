@@ -15,7 +15,7 @@ export default async function handler(req, res) {
       if (r.ok) { const p = await r.json(); const v = p.variants || [];
         return res.status(200).json({kind: 'shopify', title: p.title, vendor: p.vendor || null, images: (p.images || []).map(abs).slice(0, 20), description: strip(p.description).slice(0, 2000),
           price: (p.price / 100).toFixed(2), compareAt: p.compare_at_price && p.compare_at_price > p.price ? (p.compare_at_price / 100).toFixed(2) : null, available: p.available,
-          options: (p.options || []).map(o => ({name: o.name, values: o.values})), variants: v.slice(0, 60).map(x => ({title: x.title, price: (x.price / 100).toFixed(2), available: x.available}))}); }
+          options: (p.options || []).map(o => ({name: o.name, values: o.values})), variants: v.slice(0, 60).map(x => ({id: x.id, title: x.title, price: (x.price / 100).toFixed(2), available: x.available})), engine: 'shopify'}); }
     }
     const slug = (u.pathname.match(/\/product\/([^/?#]+)/) || [])[1];
     if (slug) { // WooCommerce

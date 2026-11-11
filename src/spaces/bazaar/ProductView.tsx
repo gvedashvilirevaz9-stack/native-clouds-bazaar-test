@@ -5,7 +5,7 @@ import {bazaar} from './store';
 
 export type Product = {title: string; price: string | null; currency?: string | null; image: string | null; images?: string[]; url: string;
   description?: string; compareAt?: string | null; options?: {name: string; values: string[]}[]; rating?: number | null; reviews?: number | null;
-  available?: boolean | null; seller?: string | null; store?: string; category?: string; variants?: {title: string; price: string; available: boolean}[]; vendor?: string | null; lat?: number; lon?: number};
+  available?: boolean | null; seller?: string | null; store?: string; category?: string; variants?: {id?: number; title: string; price: string; available: boolean}[]; vendor?: string | null; lat?: number; lon?: number; engine?: string};
 /** OpenStreetMap: a map window around a point (no key). */
 export const osmEmbed = (lat: number, lon: number, d = 0.004) => `https://www.openstreetmap.org/export/embed.html?bbox=${lon - d * 1.6},${lat - d},${lon + d * 1.6},${lat + d}&layer=mapnik&marker=${lat},${lon}`;
 export const osmTile = (lat: number, lon: number, z = 16) => { const n = 2 ** z, r = lat * Math.PI / 180; const x = Math.floor((lon + 180) / 360 * n), y = Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n); return `https://tile.openstreetmap.org/${z}/${x}/${y}.png`; };
@@ -31,7 +31,7 @@ export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p
     let alive = true; setLoading(true);
     fetch(`/api/product?url=${encodeURIComponent(p.url)}`).then(r => r.json()).then(d => { if (!alive || d.error) return;
       setFull(x => ({...x, images: mergeImgs((x.images?.length ? x.images : [x.image]).filter(Boolean) as string[], d.images || []), description: d.description || x.description, options: d.options?.length ? d.options : x.options,
-        compareAt: x.compareAt || d.compareAt, rating: x.rating ?? d.rating, reviews: x.reviews ?? d.reviews, variants: d.variants, vendor: d.vendor, available: x.available ?? d.available})); })
+        compareAt: x.compareAt || d.compareAt, rating: x.rating ?? d.rating, reviews: x.reviews ?? d.reviews, variants: d.variants, vendor: d.vendor, available: x.available ?? d.available, engine: d.engine})); })
       .catch(() => undefined).finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [p]);
@@ -78,7 +78,9 @@ export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p
           {desc ? <p className="bz-pv-text">{desc}</p> : <p className="bz-pv-text muted">{loading ? '' : 'Магазин не прислал описания.'}</p>}
         </div>
         <div className="bz-pv-actions">
-          {/^https?:\/\//.test(full.url || '') ? <a className="bz-btn acc" href={full.url} target="_blank" rel="noreferrer" data-testid="bz-pv-go">{/wolt\.com/.test(full.url) ? 'Открыть в Wolt ↗' : /openstreetmap\.org/.test(full.url) ? 'Открыть на карте ↗' : 'Перейти в магазин ↗'}</a> : <span className="bz-btn" aria-disabled="true">Ссылки нет</span>}
+          {(() => { const v = full.engine === 'shopify' && (full.variants || []).find(x => x.available && x.id); if (!v) return null; let o = ''; try { o = new URL(full.url).origin; } catch { return null; }
+            return <a className="bz-btn acc bz-pv-cart" href={`${o}/cart/${v.id}:1`} target="_blank" rel="noreferrer" data-testid="bz-pv-cart" title={'Касса магазина с этим товаром в корзине' + (full.variants!.length > 1 ? ' · вариант: ' + v.title : '')}>Сразу к оплате ↗</a>; })()}
+          {/^https?:\/\//.test(full.url || '') ? <a className="bz-btn" href={full.url} target="_blank" rel="noreferrer" data-testid="bz-pv-go">{/wolt\.com/.test(full.url) ? 'Открыть в Wolt ↗' : /openstreetmap\.org/.test(full.url) ? 'Открыть на карте ↗' : 'Перейти в магазин ↗'}</a> : <span className="bz-btn" aria-disabled="true">Ссылки нет</span>}
           {onSave && <button type="button" className={'bz-btn' + (isFav ? ' on' : '')} onClick={() => { onSave(full); setSaved(true); }} data-testid="bz-pv-save">{isFav ? '★ В избранном' : '☆ В избранное'}</button>}
           <button type="button" className="bz-btn" onClick={() => navigator.clipboard?.writeText(full.url)}>Копировать ссылку</button>
         </div>
