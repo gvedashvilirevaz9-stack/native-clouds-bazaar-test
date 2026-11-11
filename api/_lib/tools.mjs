@@ -1,7 +1,7 @@
 // Tools of the Bazaar MCP server. Each: {description, inputSchema, run(args)}.
 import {netOf, units, fmt, tagged, isAddr, usdcBalance, verifyTx} from './chain.mjs';
 import {fetchPriceList, searchItems} from './pricelist.mjs';
-import {shopifyConfigured, shopifySearch} from './shopify.mjs';
+import {shopifyConfigured, shopifySearch, shopifyPublicSearch} from './shopify.mjs';
 import {agentConfig, probe, pay} from './x402.mjs';
 
 const O = (properties, required = []) => ({type: 'object', properties, required});
@@ -40,6 +40,11 @@ export const TOOLS = {
     description: 'Search products in the Shopify store configured on the server (Storefront API, read-only). Checkout happens on Shopify (url).',
     inputSchema: O({q: str('search text'), first: {type: 'number'}}, ['q']),
     run: ({q, first}) => shopifySearch(q, first),
+  },
+  shopify_store_search: {
+    description: 'Search products in ANY Shopify store by its web address, no token needed (uses the store\'s public search). Prices are in the store currency; checkout happens on the store page (url).',
+    inputSchema: O({store: str('store domain, e.g. "allbirds.com"'), q: str('what to find'), limit: {type: 'number'}}, ['store', 'q']),
+    run: ({store, q, limit}) => shopifyPublicSearch(store, q, limit),
   },
   payment_request: {
     description: 'Make a USDC payment request for a person to pay from their own wallet: exact amount (order number in the last 4 decimals), EIP-681 link for wallets/QR.',
