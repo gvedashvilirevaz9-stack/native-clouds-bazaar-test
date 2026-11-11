@@ -12,7 +12,7 @@ import {payUri, units, txUrl} from '../shop/chain';
 import './bazaar.css';
 
 type Tab = 'stalls' | 'online' | 'orders' | 'connect' | 'agent';
-export const bazaarNav: {tab: Tab; stall: string | null; order: string | null} = {tab: 'stalls', stall: null, order: null};
+export const bazaarNav: {tab: Tab; stall: string | null; order: string | null} = {tab: 'online', stall: null, order: null};
 const short = (a: string) => a.slice(0, 6) + '…' + a.slice(-4);
 function qr(text: string) { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createDataURL(5, 2); }
 const ERR: Record<string, string> = {NOT_A_PRICELIST: 'В файле нет прайс-листа. Нужен HTML из «Моего магазина» или products.json.', NO_WALLET: 'Кошелёк в браузере не найден (Coinbase Wallet, MetaMask). Оплатите по QR.',
@@ -131,17 +131,18 @@ function AgentLimits() {
 
 export function BazaarRoom({onClose}: {onClose: () => void}) {
   const st = useBazaar(); const [tab, setTab] = useState<Tab>(bazaarNav.tab); const [open, setOpen] = useState<string | null>(bazaarNav.stall); const [orderId, setOrderId] = useState<string | null>(bazaarNav.order);
-  const [q, setQ] = useState(''); const [err, setErr] = useState(''); const [drag, setDrag] = useState(false); const fileRef = useRef<HTMLInputElement>(null);
+  const [q, setQ] = useState(''); const [err, setErr] = useState(''); const [solid, setSolid] = useState(() => { try { return localStorage.getItem('bz.solid') === '1'; } catch { return false; } }); const [drag, setDrag] = useState(false); const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => { void bazaar.load(); const f = (e: any) => { (window as any).__bazaarUiPending = null; const d = e.detail || {}; if (d.tab) setTab(d.tab); if (d.stall !== undefined) setOpen(d.stall); if (d.order !== undefined) setOrderId(d.order); if (d.q !== undefined) setQ(d.q); };
     window.addEventListener('bazaar:ui', f); const pend = (window as any).__bazaarUiPending; if (pend) f({detail: pend}); return () => window.removeEventListener('bazaar:ui', f); }, []);
   useEffect(() => { bazaarNav.tab = tab; bazaarNav.stall = open; bazaarNav.order = orderId; }, [tab, open, orderId]);
   const take = async (files: FileList | File[]) => { setErr(''); for (const f of Array.from(files)) { try { const s = await importFile(f); setOpen(s.key); setTab('stalls'); } catch (e) { setErr(`${f.name}: ${errText(e)}`); } } };
   const stall = open ? bazaar.stall(open) : null; const order = orderId ? bazaar.getOrder(orderId) : null;
   const found = q.trim() ? bazaar.search(q) : [];
-  return <div className="bz-room" data-testid="bazaar-room" onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={e => { e.preventDefault(); e.stopPropagation(); setDrag(false); void take(e.dataTransfer.files); }}>
+  return <div className={'bz-room' + (solid ? ' bz-solid' : '')} data-testid="bazaar-room" onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={e => { e.preventDefault(); e.stopPropagation(); setDrag(false); void take(e.dataTransfer.files); }}>
     <header className="bz-top">
       <div className="bz-title"><b>🧺 Базар</b><small>здесь вы покупаете: лавки из присланных прайс-листов и каталоги сервисов</small></div>
       <nav className="bz-tabs">{([['stalls', '🏪 Лавки'], ['online', '🛒 Магазины онлайн'], ['orders', '🧾 Мои покупки'], ['connect', '🔌 Подключения'], ['agent', '🤖 Агент и лимиты']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={tab === k} data-testid={'bz-tab-' + k} onClick={() => { setTab(k); if (k === 'stalls') setOpen(null); }}>{l}{k === 'orders' && st.orders.length ? ` (${st.orders.length})` : ''}</button>)}</nav>
+      <button type="button" className="bz-bgtoggle" title={solid ? 'Показать облака за окном' : 'Спокойный фон'} onClick={() => { const v = !solid; setSolid(v); try { localStorage.setItem('bz.solid', v ? '1' : '0'); } catch { /* */ } }}>{solid ? '☁' : '◐'}</button>
       <button type="button" className="bz-x" onClick={onClose} aria-label="Закрыть">×</button>
     </header>
     {drag && <div className="bz-dropping">Отпустите — прайс-лист станет лавкой</div>}
@@ -171,7 +172,7 @@ export function BazaarRoom({onClose}: {onClose: () => void}) {
       {tab === 'orders' && <div className="bz-sec" data-testid="bz-orders"><h2>Мои покупки</h2>
         {st.orders.length ? st.orders.slice().reverse().map(o => <div key={o.id} className="bz-ord-row"><button type="button" className="bz-link" onClick={() => { setOpen(o.stall); setOrderId(o.id); setTab('stalls'); }}>#{o.code} · {o.stallName}</button>
           <span>{o.items.map(i => i.title).join(', ').slice(0, 80)}</span><b>{o.groups.reduce((a, g) => a + Number(g.total), 0)} USDC</b><span>{orderPaid(o) ? '✓ оплачено' : 'ждёт оплаты'}</span><small>{new Date(o.created).toLocaleString()}</small></div>) : <p className="bz-note">Пока ничего.</p>}</div>}
-      {tab === 'online' && <OnlineShops/>}
+      {tab === 'online' && <OnlineShops onFiles={() => { setTab('stalls'); setOpen(null); }}/>}
       {tab === 'connect' && <Connections/>}
       {tab === 'agent' && <AgentLimits/>}
     </div>

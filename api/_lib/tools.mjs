@@ -47,6 +47,12 @@ export const TOOLS = {
     inputSchema: O({q: str('what to find, in English works best, e.g. "toy cars"'), source: {type: 'string', enum: ['shopify', 'channel3']}, country: str('ships to, ISO code e.g. US, GE (optional)'), max_price: str('max price in USD (optional)'), limit: {type: 'number'}}, ['q']),
     run: ({q, source = 'shopify', country, max_price, limit}) => globalSearch(source, q, {limit, country, maxPrice: max_price}),
   },
+  woo_store_search: {
+    description: 'Search products in ANY WooCommerce store by its web address (public Store API, no key). Checkout on the store page.',
+    inputSchema: O({store: str('store domain, e.g. "porterandyork.com"'), q: str('what to find')}, ['store', 'q']),
+    async run({store, q}) { const mod = await import('../woo-search.mjs'); let out; const res = {setHeader() { return res; }, status() { return res; }, json(j) { out = j; return res; }};
+      await mod.default({url: `/api/woo-search?store=${encodeURIComponent(store)}&q=${encodeURIComponent(q)}`}, res); if (out?.error) throw new Error(out.error); return out; },
+  },
   shopify_store_search: {
     description: 'Search products in ANY Shopify store by its web address, no token needed (uses the store\'s public search). Prices are in the store currency; checkout happens on the store page (url).',
     inputSchema: O({store: str('store domain, e.g. "allbirds.com"'), q: str('what to find'), limit: {type: 'number'}}, ['store', 'q']),
