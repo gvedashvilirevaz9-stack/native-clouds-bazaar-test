@@ -9,7 +9,7 @@ export type Product = {title: string; price: string | null; currency?: string | 
 const money = (v: string | null | undefined, cur?: string | null) => !v ? '' : cur && cur !== 'USD' ? `${Number(v).toLocaleString()} ${cur}` : `$${Number(v).toFixed(2)}`;
 const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
 
-export function ProductView({p, onClose, onPrev, onNext, onSave}: {p: Product; onClose: () => void; onPrev?: () => void; onNext?: () => void; onSave?: (p: Product) => void}) {
+export function ProductView({p, onClose, onPrev, onNext, onSave, idx, total}: {p: Product; onClose: () => void; onPrev?: () => void; onNext?: () => void; onSave?: (p: Product) => void; idx?: number; total?: number}) {
   const [full, setFull] = useState<Product>(p); const [i, setI] = useState(0); const [zoom, setZoom] = useState(false); const [pos, setPos] = useState('50% 50%');
   const [loading, setLoading] = useState(false); const [more, setMore] = useState(false); const [saved, setSaved] = useState(false);
   const stage = useRef<HTMLDivElement>(null);
@@ -58,7 +58,13 @@ export function ProductView({p, onClose, onPrev, onNext, onSave}: {p: Product; o
           {onSave && <button type="button" className="bz-btn" onClick={() => { onSave(full); setSaved(true); }}>{saved ? '✓ В лавке' : '＋ В лавку'}</button>}
           <button type="button" className="bz-btn" onClick={() => navigator.clipboard?.writeText(full.url)}>Копировать ссылку</button>
         </div>
-        <div className="bz-pv-nav">{onPrev && <button type="button" className="bz-link" onClick={onPrev}>← предыдущий товар</button>}{onNext && <button type="button" className="bz-link" onClick={onNext}>следующий товар →</button>}</div>
+        <div className="bz-pv-player" role="group" aria-label="Листать товары">
+          <button type="button" className="bz-pv-skip" disabled={!onPrev} onClick={onPrev} aria-label="Предыдущий товар" data-testid="bz-pv-prev">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg></button>
+          <div className="bz-pv-count"><b>{idx != null ? idx + 1 : '–'}</b><span>из {total ?? '–'}</span><small>товары в выдаче</small></div>
+          <button type="button" className="bz-pv-skip" disabled={!onNext} onClick={onNext} aria-label="Следующий товар" data-testid="bz-pv-next">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg></button>
+        </div>
         <small className="bz-pv-note">Покупка и доставка — на сайте магазина. Мы показываем то, что магазин отдаёт открыто.</small>
       </div>
     </div>

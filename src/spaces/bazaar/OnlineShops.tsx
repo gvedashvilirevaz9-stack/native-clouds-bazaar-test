@@ -168,7 +168,7 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
       </button>)}</div>
     </div>)}
     {view && (() => { const list = blocks.filter(b => b.items.length)[view.b]?.items || []; const it = list[view.k]; if (!it) return null;
-      return <ProductView p={it} onClose={() => setView(null)} onPrev={view.k > 0 ? () => setView({...view, k: view.k - 1}) : undefined} onNext={view.k < list.length - 1 ? () => setView({...view, k: view.k + 1}) : undefined}
+      return <ProductView p={it} idx={view.k} total={list.length} onClose={() => setView(null)} onPrev={view.k > 0 ? () => setView({...view, k: view.k - 1}) : undefined} onNext={view.k < list.length - 1 ? () => setView({...view, k: view.k + 1}) : undefined}
         onSave={x => bazaar.addConnector({key: 'c-saved', name: '★ Сохранённые товары', protocol: 'api', note: 'Товары, которые вы сохранили из «Магазинов онлайн».', logo: x.image,
           items: [...((bazaar.stall('c-saved') as any)?.items || []).filter((y: any) => y.url !== x.url), {id: 's' + Date.now(), title: x.title, price: x.price, image: x.image, url: x.url, pay: {kind: 'link', url: x.url}}]})}/>; })()}
   </div>;

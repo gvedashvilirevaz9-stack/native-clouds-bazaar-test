@@ -167,3 +167,17 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bz-pv-nav{display:flex;justify-content:space-between}
 .bz-pv-note{color:#7a8c96;font-size:11px}
 @media (max-width:860px){.bz-pv{grid-template-columns:1fr}.bz-pv-info{padding-right:0}}
+/* player-style product switcher: part of the platform, not of the product */
+.bz-pv-nav{display:none}
+.bz-pv-player{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px;border-radius:999px;
+  background:linear-gradient(180deg,#2a4a5b,#1b3442);box-shadow:0 10px 28px #1b344255,inset 0 1px 0 #ffffff26}
+.bz-pv-skip{width:52px;height:52px;flex:none;border-radius:50%;border:0;cursor:pointer;display:grid;place-items:center;color:#1b3442;
+  background:radial-gradient(circle at 35% 30%,#fff,#dfe9f0);box-shadow:0 4px 12px #0004,inset 0 -2px 0 #0001;transition:transform .15s,box-shadow .2s}
+.bz-pv-skip svg{width:22px;height:22px;fill:currentColor}
+.bz-pv-skip:hover:not(:disabled){transform:scale(1.07);box-shadow:0 6px 18px #0005,0 0 0 4px #ffffff22}
+.bz-pv-skip:active:not(:disabled){transform:scale(.95)}
+.bz-pv-skip:disabled{opacity:.3;cursor:default}
+.bz-pv-count{flex:1;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:4px;color:#fff;line-height:1.1}
+.bz-pv-count b{font-size:22px}.bz-pv-count span{font-size:14px;opacity:.85}
+.bz-pv-count small{width:100%;text-align:center;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.6}
+.bz-pv-info{min-height:100%}
