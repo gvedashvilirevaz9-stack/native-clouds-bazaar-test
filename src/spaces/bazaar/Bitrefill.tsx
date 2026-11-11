@@ -14,6 +14,7 @@ const KEY = 'bz.bitrefill.v1', ORD = 'bz.bitrefill.orders.v1';
 const KINDS: {id: Kind; ru: string; icon: string; color: string}[] = [{id: 'topups', ru: 'Пополнить телефон', icon: '📱', color: '#2f8fd8'}, {id: 'gift-cards', ru: 'Подарочные карты', icon: '🎁', color: '#e0508f'}, {id: 'esims', ru: 'eSIM для поездок', icon: '📶', color: '#14a3a8'}];
 const PRESETS: Record<Kind, string[]> = {topups: ['Magti', 'Geocell', 'Silknet', 'Beeline', 'Ucom', 'Azercell', 'Kcell', 'Turkcell'], 'gift-cards': ['Amazon', 'Steam', 'Netflix', 'Spotify', 'Apple', 'Google Play', 'Uber', 'Airbnb'], esims: ['Turkey', 'Georgia', 'Europe', 'USA', 'UAE', 'Thailand', 'Global']};
 const COUNTRIES = ['GE', 'AM', 'AZ', 'KZ', 'TR', 'US', 'DE', 'AE'];
+const CNAME: Record<string, string> = {GE: 'Georgia', AM: 'Armenia', AZ: 'Azerbaijan', KZ: 'Kazakhstan', TR: 'Turkey', US: 'United States', DE: 'Germany', AE: 'United Arab Emirates'};
 const hex = (s: string) => '0x' + Array.from(new TextEncoder().encode(s), b => b.toString(16).padStart(2, '0')).join('');
 const loadTok = () => { try { const t = JSON.parse(sessionStorage.getItem(KEY) || 'null'); return t && t.exp > Date.now() ? t : null; } catch { return null; } };
 const loadOrd = (): Buy[] => { try { return JSON.parse(localStorage.getItem(ORD) || '[]'); } catch { return []; } };
@@ -56,7 +57,16 @@ export function BitrefillPanel() {
   };
   const search = async (text = q, k = kind) => {
     if (!text.trim()) return; setBusy('search'); setMsg(''); setSel(null); setPkg(null); setRaw(null);
-    try { const j = await get(`op=search&kind=${k}&q=${encodeURIComponent(text.trim())}&country=${cc}`); const list = arr(j).map(norm).filter(p => p.slug); setItems(list); if (!list.length) { setMsg('Ничего не нашлось. Попробуйте другое название или страну.'); setRaw(j); } }
+    try {
+      // Bitrefill searches top-ups by country/operator slug, not always by brand name: try the word, then the whole country, then the country name.
+      const word = text.trim(); const tries = [word, ...(k !== 'gift-cards' ? ['', CNAME[cc] || cc, word.toLowerCase() + ' ' + (CNAME[cc] || '')] : [word.toLowerCase()])];
+      let list: Prod[] = []; let last: any = null; let used = word;
+      for (const t of tries) { const j = await get(`op=search&kind=${k}&q=${encodeURIComponent(t)}&country=${cc}`); last = j; list = arr(j).map(norm).filter(p => p.slug); used = t; if (list.length) break; }
+      const w0 = word.toLowerCase(); const hit = list.filter(p => (p.name + ' ' + p.slug).toLowerCase().includes(w0));
+      setItems(hit.length ? hit : list);
+      if (!list.length) { setMsg('Ничего не нашлось. Попробуйте другую страну или вкладку.'); setRaw(last); }
+      else if (!hit.length && used !== word) setMsg(`«${word}» отдельно не нашёлся — показываю всё, что Bitrefill даёт по стране ${cc}.`);
+    }
     catch (e: any) { setItems([]); if (String(e.message).includes('402')) setMsg('Сначала войдите в Bitrefill кошельком — поиск станет бесплатным.'); else fail(e); }
     setBusy('');
   };
