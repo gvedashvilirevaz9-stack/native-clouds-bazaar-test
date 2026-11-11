@@ -127,3 +127,12 @@
 .bz-cats{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 10px}
 .bz-cats button{padding:5px 11px;border-radius:999px;border:1px solid #ffffffcc;background:#ffffff66;color:#203d4b;font:inherit;font-size:12px;cursor:pointer}
 .bz-cats button[aria-pressed=true]{background:#9a63d6;border-color:#9a63d6;color:#fff}
+.bz-step{display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-weight:700;font-size:13px;color:#1b3442;letter-spacing:.01em}
+.bz-step span{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#203d4b;color:#fff;font-size:12px}
+.bz-step small{font-weight:400;color:#3d5868}
+.bz-cats button{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;font-size:13px}
+.bz-cats button[aria-pressed=true]{background:#203d4b;border-color:#203d4b}
+.bz-favs{align-items:center}
+.bz-online{max-width:1440px}
+.bz-providers{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.bz-prov{padding:13px 14px 12px}.bz-prov b{font-size:16px}
