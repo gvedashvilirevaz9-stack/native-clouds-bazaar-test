@@ -181,3 +181,26 @@ button.bz-card{font:inherit;text-align:left;cursor:pointer}
 .bz-pv-count b{font-size:22px}.bz-pv-count span{font-size:14px;opacity:.85}
 .bz-pv-count small{width:100%;text-align:center;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.6}
 .bz-pv-info{min-height:100%}
+/* ===== fixed-frame popup: nothing jumps when flipping ===== */
+.bz-pv{height:min(720px,100%);width:min(1180px,100%);overflow:hidden;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:stretch}
+.bz-pv-gal{display:grid;grid-template-rows:minmax(0,1fr) 76px;gap:10px;min-height:0}
+.bz-pv-stage{aspect-ratio:auto;height:100%;min-height:0;transition:none}
+.bz-pv-img{position:absolute;inset:0;background-repeat:no-repeat;transition:background-size .2s}
+.bz-pv-stage.z .bz-pv-img{transition:none}
+.bz-pv-arr{z-index:1}.bz-pv-hint{z-index:1}
+.bz-pv-thumbs{height:76px;align-items:center}
+.bz-pv-thumbs-empty{color:#7a8c96;font-size:12px;padding-left:4px}
+.bz-pv-info{display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:12px;min-height:0;padding-right:34px}
+.bz-pv-head{display:flex;flex-direction:column;gap:6px}
+.bz-pv-shop{height:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.bz-pv-info h3{height:2.4em;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:22px}
+.bz-pv-price{height:36px}
+.bz-pv-meta{height:20px;overflow:hidden;white-space:nowrap}
+.bz-pv-body{overflow-y:auto;min-height:0;padding-right:6px;display:flex;flex-direction:column;gap:10px;border-top:1px solid #dfe8ef;padding-top:10px;scrollbar-width:thin}
+.bz-pv-text{margin:0;font-size:14px;line-height:1.55;color:#2f4b5a}.bz-pv-text.muted{color:#8a9aa4}
+.bz-pv-actions{margin-top:0;flex-wrap:nowrap}.bz-pv-actions .bz-btn{white-space:nowrap}
+.bz-btn.on{background:#fff4d6;border-color:#f1c75b;color:#7a5600}
+.bz-pv-player{margin-top:0}
+.bz-pv-note{display:none}
+@media (max-width:860px){.bz-pv{height:100%;grid-template-columns:1fr;grid-template-rows:46% 54%;overflow:auto}.bz-pv-info{padding-right:0}.bz-pv-actions{flex-wrap:wrap}}
+.bz-pv-veil{position:fixed;inset:0;border-radius:inherit}

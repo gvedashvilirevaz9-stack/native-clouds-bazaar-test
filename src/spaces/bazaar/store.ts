@@ -26,6 +26,7 @@ export type Order = {id: string; stall: string; stallName: string; code: number;
   items: {id: string; title: string; price: string; qty: number; seller?: string}[]; groups: Group[];
   buyer: {name: string; contact: string; comment: string}; contact: Record<string, string>};
 
+export const FAV_KEY = 'c-favorites';
 type State = {stalls: Stall[]; orders: Order[]; policy: AgentPolicy; loaded: boolean};
 let st: State = {stalls: [], orders: [], policy: DEFAULT_POLICY, loaded: false};
 const subs = new Set<() => void>(); let rev = 0; let saveT: any;
@@ -57,6 +58,16 @@ export const bazaar = {
     set({stalls: [s, ...st.stalls.filter(x => x.key !== key)]}); return s;
   },
   remove(key: string) { set({stalls: st.stalls.filter(s => s.key !== key)}); },
+  /** ★ Favourites: one stall that only grows. Same product (same title + same shop page) is not added twice; nothing else is replaced. */
+  saveFavorite(i: Omit<ConnItem, 'id'>) {
+    const cur = st.stalls.find(s => s.key === FAV_KEY) as ConnStall | undefined;
+    const page = (u?: string) => (u || '').split('?')[0];
+    const same = (y: ConnItem) => y.title === i.title && page(y.url || (y.pay as any).url) === page(i.url || (i.pay as any).url);
+    const items = [...(cur?.items || []).filter(y => !same(y)), {...i, id: 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5)}];
+    const s: ConnStall = {key: FAV_KEY, kind: 'connector', name: '★ Избранное', protocol: 'manual', note: 'Товары, которые вы отложили. Покупка — на сайте магазина.', logo: items[0]?.image || null, items, importedAt: cur?.importedAt || Date.now(), warnings: []};
+    set({stalls: [s, ...st.stalls.filter(x => x.key !== FAV_KEY)]}); return items.length;
+  },
+  isFavorite: (title: string, url: string) => { const cur = st.stalls.find(s => s.key === FAV_KEY) as ConnStall | undefined; const pg = url.split('?')[0]; return !!cur?.items.some(y => y.title === title && (y.url || '').split('?')[0] === pg); },
 
   catalog(stallKey?: string): CatalogItem[] {
     return st.stalls.filter(s => !stallKey || s.key === stallKey).flatMap((s): CatalogItem[] => s.kind === 'file'

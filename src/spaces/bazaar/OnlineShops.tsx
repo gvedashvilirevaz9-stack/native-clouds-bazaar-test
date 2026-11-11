@@ -125,7 +125,7 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
   };
   const toBazaar = (b: typeof blocks[number]) => {
     if (!b.items.length) return;
-    bazaar.addConnector({name: `${b.title}: ${q || cat}`, protocol: b.key === 'shopify' ? 'ucp' : 'api', endpoint: b.key === 'shopify' ? 'https://catalog.shopify.com/api/ucp/mcp' : undefined, note: 'Найдено в «Магазинах онлайн». Цены в валюте магазина; оплата на его странице.', logo: b.items[0].image,
+    bazaar.addConnector({key: 'c-' + Date.now().toString(36), name: `${b.title}: ${q || cat}`, protocol: b.key === 'shopify' ? 'ucp' : 'api', endpoint: b.key === 'shopify' ? 'https://catalog.shopify.com/api/ucp/mcp' : undefined, note: 'Найдено в «Магазинах онлайн». Цены в валюте магазина; оплата на его странице.', logo: b.items[0].image,
       items: b.items.map((i, k) => ({id: 'p' + k, title: i.title, price: i.price, image: i.image, url: i.url, pay: {kind: 'link' as const, url: i.url}}))});
   };
   const price = (i: Item) => i.currency && i.currency !== 'USD' ? `${Number(i.price).toLocaleString()} ${i.currency}` : `$${Number(i.price).toFixed(2)}`;
@@ -169,7 +169,6 @@ export function OnlineShops({onFiles}: {onFiles?: () => void}) {
     </div>)}
     {view && (() => { const list = blocks.filter(b => b.items.length)[view.b]?.items || []; const it = list[view.k]; if (!it) return null;
       return <ProductView p={it} idx={view.k} total={list.length} onClose={() => setView(null)} onPrev={view.k > 0 ? () => setView({...view, k: view.k - 1}) : undefined} onNext={view.k < list.length - 1 ? () => setView({...view, k: view.k + 1}) : undefined}
-        onSave={x => bazaar.addConnector({key: 'c-saved', name: '★ Сохранённые товары', protocol: 'api', note: 'Товары, которые вы сохранили из «Магазинов онлайн».', logo: x.image,
-          items: [...((bazaar.stall('c-saved') as any)?.items || []).filter((y: any) => y.url !== x.url), {id: 's' + Date.now(), title: x.title, price: x.price, image: x.image, url: x.url, pay: {kind: 'link', url: x.url}}]})}/>; })()}
+        onSave={x => bazaar.saveFavorite({title: x.title, price: x.price, image: x.image, url: x.url, text: x.description?.slice(0, 300), pay: {kind: 'link', url: x.url}})}/>; })()}
   </div>;
 }
