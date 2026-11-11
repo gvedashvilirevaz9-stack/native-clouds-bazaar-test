@@ -78,7 +78,15 @@ export function MoneyPlace() {
   }, [feed]);
   const cards = feed.flatMap(e => e.items.map((r, i) => ({r, key: e.id + i, ask: e.ask, at: e.at, first: i === 0})));
   return <div className="mp" data-testid="mp">
-    <div className="bz-step"><span>1</span>Что вам нужно <small>{meta?.you.city ? `город по IP: ${meta.you.city}` : 'пакеты сервисов'}</small></div>
+    <div className="mp-top">
+      <div className="bz-step mp-label"><span>✦</span>Что вам нужно</div>
+      <div className="mp-bar" data-testid="mp-bar" onClick={e => { if (e.target === e.currentTarget) (e.currentTarget.querySelector('input') as HTMLInputElement)?.focus(); }}>
+        <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && q.trim() && void ask(`/api/money?q=${encodeURIComponent(q.trim())}`, q.trim())}
+          placeholder="спросите…" style={{width: `min(70%, ${Math.max(150, q.length * 8.6 + 40)}px)`}} data-testid="mp-q"/>
+        <div className="mp-presets">{EXAMPLES.map(x => <button key={x} type="button" disabled={!!busy} onClick={() => { setQ(''); void ask(`/api/money?q=${encodeURIComponent(x)}`, x); }}>{x}</button>)}</div>
+        <button type="button" className="mp-ask" disabled={!!busy || !q.trim()} onClick={() => void ask(`/api/money?q=${encodeURIComponent(q.trim())}`, q.trim())} data-testid="mp-go" aria-label="Спросить">{busy ? '…' : '→'}</button>
+      </div>
+    </div>
     <div className="mp-pkgs">{(meta?.packages || []).map(p => <button key={p.id} type="button" aria-pressed={pk === p.id} style={{'--pc': PK_COLOR[p.id] || '#2f8fd8'} as React.CSSProperties} className="bz-prov mp-pkg" onClick={() => setPk(pk === p.id ? '' : p.id)} data-testid={'mp-pkg-' + p.id}>
       <span className="bz-prov-glow"/><b>{p.icon} {p.ru}</b><small>{p.options.slice(0, 3).map(o => o.label).join(' · ')}</small></button>)}</div>
     {cur && <div className="mp-opts">
@@ -86,10 +94,6 @@ export function MoneyPlace() {
       {cur.options.map(o => <button key={o.serviceId} type="button" className="mp-chip" disabled={!!busy || o.needsInput} title={o.needsInput ? 'Нужны ваши данные — спросите словами ниже' : o.desc}
         onClick={() => void ask(`/api/money?service=${o.serviceId}`, o.label)}><b>{o.label}</b><small>{o.needsInput ? 'спросите словами' : o.desc}</small></button>)}
     </div>}
-    <div className="bz-step"><span>2</span>Или спросите словами</div>
-    <div className="bz-search"><input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && q.trim() && void ask(`/api/money?q=${encodeURIComponent(q.trim())}`, q.trim())} placeholder="погода в Батуми, курс доллара, рейсы Тбилиси — Стамбул 15 ноября…" data-testid="mp-q"/>
-      <button type="button" className="bz-btn acc" disabled={!!busy || !q.trim()} onClick={() => void ask(`/api/money?q=${encodeURIComponent(q.trim())}`, q.trim())} data-testid="mp-go">{busy && busy === q.trim() ? 'Ищу…' : 'Спросить'}</button></div>
-    <div className="mp-ex">{EXAMPLES.map(x => <button key={x} type="button" onClick={() => { setQ(x); void ask(`/api/money?q=${encodeURIComponent(x)}`, x); }}>{x}</button>)}</div>
     {hint && <p className="bz-note">{hint}</p>}
     {busy && <p className="bz-note">⏳ {busy}…</p>}
     {feed.length > 0 && <div className="bz-step"><span>✦</span>Лента <small>новые сверху · хранится в этом браузере</small><button type="button" className="bz-link" onClick={() => setFeed([])}>очистить</button></div>}
