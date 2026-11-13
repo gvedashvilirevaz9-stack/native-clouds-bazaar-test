@@ -1,0 +1,156 @@
+{
+  "terrain_ssim": 0.9999986290931702,
+  "scene_ssim": 0.9961618781089783,
+  "mean_absolute_rgb_error": 0.37959305877057614,
+  "max_background_delta_outside_object_patches": 0,
+  "method": "master-derived visible pixels + AI-generated hidden extensions; high-resolution airship/balloon at measured bboxes; eagle original reference pose",
+  "full_scene_ssim_enhanced_first_frame": 0.9953780770301819,
+  "mean_absolute_rgb_error_enhanced_first_frame": 0.4299849569797516,
+  "parallax_test": {
+    "offsets_px": [
+      -20,
+      20
+    ],
+    "overscan": 1.04,
+    "transparent_pixels_in_assembled_image": 0,
+    "engine": "Offline Pillow composition only; portal not opened or modified"
+  },
+  "alpha": {
+    "assets/clouds/cloud1.png": {
+      "size": [
+        1012,
+        1024
+      ],
+      "transparent_pixels": 920684,
+      "partial_pixels": 79080
+    },
+    "assets/clouds/cloud2.png": {
+      "size": [
+        1024,
+        653
+      ],
+      "transparent_pixels": 526794,
+      "partial_pixels": 123371
+    },
+    "assets/clouds/cloud3.png": {
+      "size": [
+        914,
+        1024
+      ],
+      "transparent_pixels": 726623,
+      "partial_pixels": 171467
+    },
+    "assets/scene-mountains/airship.png": {
+      "size": [
+        1671,
+        385
+      ],
+      "transparent_pixels": 220850,
+      "partial_pixels": 11810
+    },
+    "assets/scene-mountains/airship_master.png": {
+      "size": [
+        153,
+        42
+      ],
+      "transparent_pixels": 1671,
+      "partial_pixels": 1771
+    },
+    "assets/scene-mountains/balloon.png": {
+      "size": [
+        579,
+        835
+      ],
+      "transparent_pixels": 205589,
+      "partial_pixels": 9219
+    },
+    "assets/scene-mountains/balloon_master.png": {
+      "size": [
+        53,
+        72
+      ],
+      "transparent_pixels": 824,
+      "partial_pixels": 1288
+    },
+    "assets/scene-mountains/eagle_1.png": {
+      "size": [
+        1120,
+        1120
+      ],
+      "transparent_pixels": 1172187,
+      "partial_pixels": 8471
+    },
+    "assets/scene-mountains/eagle_2.png": {
+      "size": [
+        1120,
+        1120
+      ],
+      "transparent_pixels": 1177564,
+      "partial_pixels": 5638
+    },
+    "assets/scene-mountains/eagle_3.png": {
+      "size": [
+        1120,
+        1120
+      ],
+      "transparent_pixels": 1170318,
+      "partial_pixels": 6182
+    },
+    "assets/scene-mountains/eagle_4.png": {
+      "size": [
+        1120,
+        1120
+      ],
+      "transparent_pixels": 1179834,
+      "partial_pixels": 6535
+    },
+    "assets/scene-mountains/eagle_5.png": {
+      "size": [
+        1120,
+        1120
+      ],
+      "transparent_pixels": 1168067,
+      "partial_pixels": 6139
+    },
+    "assets/scene-mountains/eagle_master.png": {
+      "size": [
+        125,
+        59
+      ],
+      "transparent_pixels": 2423,
+      "partial_pixels": 3452
+    },
+    "assets/scene-mountains/foothills.png": {
+      "size": [
+        2880,
+        1440
+      ],
+      "transparent_pixels": 2011036,
+      "partial_pixels": 11425
+    },
+    "assets/scene-mountains/forest.png": {
+      "size": [
+        2880,
+        1440
+      ],
+      "transparent_pixels": 2482750,
+      "partial_pixels": 2880
+    },
+    "assets/scene-mountains/meadow.png": {
+      "size": [
+        2880,
+        1440
+      ],
+      "transparent_pixels": 3086038,
+      "partial_pixels": 11443
+    },
+    "assets/scene-mountains/mountains.png": {
+      "size": [
+        2880,
+        1440
+      ],
+      "transparent_pixels": 1524675,
+      "partial_pixels": 2880
+    }
+  }
+}

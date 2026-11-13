@@ -1,0 +1,69 @@
+Reconstruct the EXACT SAME terracotta and ivory vertically striped hot-air balloon in the reference, with its small brown basket, as a high resolution isolated cutout. Preserve envelope proportions, stripe rhythm, basket shape and consistent upper-left sunlight. Photo-real, gentle atmospheric haze. Center the whole balloon occupying 80 percent of the HEIGHT within a 2048x1152 canvas. TRANSPARENT RGBA background, no sky, ground, shadow or painted checkerboard. No additional elements, text, lettering or logos.
+
+Fixed scene passport:
+{
+  "canvas": {
+    "w": 2880,
+    "h": 1440,
+    "note": "2:1 = 16:9 плюс ~6% запаса по бокам для параллакса"
+  },
+  "camera": {
+    "height_m": 1.7,
+    "horizon_y": 0.46,
+    "lens": "35mm equivalent",
+    "tilt": 0
+  },
+  "sun": {
+    "azimuth": "upper-left, behind camera's left shoulder",
+    "elevation_deg": 40,
+    "time": "11:00",
+    "color_temp_k": 5500
+  },
+  "season": "late summer",
+  "air": "clear, light haze in distance",
+  "planes": [
+    {
+      "id": "sky",
+      "distance_m": "inf"
+    },
+    {
+      "id": "mountains",
+      "distance_m": 25000
+    },
+    {
+      "id": "foothills",
+      "distance_m": 4000
+    },
+    {
+      "id": "forest",
+      "distance_m": 400
+    },
+    {
+      "id": "meadow",
+      "distance_m": "3-60"
+    }
+  ],
+  "objects": [
+    {
+      "id": "airship",
+      "real_size_m": 120,
+      "distance_m": 2500,
+      "altitude_m": 600,
+      "expected_px": 134.4
+    },
+    {
+      "id": "balloon",
+      "real_size_m": 20,
+      "distance_m": 700,
+      "altitude_m": 150,
+      "expected_px": 80.0
+    },
+    {
+      "id": "eagle",
+      "real_size_m": 2.0,
+      "distance_m": 45,
+      "altitude_m": 25,
+      "expected_px": 124.44
+    }
+  ]
+}

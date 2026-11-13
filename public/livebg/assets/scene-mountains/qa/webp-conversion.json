@@ -1,0 +1,184 @@
+{
+  "encoder": "Pillow/libwebp",
+  "quality": 88,
+  "method": 6,
+  "alpha_quality": 100,
+  "resized": false,
+  "cropped": false,
+  "master_png_sha256": "17785e27897d3a1fdddfde580724847560abbd522e0b7b7a2f84ab46dcfcfc8a",
+  "all_scene_references_resolve": true,
+  "asset_checks": [
+    {
+      "file": "clouds/cloud1.webp",
+      "size": [
+        1012,
+        1024
+      ],
+      "alpha_identical": true,
+      "bytes": 52318
+    },
+    {
+      "file": "clouds/cloud2.webp",
+      "size": [
+        1024,
+        653
+      ],
+      "alpha_identical": true,
+      "bytes": 82556
+    },
+    {
+      "file": "clouds/cloud3.webp",
+      "size": [
+        914,
+        1024
+      ],
+      "alpha_identical": true,
+      "bytes": 89146
+    },
+    {
+      "file": "airship.webp",
+      "size": [
+        1671,
+        385
+      ],
+      "alpha_identical": true,
+      "bytes": 57732
+    },
+    {
+      "file": "airship_master.webp",
+      "size": [
+        153,
+        42
+      ],
+      "alpha_identical": true,
+      "bytes": 5878
+    },
+    {
+      "file": "background_clean.webp",
+      "size": [
+        2880,
+        1440
+      ],
+      "alpha_identical": false,
+      "bytes": 638964
+    },
+    {
+      "file": "balloon.webp",
+      "size": [
+        579,
+        835
+      ],
+      "alpha_identical": true,
+      "bytes": 51288
+    },
+    {
+      "file": "balloon_master.webp",
+      "size": [
+        53,
+        72
+      ],
+      "alpha_identical": true,
+      "bytes": 4186
+    },
+    {
+      "file": "eagle_1.webp",
+      "size": [
+        1120,
+        1120
+      ],
+      "alpha_identical": true,
+      "bytes": 43392
+    },
+    {
+      "file": "eagle_2.webp",
+      "size": [
+        1120,
+        1120
+      ],
+      "alpha_identical": true,
+      "bytes": 36986
+    },
+    {
+      "file": "eagle_3.webp",
+      "size": [
+        1120,
+        1120
+      ],
+      "alpha_identical": true,
+      "bytes": 39650
+    },
+    {
+      "file": "eagle_4.webp",
+      "size": [
+        1120,
+        1120
+      ],
+      "alpha_identical": true,
+      "bytes": 38016
+    },
+    {
+      "file": "eagle_5.webp",
+      "size": [
+        1120,
+        1120
+      ],
+      "alpha_identical": true,
+      "bytes": 40370
+    },
+    {
+      "file": "eagle_master.webp",
+      "size": [
+        125,
+        59
+      ],
+      "alpha_identical": true,
+      "bytes": 9116
+    },
+    {
+      "file": "foothills.webp",
+      "size": [
+        2880,
+        1440
+      ],
+      "alpha_identical": true,
+      "bytes": 325984
+    },
+    {
+      "file": "forest.webp",
+      "size": [
+        2880,
+        1440
+      ],
+      "alpha_identical": true,
+      "bytes": 770514
+    },
+    {
+      "file": "meadow.webp",
+      "size": [
+        2880,
+        1440
+      ],
+      "alpha_identical": true,
+      "bytes": 640694
+    },
+    {
+      "file": "mountains.webp",
+      "size": [
+        2880,
+        1440
+      ],
+      "alpha_identical": true,
+      "bytes": 142480
+    },
+    {
+      "file": "sky.webp",
+      "size": [
+        2880,
+        1440
+      ],
+      "alpha_identical": false,
+      "bytes": 33006
+    }
+  ],
+  "original_metrics_note": "qa/metrics.json describes the original PNG/lossless composition, not quality-88 WebP."
+}

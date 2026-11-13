@@ -1,0 +1,78 @@
+Use case: photorealistic-natural
+Asset: a panoramic landscape master reference for separate animated depth plates. Render at 2880 x 1440 pixels, 2:1 wide panoramic aspect ratio.
+Photorealistic alpine landscape with a restrained cinematic matte-painting touch. Late summer, 11:00, clear air, distant atmospheric haze. Sun from upper LEFT, behind the camera's left shoulder, 40-degree elevation, 5500K. Natural light.
+Eye level 1.7 m, 35mm equivalent lens, no tilt. Geometric horizon at 46 percent canvas height, not the mountain summit line.
+Distinct separated depth silhouettes: distant snowy alpine range about 25km away across the horizon, soft blue foothills about 4km away, detailed spruce forest edge about 400m away, flowering meadow in foreground. Lush but not oversaturated. Foreground flowers limited to low corners; broad calm central meadow and sky for UI.
+Exactly three tiny flying objects, fully separate and not touching:
+1. Silver vintage zeppelin, side profile pointing right, length 134 pixels (4.67 percent canvas width), centered x=0.28 y=0.16, subtly hazy.
+2. Single striped terracotta and ivory hot-air balloon with a small basket, total height 80 pixels (5.56 percent canvas height), centered x=0.65 y=0.23.
+3. Single golden-brown eagle in a broad gliding pose with both wings visible, wingspan 124 pixels (4.3 percent canvas width), centered x=0.79 y=0.12. Sharper than the distant airship.
+The landscape remains dominant. These are SMALL distant objects, never large hero illustrations. The same upper-left sunlight affects every object. No sun disc, no dramatic flare, no cloud banks (cloud sprites added later), no text, logos, people, buildings or UI.
+Rendering priorities: requested panoramic dimensions; natural believable scale; consistent light and clearly separable forest/foothill/mountain silhouettes.
+Scene passport (fixed reference metadata; the stated x/y composition positions take priority for framing the flying objects):
+{
+  "canvas": {
+    "w": 2880,
+    "h": 1440,
+    "note": "2:1 = 16:9 плюс ~6% запаса по бокам для параллакса"
+  },
+  "camera": {
+    "height_m": 1.7,
+    "horizon_y": 0.46,
+    "lens": "35mm equivalent",
+    "tilt": 0
+  },
+  "sun": {
+    "azimuth": "upper-left, behind camera's left shoulder",
+    "elevation_deg": 40,
+    "time": "11:00",
+    "color_temp_k": 5500
+  },
+  "season": "late summer",
+  "air": "clear, light haze in distance",
+  "planes": [
+    {
+      "id": "sky",
+      "distance_m": "inf"
+    },
+    {
+      "id": "mountains",
+      "distance_m": 25000
+    },
+    {
+      "id": "foothills",
+      "distance_m": 4000
+    },
+    {
+      "id": "forest",
+      "distance_m": 400
+    },
+    {
+      "id": "meadow",
+      "distance_m": "3-60"
+    }
+  ],
+  "objects": [
+    {
+      "id": "airship",
+      "real_size_m": 120,
+      "distance_m": 2500,
+      "altitude_m": 600,
+      "expected_px": 134.4
+    },
+    {
+      "id": "balloon",
+      "real_size_m": 20,
+      "distance_m": 700,
+      "altitude_m": 150,
+      "expected_px": 80.0
+    },
+    {
+      "id": "eagle",
+      "real_size_m": 2.0,
+      "distance_m": 45,
+      "altitude_m": 25,
+      "expected_px": 124.44
+    }
+  ]
+}

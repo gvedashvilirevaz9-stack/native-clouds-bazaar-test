@@ -1,0 +1,335 @@
+{
+  "version": 1,
+  "basePath": "public/livebg/assets/scene-mountains/",
+  "files": [
+    {
+      "path": "airship.webp",
+      "bytes": 57732,
+      "sha256": "4706631c9355ce395c7f9effd724d47b6ae04673c791afa4afda4fe2b43b7a32",
+      "width": 1671,
+      "height": 385,
+      "format": "WEBP"
+    },
+    {
+      "path": "airship_master.webp",
+      "bytes": 5878,
+      "sha256": "ef52a8cc0d361adb9281969b60626f840cc3b30597b96018650ffdfe7622da01",
+      "width": 153,
+      "height": 42,
+      "format": "WEBP"
+    },
+    {
+      "path": "background_clean.webp",
+      "bytes": 638964,
+      "sha256": "a7d810e8d213fd14c35c3560fd411fe0e4df636d529f954d2711fc354c1793a9",
+      "width": 2880,
+      "height": 1440,
+      "format": "WEBP"
+    },
+    {
+      "path": "balloon.webp",
+      "bytes": 51288,
+      "sha256": "3d8acb268af9d8586bef69ad19040d70c967423f1033918baed5a6e238c4538a",
+      "width": 579,
+      "height": 835,
+      "format": "WEBP"
+    },
+    {
+      "path": "balloon_master.webp",
+      "bytes": 4186,
+      "sha256": "fcd20b0c08c32e81bccd5b59b12b380be68ac05eaa8db095b0715b388f4e9101",
+      "width": 53,
+      "height": 72,
+      "format": "WEBP"
+    },
+    {
+      "path": "clouds/cloud1.webp",
+      "bytes": 52318,
+      "sha256": "1ccea71f44728b3593a56c7308420af1ac5409ebcf4ae74b4244b3b908bdc178",
+      "width": 1012,
+      "height": 1024,
+      "format": "WEBP"
+    },
+    {
+      "path": "clouds/cloud2.webp",
+      "bytes": 82556,
+      "sha256": "578b8172be7bb2fa7849c165ed4a49ec14eb4d3059a5469c620a21c4b4a6f08b",
+      "width": 1024,
+      "height": 653,
+      "format": "WEBP"
+    },
+    {
+      "path": "clouds/cloud3.webp",
+      "bytes": 89146,
+      "sha256": "bb61956c1acec3e1d2bd79d66a9f8e0ea71e0d849edfbee3e771fcd1635e802d",
+      "width": 914,
+      "height": 1024,
+      "format": "WEBP"
+    },
+    {
+      "path": "eagle_1.webp",
+      "bytes": 43392,
+      "sha256": "ae1277f5253472a96d1010f191128f5027d8daf999b9cd94a8fce9a18f714074",
+      "width": 1120,
+      "height": 1120,
+      "format": "WEBP"
+    },
+    {
+      "path": "eagle_2.webp",
+      "bytes": 36986,
+      "sha256": "62b9548480d5921fea0a4847125d076591768c76da420ebe1823966412ced0b7",
+      "width": 1120,
+      "height": 1120,
+      "format": "WEBP"
+    },
+    {
+      "path": "eagle_3.webp",
+      "bytes": 39650,
+      "sha256": "d1d04a6e71f25947a751c755ec4eb3fcc6ea9d77c64dfb917e3562c60a710613",
+      "width": 1120,
+      "height": 1120,
+      "format": "WEBP"
+    },
+    {
+      "path": "eagle_4.webp",
+      "bytes": 38016,
+      "sha256": "5e26e957da6cc1666cab0f81d95194a2741692b36a910570076bca70c99eb890",
+      "width": 1120,
+      "height": 1120,
+      "format": "WEBP"
+    },
+    {
+      "path": "eagle_5.webp",
+      "bytes": 40370,
+      "sha256": "3a2d099ea084ba8df42f182733018eb395594491b741eb5a11de5ed1bad0a828",
+      "width": 1120,
+      "height": 1120,
+      "format": "WEBP"
+    },
+    {
+      "path": "eagle_master.webp",
+      "bytes": 9116,
+      "sha256": "6f72563308a6e3b048d965ee277b5f4fef080f9f529e2e9c8c433394801e509b",
+      "width": 125,
+      "height": 59,
+      "format": "WEBP"
+    },
+    {
+      "path": "foothills.webp",
+      "bytes": 325984,
+      "sha256": "d46884483169c4109d8d85e1abbcc84c92d5e253bbe85950baab460ba24435ae",
+      "width": 2880,
+      "height": 1440,
+      "format": "WEBP"
+    },
+    {
+      "path": "forest.webp",
+      "bytes": 770514,
+      "sha256": "77207cac15a1ebc81b3992df0a32ca2f45e1ad7f21070067a8610ab9f201e3d9",
+      "width": 2880,
+      "height": 1440,
+      "format": "WEBP"
+    },
+    {
+      "path": "master.png",
+      "bytes": 5642670,
+      "sha256": "17785e27897d3a1fdddfde580724847560abbd522e0b7b7a2f84ab46dcfcfc8a",
+      "width": 2880,
+      "height": 1440,
+      "format": "PNG"
+    },
+    {
+      "path": "meadow.webp",
+      "bytes": 640694,
+      "sha256": "b9f48adf61575b0a8194509d043d4d321a3c21bb00f9610686008a2cdbc916b5",
+      "width": 2880,
+      "height": 1440,
+      "format": "WEBP"
+    },
+    {
+      "path": "mountains.webp",
+      "bytes": 142480,
+      "sha256": "a399554c4f98770cd1401467fdfcc46bb8e8beacecddfb4ebd9bf5f2bfab6b0e",
+      "width": 2880,
+      "height": 1440,
+      "format": "WEBP"
+    },
+    {
+      "path": "previews/difference-x8.webp",
+      "bytes": 24940,
+      "sha256": "34243d3c4a3d344f362b809972542b0e2e7c307a54a2829873593a63b1614367",
+      "width": 1440,
+      "height": 720,
+      "format": "WEBP"
+    },
+    {
+      "path": "previews/eagle-motion.gif",
+      "bytes": 130861,
+      "sha256": "4cd78f4f7fe10d0ebbec9b3ddbf35059d47ec632c29f8b670d9860e5fe296208",
+      "width": 448,
+      "height": 448,
+      "format": "GIF"
+    },
+    {
+      "path": "previews/layers.jpg",
+      "bytes": 111292,
+      "sha256": "82e9bec3135275c7cb02bc2a071e5e1086f8aeb772aac9850a18ebe40245b7cd",
+      "width": 1440,
+      "height": 1180,
+      "format": "JPEG"
+    },
+    {
+      "path": "previews/master.jpg",
+      "bytes": 348544,
+      "sha256": "659b173254fb0115a8ca65e5a4a901b601273f033f2d2848fa4a3b401fe282c5",
+      "width": 1440,
+      "height": 720,
+      "format": "JPEG"
+    },
+    {
+      "path": "previews/objects.jpg",
+      "bytes": 60827,
+      "sha256": "ca7d884bf577396c45a7600d5e7fa3ec862b09558f6c49365b7161eca5edc552",
+      "width": 1440,
+      "height": 990,
+      "format": "JPEG"
+    },
+    {
+      "path": "previews/parallax-left.webp",
+      "bytes": 195216,
+      "sha256": "a436f73a833c9c59a909b78f3ea5f761b82b15987119474e16655b9281a7aec2",
+      "width": 1440,
+      "height": 720,
+      "format": "WEBP"
+    },
+    {
+      "path": "previews/parallax-right.webp",
+      "bytes": 193424,
+      "sha256": "d30a992be98253f7ca832105eee1e64e20ebc64ca7b5c9113949c163c7519b7a",
+      "width": 1440,
+      "height": 720,
+      "format": "WEBP"
+    },
+    {
+      "path": "previews/scene.webp",
+      "bytes": 197074,
+      "sha256": "5da280ec5bd445eaaa297684c68228446e962e56a9dd3b84cd9daa270ed91072",
+      "width": 1440,
+      "height": 720,
+      "format": "WEBP"
+    },
+    {
+      "path": "prompts/airship.txt",
+      "bytes": 1987,
+      "sha256": "f69c8f6abb493cbc8218eeb1fd4bb847a1303441e584c102eab1816f0e4b94c9"
+    },
+    {
+      "path": "prompts/background-clean.txt",
+      "bytes": 1672,
+      "sha256": "f7c7d78360f845de160103c13d7178eccea1dcb27f6e4d72900866d04ad80f52"
+    },
+    {
+      "path": "prompts/balloon.txt",
+      "bytes": 1831,
+      "sha256": "248c3c056167d17346591399ecd94719c87fbd207499ff9f60df8d861a543629"
+    },
+    {
+      "path": "prompts/cloud-sheet-key.txt",
+      "bytes": 2083,
+      "sha256": "327b016d7ccd2d30386a68c891d51c6f631efd689276aec2019016bc191c0986"
+    },
+    {
+      "path": "prompts/eagle-sheet-v2.txt",
+      "bytes": 2240,
+      "sha256": "2dba0e25d300eb5f75def600cde3f3c8d8496d8be261082c62ec7e630142a051"
+    },
+    {
+      "path": "prompts/foothills.txt",
+      "bytes": 2033,
+      "sha256": "02bb02dba5663f8b70ad80caa9dcaf269732c07b651efad3aa954b5f4456a4b2"
+    },
+    {
+      "path": "prompts/forest-key.txt",
+      "bytes": 2057,
+      "sha256": "a0aa8d278b6ec6c755b8eb2fbce6188747ec4e4014532c9ff46901173518e76a"
+    },
+    {
+      "path": "prompts/master.txt",
+      "bytes": 3265,
+      "sha256": "3c353346721dc30bf71bd48c0b1d79e0df4186b9f312951904b7c1a984d48675"
+    },
+    {
+      "path": "prompts/meadow-key.txt",
+      "bytes": 1937,
+      "sha256": "2edc5a4b04be8b61a4153a1b44521b071e44473f19fd9d8ecb3781266e0e0bb4"
+    },
+    {
+      "path": "prompts/mountains.txt",
+      "bytes": 2104,
+      "sha256": "f9e89539be009a14f832c73e22023465c3cf331c9852bba2d318bd511c792d56"
+    },
+    {
+      "path": "prompts/sky.txt",
+      "bytes": 1849,
+      "sha256": "a8e580952ac072c8acab7035355ba620e34668db3eea09277312107dde67d606"
+    },
+    {
+      "path": "qa/contours.json",
+      "bytes": 39740,
+      "sha256": "58b6bf57673976cbae93a00eac7020588192a44f6244444de3f8c979847f52e8"
+    },
+    {
+      "path": "qa/metrics.json",
+      "bytes": 3707,
+      "sha256": "8babdc6e6c362a8a0091307c840ae219823ac0178325501b4e31e5581bb812ba"
+    },
+    {
+      "path": "qa/object-measurements.json",
+      "bytes": 272,
+      "sha256": "ff490a3f6beb7f2da0ffad6740b01e3b15df15fddf53f8b7409a630163bd2c64"
+    },
+    {
+      "path": "qa/webp-conversion.json",
+      "bytes": 3411,
+      "sha256": "c8e11e809ff62c554f2f1af414f0a3d546ed5d7f3fb89f52d28f6fc9b35c8bbd"
+    },
+    {
+      "path": "README.md",
+      "bytes": 5372,
+      "sha256": "74b8149e94f102cbee0bc849ac4d784d579436f1600cf7eb1db85a1d868c09e0"
+    },
+    {
+      "path": "REPORT.md",
+      "bytes": 8999,
+      "sha256": "59ee19be78725020b4b584b6f9fa48987b829e52753cd44db9a3242d326949ae"
+    },
+    {
+      "path": "scene-passport.json",
+      "bytes": 58243,
+      "sha256": "d6a68b187d1b9e41402c81e56e45581e457d4b0fa52d0b29d3fe2c9a8ae8f8bd"
+    },
+    {
+      "path": "scene-reference.json",
+      "bytes": 4299,
+      "sha256": "abe2ae005ac4b137634bce4aa0b54defbd473777a099e506bac163d202464b59"
+    },
+    {
+      "path": "scene.json",
+      "bytes": 4663,
+      "sha256": "f90a3a2dc6507340bb40ca9d6969b285e3d55b11f3461056e36e37a8ab6b21bf"
+    },
+    {
+      "path": "sky.webp",
+      "bytes": 33006,
+      "sha256": "d8feb96b8dd382270db00949c32a5cda04759ddf20acddf2af9f615b64850d81",
+      "width": 2880,
+      "height": 1440,
+      "format": "WEBP"
+    },
+    {
+      "path": "SOURCE-PLAN.md",
+      "bytes": 12319,
+      "sha256": "ef0a155ed64ad51cc165b3199090d449766f7363f1596b0e0436065c9f338ebd"
+    }
+  ]
+}
