@@ -39,6 +39,8 @@ const CLOUDS = [1, 2, 3].map((i) => `${BASE}clouds/cloud${i}.webp`);
 export const ASSET = (p) => BASE + p;
 
 export const PRESETS = {
+  // master-shot scene from Codex: one shared canvas, measured objects (assets/scene-mountains/scene.json)
+  mountains: () => ({ name: 'Горы · мастер-сцена', url: BASE + 'scene-mountains/scene.json', live: true }),
   // what the stand has today: sky + clouds, now layered with parallax
   sky: () => ({
     name: 'Небо (как сейчас)', time: 'live', weather: 'live',
@@ -108,6 +110,10 @@ export async function geocode(name) {
 }
 
 // ---------- validation of objects (agent writes go through this) ----------
+function okUrl(u) {
+  if (/^https:\/\//.test(u)) return true;
+  try { return new URL(u, BASE).origin === new URL(BASE).origin; } catch { return false; }
+}
 function cleanObject(o, id) {
   if (!o || typeof o !== 'object') throw new Error('object expected');
   const kind = String(o.kind || '');
@@ -125,13 +131,17 @@ function cleanObject(o, id) {
   if (kind === 'emoji') out.emoji = String(o.emoji || '⭐').slice(0, 8);
   if (kind === 'svg') { const s = String(o.svg || ''); if (!/^\s*<svg[\s>]/i.test(s) || s.length > 20000) throw new Error('svg must be an <svg> string under 20k'); out.svg = s; }
   if (kind === 'image') {
-    const u = String(o.url || ''); if (!/^https:\/\//.test(u) && (/^\/\//.test(u) || /^[a-z]+:/i.test(u))) throw new Error('image url must be https or same-site');
+    const u = String(o.url || ''); if (!okUrl(u)) throw new Error('image url must be https or same-site');
     out.url = new URL(u, BASE).href;
     if (Array.isArray(o.frames)) out.frames = o.frames.slice(0, 12).map((f) => new URL(String(f), BASE).href).filter((f) => /^https?:/.test(f));
     if (o.fps) out.fps = clamp(+o.fps, 1, 30);
     if (o.flap) out.flap = clamp(+o.flap, 0, 1);
+    if (Array.isArray(o.frameSequence)) out.frameSequence = o.frameSequence.slice(0, 32).map((n) => Math.max(0, n | 0));
   }
   if (o.label) out.label = String(o.label).slice(0, 60);
+  if (o.width) out.width = clamp(+o.width, 0.001, 2);
+  if (Array.isArray(o.anchor)) out.anchor = [clamp(+o.anchor[0], 0, 1), clamp(+o.anchor[1], 0, 1)];
+  if (o.distance_m) out.distance_m = +o.distance_m;
   return out;
 }
 
@@ -264,6 +274,12 @@ export function createLiveBG(canvas, opts = {}) {
   function withLayer(depth, fn) {
     const o = offset(depth);
     ctx.save(); ctx.translate(S.W / 2 + o.x, S.H / 2 + o.y); ctx.scale(o.s, o.s); ctx.translate(-S.W / 2, -S.H / 2); fn(); ctx.restore();
+  }
+  // scenes with a shared master canvas: every plate and object uses the same fit, so layers register exactly
+  function fit() {
+    const c = S.scene.canvas; if (!c) return null;
+    const sc = Math.max((S.W * 1.06) / c.w, (S.H * 1.1) / c.h);
+    return { sc, ox: (S.W - c.w * sc) / 2, oy: (S.H - c.h * sc) / 2, cw: c.w * sc, ch: c.h * sc };
   }
   function lightLevel(sun) { return clamp(0.3 + sun.el * 1.4, 0.16, 1); }
 
@@ -400,7 +416,8 @@ export function createLiveBG(canvas, opts = {}) {
   }
 
   function drawObject(o, light) {
-    const s = o.size * S.H; let x = o.x * S.W, y = o.y * S.H;
+    const F = fit();
+    const s = o.size * (F ? F.ch : S.H); let x = F ? F.ox + o.x * F.cw : o.x * S.W, y = F ? F.oy + o.y * F.ch : o.y * S.H;
     const m = o.motion, sp = m?.speed ?? 1;
     if (m?.type === 'drift') { const span = S.W + s * 4; x = ((((x + s * 2 + S.t * sp * S.W * 0.012) % span) + span) % span) - s * 2; y += Math.sin(S.t * 0.6 * sp + o.x * 9) * s * 0.06; }
     if (m?.type === 'bob') y += Math.sin(S.t * 1.6 * sp + o.x * 9) * s * 0.06;
@@ -411,10 +428,14 @@ export function createLiveBG(canvas, opts = {}) {
     else if (o.kind === 'emoji') { ctx.font = `${s}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(o.emoji, 0, 0); }
     else {
       let im = null;
-      if (o.frames?.length) { const fr = o.frames.map(loadImg); const k = Math.floor(S.t * (o.fps || 8) + o.x * 7) % fr.length; im = fr[k] || fr.find(Boolean); }
+      if (o.frames?.length) {
+        const fr = o.frames.map(loadImg), seq = o.frameSequence?.length ? o.frameSequence : fr.map((_, i) => i);
+        const k = seq[Math.floor(S.t * (o.fps || 8) + o.x * 7) % seq.length] % fr.length; im = fr[k] || fr.find(Boolean);
+      }
       else im = getImage(o);
       if (im) {
-        const w = s * (im.naturalWidth / im.naturalHeight);
+        const w = o.width ? o.width * (F ? F.cw : S.W) : s * (im.naturalWidth / im.naturalHeight);
+        if (o.anchor) ctx.translate((0.5 - o.anchor[0]) * w, (0.5 - o.anchor[1]) * s);
         if (o.flap) {
           // procedural wing beat: vertical strips bend around the body axis (until real frames exist)
           const N = 140, iw = im.naturalWidth, ih = im.naturalHeight, ph = Math.sin(S.t * 5.5 + o.x * 9), cx = 0.5;
@@ -448,7 +469,7 @@ export function createLiveBG(canvas, opts = {}) {
     // blend tints over the whole layer, then cut back to the layer's own alpha
     const tint = (op, col, a) => { if (a <= 0.003) return; c.globalCompositeOperation = op; c.fillStyle = col; c.globalAlpha = a; c.fillRect(0, 0, w, h); c.globalAlpha = 1; };
     if (!hasFilter) tint('source-atop', '#000', (1 - g.light) * 0.55);
-    tint('soft-light', 'rgb(255,120,60)', 0.55 * g.warm * (1 - g.gray));
+    tint('soft-light', 'rgb(255,120,60)', 0.4 * g.warm * (1 - g.gray));
     tint('multiply', 'rgb(255,190,150)', 0.25 * g.warm * (1 - g.gray));
     tint('multiply', 'rgb(70,92,170)', 0.55 * g.night);
     tint('source-atop', 'rgb(118,128,142)', 0.16 * g.gray);
@@ -469,10 +490,11 @@ export function createLiveBG(canvas, opts = {}) {
   const R = {
     plate(L, env) {
       const im = loadImg(L.src); if (!im) return;
-      const s = st(L), m = 0.05 + L.depth * 0.07;
+      const s = st(L), m = 0.05 + L.depth * 0.07, F = fit();
       const sc = Math.max((S.W * (1 + 2 * m)) / im.naturalWidth, (S.H * (1 + 2 * m)) / im.naturalHeight) * (L.zoom || 1);
-      const dw = im.naturalWidth * sc, dh = im.naturalHeight * sc;
-      const dx = (S.W - dw) / 2, dy = (L.anchor === 'center' ? (S.H - dh) / 2 : S.H * (1 + m * 0.5) - dh) + (L.y || 0) * S.H;
+      let dw = im.naturalWidth * sc, dh = im.naturalHeight * sc;
+      let dx = (S.W - dw) / 2, dy = (L.anchor === 'center' ? (S.H - dh) / 2 : S.H * (1 + m * 0.5) - dh) + (L.y || 0) * S.H;
+      if (F) { dx = F.ox; dy = F.oy; dw = F.cw; dh = F.ch; }
       const g = grading(env, L.snow || 0), key = JSON.stringify(g), tw = Math.round(Math.min(im.naturalWidth, dw * S.dpr)), th = Math.round(tw * im.naturalHeight / im.naturalWidth);
       if ((!s.cv || s.key !== key || s.tw !== tw) && (regradeBudget > 0 || !s.cv)) { s.cv = relight(im, g, tw, th, s.cv); s.key = key; s.tw = tw; regradeBudget--; }
       withLayer(L.depth, () => ctx.drawImage(s.cv, dx, dy, dw, dh));
@@ -481,6 +503,10 @@ export function createLiveBG(canvas, opts = {}) {
     sky(L, env) {
       const g = ctx.createLinearGradient(0, 0, 0, S.H); g.addColorStop(0, css(env.sky.top)); g.addColorStop(1, css(env.sky.bot));
       ctx.fillStyle = g; ctx.fillRect(0, 0, S.W, S.H);
+      if (L.src) {
+        const a = smooth((env.sun.el - 0.05) / 0.35) * (1 - clamp(env.w.cloud * 0.6 + env.w.rain * 0.5)); if (a < 0.01) return;
+        ctx.globalAlpha = a; R.plate({ ...L, depth: 0 }, env); ctx.globalAlpha = 1;
+      }
     },
     stars(L, env) {
       const a = clamp(-env.sun.el * 3) * (1 - env.w.cloud * 0.9); if (a <= 0.01) return;
@@ -489,6 +515,7 @@ export function createLiveBG(canvas, opts = {}) {
     },
     sun(L, env) {
       const { sun, w } = env, p = sunPos(sun);
+      if (L.only === 'night' && sun.day) return;
       withLayer(L.depth, () => {
         const clear = 1 - w.cloud * 0.75 - w.rain * 0.2;
         if (sun.day) {
@@ -561,7 +588,7 @@ export function createLiveBG(canvas, opts = {}) {
       });
     },
     objects(L, env) {
-      const light = lightLevel(env.sun), list = [...(L.objects || [])].sort((a, b) => (a.z || 0) - (b.z || 0));
+      const light = lightLevel(env.sun) * (1 - clamp(env.w.cloud * 0.25 + env.w.rain * 0.25)), list = [...(L.objects || [])].sort((a, b) => (a.z || 0) - (b.z || 0));
       withLayer(L.depth, () => { for (const o of list) drawObject(o, light); });
     },
     precip(L, env) {
@@ -663,14 +690,22 @@ export function createLiveBG(canvas, opts = {}) {
   function loadScene(scene) {
     if (!scene || !Array.isArray(scene.layers)) throw new Error('scene.layers[] required');
     const types = Object.keys(R);
-    const layers = scene.layers.slice(0, 24).map((l, i) => {
+    const base = scene.assetBase ? new URL(scene.assetBase, scene._from || location.href).href : BASE;
+    const abs = (u) => (u ? new URL(String(u), base).href : u);
+    const layers = scene.layers.slice(0, 24).map((l0, i) => {
+      const l = { ...l0 };
+      if (l.src) l.src = abs(l.src);
+      if (l.sprites) l.sprites = l.sprites.map(abs);
+      if (l.objects) l.objects = l.objects.map((o) => ({ ...o, url: abs(o.url), frames: o.frames?.map(abs) }));
+      if (l.enabled === false) l.hidden = true;
       if (!types.includes(l.type)) throw new Error(`layer ${i}: type must be ${types.join(', ')}`);
       const out = { ...l, id: String(l.id || l.type + i), depth: clamp(+l.depth || 0, 0, 1.2) };
-      if (l.type === 'plate') { const u = String(l.src || ''); if (!/^https:\/\//.test(u) && !/^(\.|\/)[^/]/.test(u) && !u.startsWith(BASE)) throw new Error(`layer ${i}: plate src must be https or same-site`); out.src = new URL(u, BASE).href; }
+      if (l.type === 'plate' || (l.type === 'sky' && l.src)) { const u = String(l.src || ''); if (!okUrl(u)) throw new Error(`layer ${i}: plate src must be https or same-site`); out.src = new URL(u, BASE).href; }
       if (l.type === 'objects') out.objects = (l.objects || []).slice(0, 40).map((o, j) => cleanObject(o, out.id + '-' + j));
       return out;
     });
-    S.scene = { ...scene, layers }; S.layerState.clear();
+    const canvas = scene.canvas && +scene.canvas.w > 0 && +scene.canvas.h > 0 ? { w: +scene.canvas.w, h: +scene.canvas.h } : null;
+    S.scene = { ...scene, canvas, layers }; delete S.scene._from; S.layerState.clear();
     if (scene.weather && scene.weather !== 'live') setWeather(scene.weather); else if (scene.weather === 'live') setWeather('live');
     emit('scene', getScene());
   }
@@ -713,7 +748,26 @@ export function createLiveBG(canvas, opts = {}) {
     async setLocation(loc) { S.location = typeof loc === 'string' ? await geocode(loc) : loc; return refreshWeather(); },
     setTime(h, speed = 0) { if (h == null || h === 'live') { S.timeMode = 'live'; S.speed = 0; } else { S.timeMode = 'fixed'; S.hour = ((+h % 24) + 24) % 24; S.speed = +speed || 0; } },
     getTime: () => ({ mode: S.timeMode, hour: S.curH ?? localHour(), sunrise: S.live?.sunrise ?? 7.2, sunset: S.live?.sunset ?? 17.8 }),
-    loadPreset(name) { if (!PRESETS[name]) throw new Error('preset: ' + Object.keys(PRESETS).join(' | ')); loadScene(PRESETS[name]()); },
+    async loadPreset(name) {
+      if (!PRESETS[name]) throw new Error('preset: ' + Object.keys(PRESETS).join(' | '));
+      const p = PRESETS[name]();
+      if (p.url) return api.loadSceneUrl(p.url, { live: p.live, name: p.name });
+      loadScene(p);
+    },
+    async loadSceneUrl(url, o = {}) {
+      const r = await fetch(url); if (!r.ok) throw new Error('scene ' + r.status);
+      const sc = await r.json(); sc._from = new URL(url, location.href).href; if (o.name) sc.name = o.name;
+      if (o.live) {
+        // reference manifests switch clouds/precip off for comparison; a live wallpaper turns them on
+        sc.layers = sc.layers.map((l) => (l.type === 'clouds' ? { ...l, enabled: true, density: l.density ?? 0.6, alt: l.alt || [-0.02, 0.22], scale: l.scale ?? 0.55 }
+          : l.type === 'precip' ? { ...l, enabled: true }
+          : l.type === 'sun' ? { ...l, enabled: true, only: 'night' } : l));
+        const i = sc.layers.findIndex((l) => l.type === 'sky');
+        if (!sc.layers.some((l) => l.type === 'stars')) sc.layers.splice(i + 1, 0, { id: 'stars', type: 'stars', depth: 0.02 });
+        if (!sc.layers.some((l) => l.type === 'fog')) sc.layers.push({ id: 'fog', type: 'fog', depth: 0.45 });
+      }
+      loadScene(sc);
+    },
     loadScene, getScene, addObject, updateObject, removeObject,
     clearAgent() { const L = agentLayer(); if (L) L.objects = []; emit('scene', getScene()); },
     setLayerVisible(id, on) { const L = layerById(id); if (L) L.hidden = !on; },
@@ -733,7 +787,9 @@ export function createLiveBG(canvas, opts = {}) {
     });
   }
 
-  loadScene(opts.scene || PRESETS[opts.preset || 'weather']());
+  { const p0 = !opts.scene && PRESETS[opts.preset || 'weather']?.();
+    if (p0?.url) { loadScene(PRESETS.sky()); api.loadPreset(opts.preset).catch((e) => emit('error', e.message)); }
+    else loadScene(opts.scene || p0 || PRESETS.weather()); }
   if (opts.weather) setWeather(opts.weather);
   if (opts.input) setInput(opts.input).catch(() => {});
   S.raf = requestAnimationFrame(frame);
