@@ -38,6 +38,27 @@ const BASE = ROOT + 'assets/';
 const CLOUDS = [1, 2, 3].map((i) => `${BASE}clouds/cloud${i}.webp`);
 export const ASSET = (p) => BASE + p;
 
+// Flying things: pre-scaled sprites so the browser never resizes big images on the fly.
+// Files: assets/fly/<type>/<frame>_<height>.webp — the engine picks the smallest height >= what is drawn.
+export const FLY = {
+  eagle: { aspect: 1.1751, frames: 5, lods: [12, 24, 48, 96, 192, 384], speed: 1 },
+  airship: { aspect: 4.3403, frames: 1, lods: [8, 16, 32, 64, 128, 256], speed: 0.45 },
+  balloon: { aspect: 0.6934, frames: 1, lods: [16, 32, 64, 128, 256, 512], speed: 0.22 },
+};
+// sprite height as a share of screen height, and speed in screen widths per second, per depth plan
+export const PLANS = {
+  far: { h: { eagle: 0.011, airship: 0.012, balloon: 0.022 }, speed: 0.012 },
+  mid: { h: { eagle: 0.026, airship: 0.026, balloon: 0.045 }, speed: 0.024 },
+  near: { h: { eagle: 0.06, airship: 0.055, balloon: 0.09 }, speed: 0.05 },
+};
+// courier sizes (S/M/L) — a bigger courier brings a bigger widget
+export const COURIER = {
+  airship: { S: 0.035, M: 0.055, L: 0.085 },
+  balloon: { S: 0.07, M: 0.11, L: 0.17 },
+  eagle: { S: 0.05, M: 0.08, L: 0.12 },
+};
+export const WIDGET_SCALE = { S: 0.75, M: 1, L: 1.45 };
+
 export const PRESETS = {
   'mountains-v5': () => ({ name: 'Горы · v5', url: BASE + 'scene-mountains/v5/scene.json', live: true }),
   // master-shot scene from Codex: one shared canvas, measured objects (assets/scene-mountains/scene.json)
@@ -492,8 +513,84 @@ export function createLiveBG(canvas, opts = {}) {
   let regradeBudget = 0;
 
   const sp0 = (sp, c) => { const x = sp[c.k % sp.length].white; return { width: x.naturalWidth || x.width, height: x.naturalHeight || x.height }; };
+  // ----- flying things -----
+  S.flyers = { far: { eagle: 3, airship: 1, balloon: 0 }, mid: { eagle: 2, airship: 0, balloon: 1 }, near: { eagle: 1, airship: 0, balloon: 0 } };
+  S.couriers = [];
+  let courierSeq = 1;
+  function flySprite(type, frame, hPx) {
+    const F = FLY[type], need = hPx * S.dpr, lod = F.lods.find((h) => h >= need) || F.lods[F.lods.length - 1];
+    return loadImg(`${BASE}fly/${type}/${frame + 1}_${lod}.webp`);
+  }
+  const FLAP = [0, 1, 2, 1, 0, 3, 4, 3];
+  function eagleFrame(f, dt) {
+    // soaring: glide with wings spread, then a few wing beats
+    f.anim = f.anim || { mode: 'glide', t: Math.random() * 3, beats: 0 };
+    const a = f.anim; a.t -= dt;
+    if (a.mode === 'glide') { if (a.t <= 0) { a.mode = 'flap'; a.k = 0; a.beats = 2 + (Math.random() * 3 | 0); } return 0; }
+    a.k += dt * (f.fps || 11);
+    if (a.k >= FLAP.length * a.beats) { a.mode = 'glide'; a.t = 1.5 + Math.random() * 3.5; return 0; }
+    return FLAP[Math.floor(a.k) % FLAP.length];
+  }
+  function drawFlyer(f, light) {
+    const frame = f.type === 'eagle' ? eagleFrame(f, S.dt) : 0;
+    const im = flySprite(f.type, frame, f.h); if (!im) return;
+    const w = f.h * FLY[f.type].aspect;
+    if (hasFilter && light < 0.97) ctx.filter = `brightness(${(0.35 + light * 0.65).toFixed(2)})`;
+    ctx.drawImage(im, f.x - w / 2, f.y - f.h / 2, w, f.h);
+    ctx.filter = 'none';
+  }
+  function objLight(env) { return lightLevel(env.sun) * (1 - clamp(env.w.cloud * 0.25 + env.w.rain * 0.25)); }
+
   // ----- layer renderers -----
   const R = {
+    flyers(L, env) {
+      const s = st(L), plan = PLANS[L.plan || 'mid'], want = S.flyers[L.plan || 'mid'] || {};
+      if (!s.list) s.list = [];
+      const [b0, b1] = L.band || [0.08, 0.3];
+      for (const type of Object.keys(FLY)) {
+        const have = s.list.filter((f) => f.type === type);
+        for (let i = have.length; i < (want[type] || 0); i++) s.list.push({ type, wait: Math.random() * (i ? 12 : 2), x: -1e4 });
+        if (have.length > (want[type] || 0)) { const drop = have.slice(want[type] || 0); s.list = s.list.filter((f) => !drop.includes(f)); }
+      }
+      const light = objLight(env);
+      withLayer(L.depth, () => {
+        for (const f of s.list) {
+          f.h = plan.h[f.type] * S.H * (f.k || 1);
+          const w = f.h * FLY[f.type].aspect;
+          if (f.wait > 0) { f.wait -= S.dt; if (f.wait <= 0) { f.k = 0.8 + Math.random() * 0.4; f.x = -w; f.y0 = lerp(b0, b1, Math.random()) * S.H; f.sp = plan.speed * FLY[f.type].speed * (0.8 + Math.random() * 0.4); f.ph = Math.random() * 6; f.fps = 9 + Math.random() * 4; } else continue; }
+          f.x += f.sp * S.W * S.dt;
+          f.y = f.y0 + Math.sin(S.t * 0.5 + f.ph) * f.h * 0.4;
+          if (f.x > S.W + w) { f.wait = 4 + Math.random() * 14; continue; }
+          drawFlyer(f, light);
+        }
+      });
+    },
+    courier(L, env) {
+      if (!S.couriers.length) return;
+      const light = objLight(env), o = offset(L.depth);
+      withLayer(L.depth, () => {
+        for (const c of S.couriers) {
+          const w = c.h * FLY[c.type].aspect, tx = c.at[0] * S.W;
+          if (c.state === 'in') {
+            // ease into the drop point (critically damped)
+            const k = 1 - Math.exp(-S.dt * 2.2); c.x += Math.min((tx - c.x) * k, c.vmax * S.dt);
+            if (Math.abs(tx - c.x) < 3) { c.state = 'hover'; c.t = 0.7; }
+          } else if (c.state === 'hover') {
+            c.t -= S.dt;
+            if (!c.dropped && c.t < 0.35) {
+              c.dropped = true;
+              const dropY = c.y + c.h * (c.type === 'airship' ? 0.45 : c.type === 'balloon' ? 0.5 : 0.25);
+              emit('drop', { id: c.id, widget: c.widget, data: c.data, size: c.size, from: [c.x + o.x, dropY + o.y], to: [c.at[0] * S.W, c.at[1] * S.H] });
+              c.resolve?.(c.id);
+            }
+            if (c.t <= 0) { c.state = 'out'; c.v = 0; }
+          } else { c.v = Math.min(c.vmax, (c.v || 0) + c.vmax * S.dt * 0.8); c.x += c.v * S.dt; }
+          c.y = c.y0 + Math.sin(S.t * 0.9 + c.id) * c.h * (c.type === 'airship' ? 0.06 : 0.12);
+          drawFlyer(c, light);
+        }
+        S.couriers = S.couriers.filter((c) => !(c.state === 'out' && c.x > S.W + c.h * FLY[c.type].aspect));
+      });
+    },
     plate(L, env) {
       const im = loadImg(L.src); if (!im) return;
       const s = st(L), m = 0.05 + L.depth * 0.07, F = fit();
@@ -777,6 +874,19 @@ export function createLiveBG(canvas, opts = {}) {
     },
     loadScene, getScene, addObject, updateObject, removeObject,
     clearAgent() { const L = agentLayer(); if (L) L.objects = []; emit('scene', getScene()); },
+    // a courier flies in, drops a widget at `at` (screen fractions), and flies away; resolves on drop
+    deliver(widget, o = {}) {
+      const type = FLY[o.by] ? o.by : 'airship', size = ['S', 'M', 'L'].includes(o.size) ? o.size : 'M';
+      const at = [clamp(+(o.at?.[0] ?? 0.5), 0.1, 0.9), clamp(+(o.at?.[1] ?? 0.45), 0.2, 0.85)];
+      const h = COURIER[type][size] * S.H, w = h * FLY[type].aspect;
+      const c = { id: courierSeq++, type, size, widget: String(widget).slice(0, 40), data: o.data || null, at, h, x: -w, state: 'in', vmax: S.W * (type === 'eagle' ? 0.4 : type === 'airship' ? 0.22 : 0.16) };
+      c.y0 = c.y = Math.max(h * 0.8, at[1] * S.H - h * (type === 'airship' ? 1.4 : 1.1) - S.H * 0.08);
+      S.couriers.push(c);
+      if (!S.scene.layers.some((l) => l.type === 'courier')) S.scene.layers.splice(S.scene.layers.length - 2, 0, { id: 'courier', type: 'courier', depth: 0.7 });
+      return new Promise((res) => { c.resolve = res; });
+    },
+    setFlyers(counts) { for (const p of Object.keys(counts || {})) if (S.flyers[p]) for (const t of Object.keys(counts[p])) if (FLY[t]) S.flyers[p][t] = clamp(+counts[p][t] | 0, 0, 8); return JSON.parse(JSON.stringify(S.flyers)); },
+    getFlyers: () => JSON.parse(JSON.stringify(S.flyers)),
     setLayerVisible(id, on) { const L = layerById(id); if (L) L.hidden = !on; },
     on(e, f) { (listeners[e] ||= []).push(f); return () => { listeners[e] = listeners[e].filter((x) => x !== f); }; },
     destroy() { cancelAnimationFrame(S.raf); ro.disconnect(); stopCamera(); clearTimeout(wTimer); window.removeEventListener('pointermove', onMouse); document.removeEventListener('pointerleave', onLeave); },

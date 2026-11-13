@@ -44,6 +44,16 @@
    "offsetY": -180
   },
   {
+   "id": "flyers-far",
+   "type": "flyers",
+   "plan": "far",
+   "depth": 0.16,
+   "band": [
+    0.12,
+    0.3
+   ]
+  },
+  {
    "id": "foothills",
    "type": "plate",
    "depth": 0.25,
@@ -53,60 +63,21 @@
    "offsetY": -240
   },
   {
-   "id": "sky-objects",
+   "id": "flyers-mid",
+   "type": "flyers",
+   "plan": "mid",
+   "depth": 0.32,
+   "band": [
+    0.08,
+    0.28
+   ]
+  },
+  {
+   "id": "agent",
    "type": "objects",
    "depth": 0.3,
    "agent": true,
-   "objects": [
-    {
-     "id": "airship",
-     "kind": "image",
-     "url": "airship.webp",
-     "x": 0.3269097222222222,
-     "y": 0.12986111111111112,
-     "size": 0.029166666666666667,
-     "width": 0.053125,
-     "anchor": [
-      0.5,
-      0.5
-     ],
-     "bbox_px": [
-      865,
-      166,
-      153,
-      42
-     ],
-     "distance_m": 2500,
-     "motion": {
-      "type": "drift",
-      "speed": 0.2
-     }
-    },
-    {
-     "id": "balloon",
-     "kind": "image",
-     "url": "balloon.webp",
-     "x": 0.6182291666666667,
-     "y": 0.125,
-     "size": 0.05,
-     "width": 0.01840277777777778,
-     "anchor": [
-      0.5,
-      0.5
-     ],
-     "bbox_px": [
-      1754,
-      144,
-      53,
-      72
-     ],
-     "distance_m": 700,
-     "motion": {
-      "type": "bob",
-      "speed": 0.5
-     }
-    }
-   ]
+   "objects": []
   },
   {
    "id": "forest",
@@ -118,55 +89,19 @@
    "offsetY": -160
   },
   {
-   "id": "near-objects",
-   "type": "objects",
+   "id": "flyers-near",
+   "type": "flyers",
+   "plan": "near",
    "depth": 0.6,
-   "objects": [
-    {
-     "id": "eagle",
-     "kind": "image",
-     "url": "eagle_1.webp",
-     "frames": [
-      "eagle_1.webp",
-      "eagle_2.webp",
-      "eagle_3.webp",
-      "eagle_4.webp",
-      "eagle_5.webp"
-     ],
-     "frameSequence": [
-      0,
-      1,
-      2,
-      1,
-      0,
-      3,
-      4,
-      3
-     ],
-     "fps": 10,
-     "x": 0.7657986111111111,
-     "y": 0.1482638888888889,
-     "size": 0.06612231828370158,
-     "width": 0.04940153568202349,
-     "anchor": [
-      0.50625,
-      0.34732142857142856
-     ],
-     "bbox_px": [
-      2143,
-      184,
-      125,
-      59
-     ],
-     "distance_m": 45,
-     "frame_canvas_px": [
-      1120,
-      1120
-     ],
-     "reference_url": "eagle_master.webp",
-     "note": "The custom anchor is the centre of the visible first-frame footprint. Keep the shared canvas and anchor across all frames."
-    }
+   "band": [
+    0.06,
+    0.22
    ]
+  },
+  {
+   "id": "courier",
+   "type": "courier",
+   "depth": 0.7
   },
   {
    "id": "foreground",
