@@ -278,7 +278,9 @@ export function createLiveBG(canvas, opts = {}) {
   // scenes with a shared master canvas: every plate and object uses the same fit, so layers register exactly
   function fit() {
     const c = S.scene.canvas; if (!c) return null;
-    const sc = Math.max((S.W * 1.06) / c.w, (S.H * 1.1) / c.h);
+    // overscan = the largest shift any layer can get (depth <= 1) + lean zoom, so edges never show
+    const k = S.strength * Math.min(S.W, S.H) * 0.09 * 1.05;
+    const sc = Math.max((S.W + 2 * k + 8) / c.w, (S.H + 2 * k * 0.55 + 8) / c.h) * (1 + Math.max(0, S.v.z) * 0.12);
     return { sc, ox: (S.W - c.w * sc) / 2, oy: (S.H - c.h * sc) / 2, cw: c.w * sc, ch: c.h * sc };
   }
   function lightLevel(sun) { return clamp(0.3 + sun.el * 1.4, 0.16, 1); }
