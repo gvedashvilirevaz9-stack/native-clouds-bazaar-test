@@ -39,10 +39,11 @@ const CLOUDS = [1, 2, 3].map((i) => `${BASE}clouds/cloud${i}.webp`);
 export const ASSET = (p) => BASE + p;
 
 export const PRESETS = {
+  'mountains-v5': () => ({ name: 'Горы · v5', url: BASE + 'scene-mountains/v5/scene.json', live: true }),
   // master-shot scene from Codex: one shared canvas, measured objects (assets/scene-mountains/scene.json)
-  mountains: () => ({ name: 'Горы · новые слои', url: BASE + 'scene-mountains/scene.json', live: true }),
+  mountains: () => ({ name: 'Горы · v4 (мыло)', url: BASE + 'scene-mountains/scene.json', live: true }),
   // previous layer set (sharper, but with ghosts in hidden zones) — kept for side-by-side comparison
-  'mountains-v1': () => ({ name: 'Горы · прошлые слои', url: BASE + 'scene-mountains/scene.json', live: true,
+  'mountains-v1': () => ({ name: 'Горы · v3 (призраки)', url: BASE + 'scene-mountains/scene.json', live: true,
     override: { mountains: 'v1/mountains.webp', foothills: 'v1/foothills.webp', forest: 'v1/forest.webp', meadow: 'v1/meadow.webp' } }),
   // what the stand has today: sky + clouds, now layered with parallax
   sky: () => ({
@@ -499,7 +500,7 @@ export function createLiveBG(canvas, opts = {}) {
       const sc = Math.max((S.W * (1 + 2 * m)) / im.naturalWidth, (S.H * (1 + 2 * m)) / im.naturalHeight) * (L.zoom || 1);
       let dw = im.naturalWidth * sc, dh = im.naturalHeight * sc;
       let dx = (S.W - dw) / 2, dy = (L.anchor === 'center' ? (S.H - dh) / 2 : S.H * (1 + m * 0.5) - dh) + (L.y || 0) * S.H;
-      if (F) { dx = F.ox; dy = F.oy; dw = F.cw; dh = F.ch; }
+      if (F) { dx = F.ox + (L.offsetX || 0) * F.sc; dy = F.oy + (L.offsetY || 0) * F.sc; dw = F.cw; dh = F.ch; }
       const g = grading(env, L.snow || 0), key = JSON.stringify(g), tw = Math.round(Math.min(im.naturalWidth, dw * S.dpr)), th = Math.round(tw * im.naturalHeight / im.naturalWidth);
       if ((!s.cv || s.key !== key || s.tw !== tw) && (regradeBudget > 0 || !s.cv)) { s.cv = relight(im, g, tw, th, s.cv); s.key = key; s.tw = tw; regradeBudget--; }
       withLayer(L.depth, () => ctx.drawImage(s.cv, dx, dy, dw, dh));

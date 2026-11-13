@@ -101,7 +101,7 @@
 import { createLiveBG, PRESETS } from './livebg.js';
 const $ = (id) => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
-const bg = createLiveBG($('bg'), { preset: qs.get('preset') || 'mountains', input: qs.get('input') || 'mouse', allowAllLayers: false });
+const bg = createLiveBG($('bg'), { preset: qs.get('preset') || 'mountains-v5', input: qs.get('input') || 'mouse', allowAllLayers: false });
 window.LiveBG = bg; // for the console / bot
 bg.on('error', (m) => { const n = document.getElementById('jNote'); if (n) n.textContent = 'Ошибка сцены: ' + m; console.error('livebg', m); });
 
@@ -110,7 +110,7 @@ if (qs.has('embed')) { $('panel').remove(); $('show').remove(); $('demoUi').remo
 function seg(id, val) { $(id).querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === val))); }
 const presetBox = $('preset');
 for (const [k, f] of Object.entries(PRESETS)) { const b = document.createElement('button'); b.dataset.v = k; b.textContent = f().name; presetBox.append(b); }
-let preset = qs.get('preset') || 'mountains'; seg('preset', preset);
+let preset = qs.get('preset') || 'mountains-v5'; seg('preset', preset);
 presetBox.onclick = async (e) => { const v = e.target.dataset.v; if (!v) return; preset = v; seg('preset', v); await bg.loadPreset(v); applyFx(); };
 
 seg('input', bg.getInput() || 'mouse');
@@ -171,7 +171,7 @@ const SPOTS_M = {
   balloon: { kind: 'image', url: M + 'balloon.webp', x: 0.62, y: 0.13, size: 0.05, width: 0.0184, motion: { type: 'bob', speed: 0.5 } },
   eagle: { kind: 'image', url: M + 'eagle_1.webp', frames: [1, 2, 3, 4, 5].map((i) => M + `eagle_${i}.webp`), frameSequence: [0, 1, 2, 1, 0, 3, 4, 3], fps: 10, x: 0.77, y: 0.15, size: 0.066, width: 0.0494, anchor: [0.506, 0.347], motion: { type: 'circle', speed: 0.3 } },
 };
-$('add').onclick = (e) => { const k = e.target.dataset.k; if (!k) return; const o = (preset === 'mountains' && SPOTS_M[k]) || SPOTS[k]; const jx = preset === 'mountains' ? 0.4 : 0.15; try { bg.addObject({ ...o, x: Math.min(0.9, Math.max(0.1, o.x + (Math.random() - 0.5) * jx)), y: o.y + (Math.random() - 0.5) * 0.06 }); } catch (err) { $('jNote').textContent = err.message; } };
+$('add').onclick = (e) => { const k = e.target.dataset.k; if (!k) return; const o = (preset.startsWith('mountains') && SPOTS_M[k]) || SPOTS[k]; const jx = preset.startsWith('mountains') ? 0.4 : 0.15; try { bg.addObject({ ...o, x: Math.min(0.9, Math.max(0.1, o.x + (Math.random() - 0.5) * jx)), y: o.y + (Math.random() - 0.5) * 0.06 }); } catch (err) { $('jNote').textContent = err.message; } };
 $('clearAgent').onclick = () => bg.clearAgent();
 
 function showJson(s) { if (document.activeElement !== $('json')) $('json').value = JSON.stringify(s, null, 1); }

@@ -1,0 +1,187 @@
+{
+ "version": 5,
+ "name": "Горы · v5",
+ "assetBase": "/livebg/assets/scene-mountains/",
+ "canvas": {
+  "w": 3840,
+  "h": 1920
+ },
+ "time": "live",
+ "weather": "live",
+ "source": "v5/layout.json (Native Clouds Landscape v5); plates use offsetX/offsetY in canvas px",
+ "layers": [
+  {
+   "id": "sky",
+   "type": "sky",
+   "depth": 0,
+   "src": "v5/layers/sky-existing.webp"
+  },
+  {
+   "id": "sun",
+   "type": "sun",
+   "depth": 0.06,
+   "enabled": false,
+   "note": "Lighting is painted; no sun disk in reference."
+  },
+  {
+   "id": "clouds-far",
+   "type": "clouds",
+   "depth": 0.1,
+   "enabled": false,
+   "sprites": [
+    "clouds/cloud1.webp",
+    "clouds/cloud2.webp",
+    "clouds/cloud3.webp"
+   ]
+  },
+  {
+   "id": "mountains",
+   "type": "plate",
+   "depth": 0.12,
+   "src": "v5/web/mountains.webp",
+   "snow": 0.6,
+   "offsetX": 0,
+   "offsetY": -180
+  },
+  {
+   "id": "foothills",
+   "type": "plate",
+   "depth": 0.25,
+   "src": "v5/web/foothills.webp",
+   "snow": 0.7,
+   "offsetX": 0,
+   "offsetY": -240
+  },
+  {
+   "id": "sky-objects",
+   "type": "objects",
+   "depth": 0.3,
+   "agent": true,
+   "objects": [
+    {
+     "id": "airship",
+     "kind": "image",
+     "url": "airship.webp",
+     "x": 0.3269097222222222,
+     "y": 0.12986111111111112,
+     "size": 0.029166666666666667,
+     "width": 0.053125,
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "bbox_px": [
+      865,
+      166,
+      153,
+      42
+     ],
+     "distance_m": 2500,
+     "motion": {
+      "type": "drift",
+      "speed": 0.2
+     }
+    },
+    {
+     "id": "balloon",
+     "kind": "image",
+     "url": "balloon.webp",
+     "x": 0.6182291666666667,
+     "y": 0.125,
+     "size": 0.05,
+     "width": 0.01840277777777778,
+     "anchor": [
+      0.5,
+      0.5
+     ],
+     "bbox_px": [
+      1754,
+      144,
+      53,
+      72
+     ],
+     "distance_m": 700,
+     "motion": {
+      "type": "bob",
+      "speed": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "forest",
+   "type": "plate",
+   "depth": 0.45,
+   "src": "v5/web/forest.webp",
+   "snow": 0.6,
+   "offsetX": 0,
+   "offsetY": -160
+  },
+  {
+   "id": "near-objects",
+   "type": "objects",
+   "depth": 0.6,
+   "objects": [
+    {
+     "id": "eagle",
+     "kind": "image",
+     "url": "eagle_1.webp",
+     "frames": [
+      "eagle_1.webp",
+      "eagle_2.webp",
+      "eagle_3.webp",
+      "eagle_4.webp",
+      "eagle_5.webp"
+     ],
+     "frameSequence": [
+      0,
+      1,
+      2,
+      1,
+      0,
+      3,
+      4,
+      3
+     ],
+     "fps": 10,
+     "x": 0.7657986111111111,
+     "y": 0.1482638888888889,
+     "size": 0.06612231828370158,
+     "width": 0.04940153568202349,
+     "anchor": [
+      0.50625,
+      0.34732142857142856
+     ],
+     "bbox_px": [
+      2143,
+      184,
+      125,
+      59
+     ],
+     "distance_m": 45,
+     "frame_canvas_px": [
+      1120,
+      1120
+     ],
+     "reference_url": "eagle_master.webp",
+     "note": "The custom anchor is the centre of the visible first-frame footprint. Keep the shared canvas and anchor across all frames."
+    }
+   ]
+  },
+  {
+   "id": "foreground",
+   "type": "plate",
+   "depth": 0.88,
+   "src": "v5/web/foreground.webp",
+   "snow": 0.8,
+   "offsetX": 0,
+   "offsetY": 0
+  },
+  {
+   "id": "precip",
+   "type": "precip",
+   "depth": 1,
+   "enabled": false
+  }
+ ]
+}
