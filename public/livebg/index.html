@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Живые фоны · Native Clouds</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#0b1020;font-family:Inter,system-ui,-apple-system,sans-serif;color:#0f172a}
+  #bg{position:fixed;inset:0;width:100%;height:100%;display:block}
+  .panel{position:fixed;top:16px;right:16px;width:320px;max-height:calc(100% - 32px);overflow:auto;scrollbar-width:none;padding:14px;border-radius:20px;
+    background:rgba(255,255,255,.55);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);
+    border:1px solid rgba(255,255,255,.7);box-shadow:0 10px 40px rgba(15,23,42,.18);font-size:13px;transition:transform .3s}
+  .panel.min{transform:translateX(calc(100% + 24px))}
+  .panel h1{font-size:15px;margin:0 0 2px}.panel .sub{color:#475569;font-size:12px;margin-bottom:10px}
+  .sec{margin:12px 0 0}.sec>b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#64748b;margin-bottom:6px}
+  .seg{display:flex;flex-wrap:wrap;gap:4px}
+  .seg button,.btn{border:1px solid rgba(15,23,42,.08);background:rgba(255,255,255,.6);border-radius:10px;padding:6px 10px;font:inherit;cursor:pointer;color:#0f172a}
+  .seg button[aria-pressed=true]{background:#0f172a;color:#fff}
+  .btn:hover,.seg button:hover{background:rgba(255,255,255,.9)}
+  .seg button[aria-pressed=true]:hover{background:#1e293b}
+  .row{display:flex;gap:6px;align-items:center}
+  .row input[type=text]{flex:1;min-width:0;border:1px solid rgba(15,23,42,.1);border-radius:10px;padding:6px 9px;font:inherit;background:rgba(255,255,255,.7)}
+  input[type=range]{width:100%}
+  label.ck{display:flex;gap:6px;align-items:center;margin:3px 0;cursor:pointer}
+  .note{font-size:12px;color:#475569;margin-top:4px;line-height:1.35}
+  .note.err{color:#b91c1c}
+  textarea{width:100%;box-sizing:border-box;height:130px;border-radius:10px;border:1px solid rgba(15,23,42,.1);font:11px/1.4 ui-monospace,monospace;padding:8px;background:rgba(255,255,255,.75);resize:vertical}
+  .fab{position:fixed;top:16px;right:16px;width:42px;height:42px;border-radius:14px;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.55);backdrop-filter:blur(14px);cursor:pointer;font-size:18px;display:none}
+  .panel.min~.fab{display:block}
+  #cam{position:fixed;left:16px;bottom:16px;width:160px;border-radius:14px;transform:scaleX(-1);display:none;box-shadow:0 6px 24px rgba(0,0,0,.3);opacity:.9}
+  #dot{position:fixed;left:16px;bottom:16px;padding:6px 10px;border-radius:999px;background:rgba(15,23,42,.6);color:#fff;font-size:12px;display:none}
+  .live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px;animation:p 1.4s infinite}
+  @keyframes p{50%{opacity:.3}}
+  .demo-ui{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,80vw);padding:22px;border-radius:22px;background:rgba(255,255,255,.35);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.6);text-align:center;color:#0f172a;pointer-events:none}
+  .demo-ui b{font-size:18px}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="demo-ui" id="demoUi"><b>Здесь будет интерфейс портала</b><div class="note">Фон живёт за стеклом. Подвигайте мышкой или включите камеру справа.</div></div>
+<video id="cam" muted playsinline></video>
+<div id="dot"></div>
+
+<div class="panel" id="panel">
+  <div class="row" style="justify-content:space-between"><h1>Живые фоны</h1><button class="btn" id="hide" title="Скрыть">→</button></div>
+  <div class="sub">Слои, параллакс, погода и слой агента</div>
+
+  <div class="sec"><b>Сцена</b><div class="seg" id="preset"></div></div>
+
+  <div class="sec"><b>Управление</b>
+    <div class="seg" id="input">
+      <button data-v="mouse">Мышь</button><button data-v="camera">Веб-камера</button><button data-v="off">Выкл</button>
+    </div>
+    <div class="row" style="margin-top:6px"><span>Сила</span><input type="range" id="strength" min="0" max="2.5" step="0.05" value="1"></div>
+    <div class="row"><button class="btn" id="calib">Центр (камера)</button><label class="ck"><input type="checkbox" id="preview"> превью камеры</label></div>
+    <div class="note" id="camNote">Видео с камеры обрабатывается только в браузере, никуда не отправляется.</div>
+  </div>
+
+  <div class="sec"><b>Погода</b>
+    <div class="seg" id="weather">
+      <button data-v="live">Живая</button><button data-v="clear">Ясно</button><button data-v="partly">Облачно</button><button data-v="cloudy">Пасмурно</button>
+      <button data-v="rain">Дождь</button><button data-v="storm">Гроза</button><button data-v="snow">Снег</button><button data-v="fog">Туман</button>
+    </div>
+    <div class="row" style="margin-top:6px"><input type="text" id="city" placeholder="Город, напр. Batumi"><button class="btn" id="cityGo">OK</button><button class="btn" id="geo" title="Моё местоположение">◎</button></div>
+    <div class="note" id="wNote">…</div>
+  </div>
+
+  <div class="sec"><b>Время суток</b>
+    <div class="seg" id="time"><button data-v="live">Живое</button><button data-v="fixed">Вручную</button><button data-v="lapse">Ускорить день</button></div>
+    <input type="range" id="hour" min="0" max="24" step="0.05" value="12">
+    <div class="note" id="tNote"></div>
+  </div>
+
+  <div class="sec"><b>Эффекты</b>
+    <label class="ck"><input type="checkbox" id="fxGlare" checked> Луч-сканер по стеклу</label>
+    <label class="ck"><input type="checkbox" id="fxBlind" checked> Слепое пятно в углу</label>
+    <div class="seg" id="corner" style="margin:2px 0 4px 22px"><button data-v="auto">Авто</button><button data-v="left">Слева</button><button data-v="right">Справа</button></div>
+    <label class="ck"><input type="checkbox" id="fxBirds" checked> Птицы</label>
+    <label class="ck"><input type="checkbox" id="fxGround" checked> Земля и горы</label>
+    <label class="ck"><input type="checkbox" id="fxUi" checked> Показать стекло портала</label>
+  </div>
+
+  <div class="sec"><b>Слой агента</b>
+    <div class="seg" id="add">
+      <button data-k="airship">Дирижабль</button><button data-k="eagle">Большая птица</button><button data-k="balloon">Воздушный шар</button>
+      <button data-k="kite">Змей</button><button data-k="plane">Самолётик</button>
+    </div>
+    <div class="row" style="margin-top:6px"><button class="btn" id="clearAgent">Очистить слой</button></div>
+    <div class="note">Так агент через MCP вставляет объекты. Остальные слои для него закрыты.</div>
+  </div>
+
+  <div class="sec"><b>Сцена в JSON (как видит агент)</b>
+    <textarea id="json" spellcheck="false"></textarea>
+    <div class="row"><button class="btn" id="apply">Применить JSON</button><button class="btn" id="copy">Копировать</button></div>
+    <div class="note" id="jNote"></div>
+  </div>
+</div>
+<button class="fab" id="show" title="Панель">☰</button>
+
+<script type="module">
+import { createLiveBG, PRESETS } from './livebg.js';
+const $ = (id) => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const bg = createLiveBG($('bg'), { preset: qs.get('preset') || 'weather', input: qs.get('input') || 'mouse', allowAllLayers: false });
+window.LiveBG = bg; // for the console / bot
+
+if (qs.has('embed')) { $('panel').remove(); $('show').remove(); $('demoUi').remove(); }
+
+function seg(id, val) { $(id).querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === val))); }
+const presetBox = $('preset');
+for (const [k, f] of Object.entries(PRESETS)) { const b = document.createElement('button'); b.dataset.v = k; b.textContent = f().name; presetBox.append(b); }
+let preset = qs.get('preset') || 'weather'; seg('preset', preset);
+presetBox.onclick = (e) => { const v = e.target.dataset.v; if (!v) return; preset = v; bg.loadPreset(v); seg('preset', v); applyFx(); };
+
+seg('input', bg.getInput() || 'mouse');
+$('input').onclick = async (e) => { const v = e.target.dataset.v; if (!v) return; seg('input', v); try { await bg.setInput(v); } catch { seg('input', 'off'); } };
+$('strength').oninput = (e) => bg.setStrength(e.target.value);
+$('calib').onclick = () => bg.calibrate();
+let camVideo = null;
+$('preview').onchange = () => { $('cam').style.display = $('preview').checked && camVideo ? 'block' : 'none'; };
+bg.on('camera', (c) => {
+  const n = $('camNote'); n.classList.toggle('err', c.state === 'error');
+  if (c.state === 'starting') n.textContent = 'Включаю камеру…';
+  if (c.state === 'fallback') n.textContent = c.msg;
+  if (c.state === 'on') { camVideo = c.video; $('cam').srcObject = c.video.srcObject; $('cam').play(); n.textContent = c.mode === 'face' ? 'Слежу за лицом. Сядьте ровно и нажмите «Центр».' : n.textContent; $('dot').style.display = 'block'; $('dot').innerHTML = '<span class="live"></span>камера'; $('preview').onchange(); }
+  if (c.state === 'off') { camVideo = null; $('cam').style.display = 'none'; $('dot').style.display = 'none'; n.textContent = 'Камера выключена.'; }
+  if (c.state === 'error') n.textContent = 'Камера: ' + c.msg;
+});
+let lastFace = 0; bg.on('face', (f) => { if (f) lastFace = Date.now(); });
+setInterval(() => { if (bg.getInput() === 'camera' && camVideo) $('dot').innerHTML = '<span class="live"></span>' + (Date.now() - lastFace < 800 ? 'лицо найдено' : 'камера'); }, 500);
+
+let wMode = 'live'; seg('weather', wMode);
+$('weather').onclick = (e) => { const v = e.target.dataset.v; if (!v) return; wMode = v; bg.setWeather(v); seg('weather', v); wNote(); };
+const CODE = { 0: 'ясно', 1: 'почти ясно', 2: 'переменная облачность', 3: 'пасмурно', 45: 'туман', 48: 'туман', 51: 'морось', 61: 'дождь', 63: 'дождь', 65: 'ливень', 71: 'снег', 73: 'снег', 75: 'снегопад', 80: 'ливень', 95: 'гроза' };
+let lastW = null; bg.on('weather', (w) => { lastW = w; wNote(); });
+function wNote() {
+  const g = bg.getWeather(), n = $('wNote');
+  if (wMode !== 'live') { n.textContent = 'Ручной режим. Живая погода не используется.'; return; }
+  if (lastW?.error) { n.textContent = 'Погода не загрузилась: ' + lastW.error; return; }
+  if (!lastW || g.temp == null) { n.textContent = 'Загружаю погоду…'; return; }
+  n.textContent = `${g.location.name}: ${Math.round(g.temp)}°, ${CODE[g.code] || 'код ' + g.code}, облачность ${Math.round(g.cloud * 100)}%, ветер ${g.wind.toFixed(1)} м/с`;
+}
+$('cityGo').onclick = async () => { const v = $('city').value.trim(); if (!v) return; try { await bg.setLocation(v); wMode = 'live'; bg.setWeather('live'); seg('weather', 'live'); } catch (e) { $('wNote').textContent = e.message; } };
+$('city').onkeydown = (e) => { if (e.key === 'Enter') $('cityGo').onclick(); };
+$('geo').onclick = () => navigator.geolocation?.getCurrentPosition((p) => bg.setLocation({ lat: p.coords.latitude, lon: p.coords.longitude, name: 'Моё место' }), (e) => { $('wNote').textContent = 'Геолокация: ' + e.message; });
+
+let tMode = 'live'; seg('time', tMode);
+const fmt = (h) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.floor((h % 1) * 60)).padStart(2, '0')}`;
+$('time').onclick = (e) => { const v = e.target.dataset.v; if (!v) return; tMode = v; seg('time', v); if (v === 'live') bg.setTime(null); else bg.setTime(+$('hour').value, v === 'lapse' ? 3600 * 1.2 : 0); };
+$('hour').oninput = (e) => { if (tMode === 'live') { tMode = 'fixed'; seg('time', 'fixed'); } bg.setTime(+e.target.value, tMode === 'lapse' ? 3600 * 1.2 : 0); };
+setInterval(() => { const t = bg.getTime(); if (tMode !== 'fixed') $('hour').value = t.hour; $('tNote').textContent = `Сейчас ${fmt(t.hour)} · восход ${fmt(t.sunrise)} · закат ${fmt(t.sunset)}`; }, 250);
+
+function applyFx() { bg.setEffects({ glare: $('fxGlare').checked, blindspot: $('fxBlind').checked, birds: $('fxBirds').checked, ground: $('fxGround').checked }); }
+['fxGlare', 'fxBlind', 'fxBirds', 'fxGround'].forEach((id) => ($(id).onchange = applyFx));
+$('fxUi').onchange = (e) => { $('demoUi').style.display = e.target.checked ? '' : 'none'; };
+seg('corner', 'auto'); $('corner').onclick = (e) => { const v = e.target.dataset.v; if (!v) return; seg('corner', v); bg.setEffects({ blindCorner: v }); };
+
+const SPOTS = { airship: [0.3, 0.22, 0.07, 'drift', 0.6], eagle: [0.7, 0.3, 0.06, 'circle', 1], balloon: [0.55, 0.35, 0.09, 'bob', 0.6], kite: [0.2, 0.42, 0.06, 'bob', 1.4], plane: [0.4, 0.15, 0.03, 'drift', 2] };
+$('add').onclick = (e) => { const k = e.target.dataset.k; if (!k) return; const [x, y, size, type, speed] = SPOTS[k]; try { bg.addObject({ kind: k, x: x + (Math.random() - 0.5) * 0.15, y: y + (Math.random() - 0.5) * 0.08, size, motion: { type, speed } }); } catch (err) { $('jNote').textContent = err.message; } };
+$('clearAgent').onclick = () => bg.clearAgent();
+
+function showJson(s) { if (document.activeElement !== $('json')) $('json').value = JSON.stringify(s, null, 1); }
+bg.on('scene', showJson); showJson(bg.getScene());
+$('apply').onclick = () => { try { bg.loadScene(JSON.parse($('json').value)); $('jNote').textContent = 'Применено.'; } catch (e) { $('jNote').textContent = 'Ошибка: ' + e.message; } };
+$('copy').onclick = () => navigator.clipboard.writeText($('json').value).then(() => ($('jNote').textContent = 'Скопировано.'));
+
+$('hide').onclick = () => $('panel').classList.add('min');
+$('show').onclick = () => $('panel').classList.remove('min');
+</script>
+</body>
+</html>
