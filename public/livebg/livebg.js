@@ -40,7 +40,10 @@ export const ASSET = (p) => BASE + p;
 
 export const PRESETS = {
   // master-shot scene from Codex: one shared canvas, measured objects (assets/scene-mountains/scene.json)
-  mountains: () => ({ name: 'Горы · мастер-сцена', url: BASE + 'scene-mountains/scene.json', live: true }),
+  mountains: () => ({ name: 'Горы · новые слои', url: BASE + 'scene-mountains/scene.json', live: true }),
+  // previous layer set (sharper, but with ghosts in hidden zones) — kept for side-by-side comparison
+  'mountains-v1': () => ({ name: 'Горы · прошлые слои', url: BASE + 'scene-mountains/scene.json', live: true,
+    override: { mountains: 'v1/mountains.webp', foothills: 'v1/foothills.webp', forest: 'v1/forest.webp', meadow: 'v1/meadow.webp' } }),
   // what the stand has today: sky + clouds, now layered with parallax
   sky: () => ({
     name: 'Небо (как сейчас)', time: 'live', weather: 'live',
@@ -753,12 +756,13 @@ export function createLiveBG(canvas, opts = {}) {
     async loadPreset(name) {
       if (!PRESETS[name]) throw new Error('preset: ' + Object.keys(PRESETS).join(' | '));
       const p = PRESETS[name]();
-      if (p.url) return api.loadSceneUrl(p.url, { live: p.live, name: p.name });
+      if (p.url) return api.loadSceneUrl(p.url, { live: p.live, name: p.name, override: p.override });
       loadScene(p);
     },
     async loadSceneUrl(url, o = {}) {
       const r = await fetch(url); if (!r.ok) throw new Error('scene ' + r.status);
       const sc = await r.json(); sc._from = new URL(url, location.href).href; if (o.name) sc.name = o.name;
+      if (o.override) sc.layers = sc.layers.map((l) => (o.override[l.id] ? { ...l, src: o.override[l.id] } : l));
       if (o.live) {
         // reference manifests switch clouds/precip off for comparison; a live wallpaper turns them on
         sc.layers = sc.layers.map((l) => (l.type === 'clouds' ? { ...l, enabled: true, density: l.density ?? 0.6, alt: l.alt || [-0.02, 0.22], scale: l.scale ?? 0.55 }
