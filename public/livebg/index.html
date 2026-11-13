@@ -155,8 +155,15 @@ function applyFx() { bg.setEffects({ glare: $('fxGlare').checked, blindspot: $('
 $('fxUi').onchange = (e) => { $('demoUi').style.display = e.target.checked ? '' : 'none'; };
 seg('corner', 'auto'); $('corner').onclick = (e) => { const v = e.target.dataset.v; if (!v) return; seg('corner', v); bg.setEffects({ blindCorner: v }); };
 
-const SPOTS = { airship: [0.3, 0.22, 0.07, 'drift', 0.6], eagle: [0.7, 0.3, 0.06, 'circle', 1], balloon: [0.55, 0.35, 0.09, 'bob', 0.6], kite: [0.2, 0.42, 0.06, 'bob', 1.4], plane: [0.4, 0.15, 0.03, 'drift', 2] };
-$('add').onclick = (e) => { const k = e.target.dataset.k; if (!k) return; const [x, y, size, type, speed] = SPOTS[k]; try { bg.addObject({ kind: k, x: x + (Math.random() - 0.5) * 0.15, y: y + (Math.random() - 0.5) * 0.08, size, motion: { type, speed } }); } catch (err) { $('jNote').textContent = err.message; } };
+// photo cutouts from assets/objects; kite and paper plane are still drawn by code until their images exist
+const SPOTS = {
+  airship: { kind: 'image', url: 'objects/airship.webp', x: 0.3, y: 0.2, size: 0.09, motion: { type: 'drift', speed: 0.5 } },
+  eagle: { kind: 'image', url: 'objects/eagle.webp', x: 0.68, y: 0.3, size: 0.11, flap: 0.6, motion: { type: 'circle', speed: 0.8 } },
+  balloon: { kind: 'image', url: 'objects/balloon.webp', x: 0.56, y: 0.33, size: 0.16, motion: { type: 'bob', speed: 0.6 } },
+  kite: { kind: 'kite', x: 0.2, y: 0.42, size: 0.06, motion: { type: 'bob', speed: 1.4 } },
+  plane: { kind: 'plane', x: 0.4, y: 0.15, size: 0.03, motion: { type: 'drift', speed: 2 } },
+};
+$('add').onclick = (e) => { const k = e.target.dataset.k; if (!k) return; const o = SPOTS[k]; try { bg.addObject({ ...o, x: o.x + (Math.random() - 0.5) * 0.15, y: o.y + (Math.random() - 0.5) * 0.06 }); } catch (err) { $('jNote').textContent = err.message; } };
 $('clearAgent').onclick = () => bg.clearAgent();
 
 function showJson(s) { if (document.activeElement !== $('json')) $('json').value = JSON.stringify(s, null, 1); }

@@ -18,9 +18,10 @@
 | `sky` | градиент неба по солнцу и погоде | — |
 | `stars` | звёзды ночью | — |
 | `sun` | солнце или луна по дуге восход→закат | — |
-| `clouds` | облака, количество и цвет от погоды | `alt:[y0,y1]`, `scale`, `density`, `speed` |
+| `clouds` | облака, количество и цвет от погоды | `alt:[y0,y1]`, `scale`, `density`, `speed`, `sprites:[картинки облаков]` |
 | `hills` | холмы или горы, опционально ели | `seed`, `base`, `amp`, `rough`, `color:[r,g,b]`, `haze`, `trees:{count,size}` или `trees:{list:[{u,size}]}` |
 | `birds` | стая птиц днём | `count` |
+| `plate` | картинка-слой на всю ширину (горы, лес, луг) | `src`, `y` (сдвиг вниз в долях экрана), `zoom`, `snow` (насколько белеет в снег) |
 | `objects` | предметы | `objects:[…]`, `agent:true` — слой агента |
 | `precip` | дождь или снег по погоде | — |
 | `fog` | туман | — |
@@ -34,7 +35,10 @@
   "motion": { "type": "drift", "speed": 0.6 }, "flip": false, "z": 0 }
 ```
 
-- `kind`: `airship`, `eagle`, `balloon`, `kite`, `plane`, `pine`, `emoji` (+ `"emoji":"🐻"`), `svg` (+ `"svg":"<svg…>"`, до 20 КБ), `image` (+ `"url":"https://…"`).
+- `kind`: главное — `image` с готовой картинкой из библиотеки: `"url":"objects/airship.webp"` (путь от папки `assets/`) или `https://…`.
+  Анимация: `"frames":["objects/eagle_1.webp", …], "fps": 10`. Пока кадров нет, `"flap": 0.6` машет крыльями одной картинкой.
+  Запасные варианты: `emoji` (+ `"emoji":"🐻"`), `svg` (+ `"svg":"<svg…>"`, до 20 КБ) и нарисованные кодом `airship`, `eagle`, `balloon`, `kite`, `plane`, `pine`.
+- Библиотека сейчас: `objects/airship.webp`, `objects/eagle.webp`, `objects/balloon.webp`.
 - `x`, `y` — центр объекта в долях экрана (0…1). `size` — высота объекта в долях высоты экрана.
 - `motion.type`: `drift` (плывёт поперёк экрана; отрицательная скорость — в обратную сторону), `bob` (покачивается), `circle` (кружит), `none`.
 - Ночью и в пасмурную погоду объекты автоматически темнеют.
@@ -61,7 +65,7 @@
 | `bg_set_time` | `setTime` | `["live"]` или `[hour, speedSecPerSec]` |
 | `bg_set_effects` | `setEffects` | `[{glare,blindspot,blindCorner,birds,ground}]` |
 | `bg_set_input` | `setInput` | `["mouse"]`, `["camera"]` или `["off"]`; камеру включает только сам человек кнопкой |
-| `bg_load_preset` | `loadPreset` | `["sky"]`, `["weather"]` или `["forest"]` |
+| `bg_load_preset` | `loadPreset` | `["sky"]` или `["weather"]` |
 | `bg_load_scene` | `loadScene` | `[scene]` — только режим B |
 
 ## 5. Промпт агенту: как собирать сцену с параллаксом
@@ -82,7 +86,7 @@
 8. Прежде чем сохранить, перечисли человеку слои одной строкой каждый.
 ```
 
-Пример полной сцены — пресет `forest` в `livebg.js`: медведи на 0.42, ели перед ними на 0.6, девочка на 0.75, рамка из елей на 0.95.
+Пример полной сцены — пресет `weather` в `livebg.js`: горы 0.16 → холмы 0.3 → лес 0.5 → луг 0.88.
 
 ## 6. Камера и приватность
 

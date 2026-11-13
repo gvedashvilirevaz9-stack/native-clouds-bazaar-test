@@ -31,59 +31,43 @@ const SKY = {
 // ---------- presets ----------
 export const KINDS = ['airship', 'eagle', 'balloon', 'kite', 'plane', 'pine', 'emoji', 'svg', 'image'];
 
+// Image layers live next to this file: assets/<group>/<name>.webp (RGBA, painted in neutral daylight).
+// The engine relights them for time of day and weather. See ASSETS.md for the generation brief.
+const ROOT = new URL('./', import.meta.url).href;
+const BASE = ROOT + 'assets/';
+const CLOUDS = [1, 2, 3].map((i) => `${BASE}clouds/cloud${i}.webp`);
+export const ASSET = (p) => BASE + p;
+
 export const PRESETS = {
-  // what the stand has today: sky + clouds, now with parallax
+  // what the stand has today: sky + clouds, now layered with parallax
   sky: () => ({
     name: 'Небо (как сейчас)', time: 'live', weather: 'live',
     layers: [
       { id: 'sky', type: 'sky', depth: 0 },
       { id: 'stars', type: 'stars', depth: 0.02 },
       { id: 'sun', type: 'sun', depth: 0.06 },
-      { id: 'clouds-far', type: 'clouds', depth: 0.18, alt: [0.05, 0.55], scale: 0.7, density: 0.9, speed: 0.6 },
+      { id: 'clouds-far', type: 'clouds', depth: 0.16, alt: [0.0, 0.5], scale: 0.8, density: 0.8, speed: 0.6, sprites: CLOUDS },
       { id: 'agent', type: 'objects', depth: 0.45, agent: true, objects: [] },
-      { id: 'clouds-near', type: 'clouds', depth: 0.7, alt: [0.25, 0.85], scale: 1.4, density: 0.5, speed: 1.2 },
+      { id: 'clouds-near', type: 'clouds', depth: 0.7, alt: [0.3, 0.8], scale: 1.5, density: 0.4, speed: 1.2, sprites: CLOUDS },
       { id: 'precip', type: 'precip', depth: 1 },
     ],
   }),
   weather: () => ({
-    name: 'Погода · природа', time: 'live', weather: 'live',
+    name: 'Погода · горы, лес, луг', time: 'live', weather: 'live',
     layers: [
       { id: 'sky', type: 'sky', depth: 0 },
       { id: 'stars', type: 'stars', depth: 0.02 },
       { id: 'sun', type: 'sun', depth: 0.06 },
-      { id: 'clouds-far', type: 'clouds', depth: 0.14, alt: [0.04, 0.42], scale: 0.6, density: 1, speed: 0.5 },
-      { id: 'mountains', type: 'hills', depth: 0.24, seed: 7, base: 0.62, amp: 0.16, rough: 2.2, color: [92, 112, 146], haze: 0.55 },
-      { id: 'clouds-mid', type: 'clouds', depth: 0.34, alt: [0.18, 0.5], scale: 1, density: 0.55, speed: 0.9 },
-      { id: 'hills', type: 'hills', depth: 0.48, seed: 21, base: 0.74, amp: 0.07, rough: 1.2, color: [78, 138, 84], haze: 0.25, trees: { count: 7, size: 0.05 } },
-      { id: 'birds', type: 'birds', depth: 0.55, count: 7 },
-      { id: 'agent', type: 'objects', depth: 0.62, agent: true, objects: [] },
-      { id: 'front', type: 'hills', depth: 0.86, seed: 3, base: 0.9, amp: 0.06, rough: 0.8, color: [44, 98, 58], haze: 0, trees: { list: [{ u: 0.04, size: 0.24 }, { u: 0.1, size: 0.17 }, { u: 0.93, size: 0.21 }] } },
+      { id: 'clouds-far', type: 'clouds', depth: 0.1, alt: [-0.04, 0.22], scale: 0.75, density: 0.9, speed: 0.5, sprites: CLOUDS },
+      { id: 'mountains', type: 'plate', depth: 0.16, src: BASE + 'nature/mountains.webp', y: 0.12, snow: 0.6 },
+      { id: 'clouds-mid', type: 'clouds', depth: 0.24, alt: [0.14, 0.3], scale: 0.6, density: 0.3, speed: 0.8, sprites: CLOUDS },
+      { id: 'foothills', type: 'plate', depth: 0.3, src: BASE + 'nature/foothills.webp', y: 0.06, snow: 0.7 },
+      { id: 'birds', type: 'birds', depth: 0.38, count: 7 },
+      { id: 'forest', type: 'plate', depth: 0.5, src: BASE + 'nature/forest.webp', y: 0.14, snow: 0.6 },
+      { id: 'agent', type: 'objects', depth: 0.6, agent: true, objects: [] },
+      { id: 'meadow', type: 'plate', depth: 0.88, src: BASE + 'nature/meadow.webp', y: 0.08, snow: 0.8 },
       { id: 'precip', type: 'precip', depth: 1 },
-      { id: 'fog', type: 'fog', depth: 0.5 },
-    ],
-  }),
-  // example of a scene built entirely from layers + objects (what the agent will assemble later)
-  forest: () => ({
-    name: 'Лесная сказка (пример полной сцены)', time: 'live', weather: 'live',
-    layers: [
-      { id: 'sky', type: 'sky', depth: 0 },
-      { id: 'stars', type: 'stars', depth: 0.02 },
-      { id: 'sun', type: 'sun', depth: 0.06 },
-      { id: 'clouds', type: 'clouds', depth: 0.15, alt: [0.04, 0.35], scale: 0.7, density: 0.7, speed: 0.5 },
-      { id: 'ridge', type: 'hills', depth: 0.25, seed: 11, base: 0.6, amp: 0.05, rough: 1, color: [52, 96, 82], haze: 0.5, trees: { count: 38, size: 0.08 } },
-      { id: 'bears', type: 'objects', depth: 0.42, objects: [
-        { id: 'bear1', kind: 'emoji', emoji: '🐻', x: 0.31, y: 0.74, size: 0.1 },
-        { id: 'bear2', kind: 'emoji', emoji: '🐻', x: 0.62, y: 0.75, size: 0.085 },
-        { id: 'bear3', kind: 'emoji', emoji: '🧸', x: 0.69, y: 0.77, size: 0.06 },
-      ] },
-      { id: 'woods', type: 'hills', depth: 0.6, seed: 5, base: 0.8, amp: 0.03, rough: 0.7, color: [40, 84, 52], haze: 0.15, trees: { list: [
-        { u: 0.12, size: 0.3 }, { u: 0.28, size: 0.34 }, { u: 0.35, size: 0.26 }, { u: 0.5, size: 0.3 }, { u: 0.66, size: 0.33 }, { u: 0.86, size: 0.36 },
-      ] } },
-      { id: 'hero', type: 'objects', depth: 0.75, objects: [{ id: 'girl', kind: 'emoji', emoji: '👧', x: 0.44, y: 0.86, size: 0.11, motion: { type: 'bob', speed: 1 } }] },
-      { id: 'agent', type: 'objects', depth: 0.78, agent: true, objects: [] },
-      { id: 'front', type: 'hills', depth: 0.95, seed: 9, base: 0.95, amp: 0.03, rough: 0.6, color: [26, 62, 36], haze: 0, trees: { list: [{ u: 0.02, size: 0.5 }, { u: 0.97, size: 0.46 }] } },
-      { id: 'precip', type: 'precip', depth: 1 },
-      { id: 'fog', type: 'fog', depth: 0.5 },
+      { id: 'fog', type: 'fog', depth: 0.45 },
     ],
   }),
 };
@@ -140,7 +124,13 @@ function cleanObject(o, id) {
   if (o.color) out.color = String(o.color).slice(0, 30);
   if (kind === 'emoji') out.emoji = String(o.emoji || '⭐').slice(0, 8);
   if (kind === 'svg') { const s = String(o.svg || ''); if (!/^\s*<svg[\s>]/i.test(s) || s.length > 20000) throw new Error('svg must be an <svg> string under 20k'); out.svg = s; }
-  if (kind === 'image') { const u = String(o.url || ''); if (!/^https:\/\//.test(u) && !/^\/[^/]/.test(u)) throw new Error('image url must be https or same-site'); out.url = u; }
+  if (kind === 'image') {
+    const u = String(o.url || ''); if (!/^https:\/\//.test(u) && (/^\/\//.test(u) || /^[a-z]+:/i.test(u))) throw new Error('image url must be https or same-site');
+    out.url = new URL(u, BASE).href;
+    if (Array.isArray(o.frames)) out.frames = o.frames.slice(0, 12).map((f) => new URL(String(f), BASE).href).filter((f) => /^https?:/.test(f));
+    if (o.fps) out.fps = clamp(+o.fps, 1, 30);
+    if (o.flap) out.flap = clamp(+o.flap, 0, 1);
+  }
   if (o.label) out.label = String(o.label).slice(0, 60);
   return out;
 }
@@ -419,12 +409,75 @@ export function createLiveBG(canvas, opts = {}) {
     if (hasFilter && light < 0.97) ctx.filter = `brightness(${(0.35 + light * 0.65).toFixed(2)})`;
     if (DRAW[o.kind]) DRAW[o.kind](s, S.t);
     else if (o.kind === 'emoji') { ctx.font = `${s}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(o.emoji, 0, 0); }
-    else { const im = getImage(o); if (im) { const w = s * (im.naturalWidth / im.naturalHeight); ctx.drawImage(im, -w / 2, -s / 2, w, s); } }
+    else {
+      let im = null;
+      if (o.frames?.length) { const fr = o.frames.map(loadImg); const k = Math.floor(S.t * (o.fps || 8) + o.x * 7) % fr.length; im = fr[k] || fr.find(Boolean); }
+      else im = getImage(o);
+      if (im) {
+        const w = s * (im.naturalWidth / im.naturalHeight);
+        if (o.flap) {
+          // procedural wing beat: vertical strips bend around the body axis (until real frames exist)
+          const N = 140, iw = im.naturalWidth, ih = im.naturalHeight, ph = Math.sin(S.t * 5.5 + o.x * 9), cx = 0.5;
+          for (let i = 0; i < N; i++) {
+            const u0 = i / N, u1 = (i + 1) / N, um = (u0 + u1) / 2, d = (um - cx) / 0.5, k2 = Math.sign(d) * Math.pow(Math.abs(d), 1.6);
+            const dy = -ph * Math.abs(k2) * s * 0.42 * o.flap, sy = 1 - Math.abs(k2) * 0.25 * o.flap * Math.abs(ph);
+            ctx.drawImage(im, u0 * iw, 0, (u1 - u0) * iw + 1, ih, -w / 2 + u0 * w, -s / 2 * sy + dy + s / 2 * (1 - sy), (u1 - u0) * w + 0.6, s * sy);
+          }
+          ctx.translate(0, Math.sin(S.t * 5.5 + o.x * 9 + 1.2) * s * 0.04 * o.flap);
+        } else ctx.drawImage(im, -w / 2, -s / 2, w, s);
+      }
+    }
     ctx.restore();
   }
 
+  // ----- photo plates: load once, relight into a cached canvas when time/weather changes -----
+  function grading(env, snowable = 0) {
+    const night = clamp(-env.sun.el * 2.5), warm = env.sun.el > -0.15 ? 1 - smooth(Math.abs(env.sun.el) / 0.3) : 0;
+    const gray = clamp(env.w.cloud * 0.3 + env.w.rain * 0.5 + (env.w.storm ? 0.3 : 0));
+    const light = lightLevel(env.sun);
+    const snow = clamp(env.w.snow) * snowable;
+    const q = (v, n) => Math.round(v * n) / n;
+    return { light: q(light, 24), night: q(night, 12), warm: q(warm, 12), gray: q(gray, 12), snow: q(snow, 6) };
+  }
+  function relight(src, g, w, h, out) {
+    const cv = out || document.createElement('canvas'); cv.width = Math.max(1, w); cv.height = Math.max(1, h);
+    const c = cv.getContext('2d');
+    c.clearRect(0, 0, w, h);
+    if (hasFilter) c.filter = `brightness(${(0.42 + 0.62 * g.light - g.gray * 0.12).toFixed(3)}) saturate(${(1.05 - g.gray * 0.45 - g.night * 0.45).toFixed(3)})`;
+    c.drawImage(src, 0, 0, w, h); c.filter = 'none';
+    // blend tints over the whole layer, then cut back to the layer's own alpha
+    const tint = (op, col, a) => { if (a <= 0.003) return; c.globalCompositeOperation = op; c.fillStyle = col; c.globalAlpha = a; c.fillRect(0, 0, w, h); c.globalAlpha = 1; };
+    if (!hasFilter) tint('source-atop', '#000', (1 - g.light) * 0.55);
+    tint('soft-light', 'rgb(255,120,60)', 0.55 * g.warm * (1 - g.gray));
+    tint('multiply', 'rgb(255,190,150)', 0.25 * g.warm * (1 - g.gray));
+    tint('multiply', 'rgb(70,92,170)', 0.55 * g.night);
+    tint('source-atop', 'rgb(118,128,142)', 0.16 * g.gray);
+    tint('source-atop', 'rgb(236,241,248)', 0.42 * g.snow);
+    c.globalCompositeOperation = 'destination-in'; c.drawImage(src, 0, 0, w, h);
+    c.globalCompositeOperation = 'source-over';
+    return cv;
+  }
+  function loadImg(url) {
+    let im = S.images.get('url:' + url);
+    if (!im) { im = new Image(); im.decoding = 'async'; im.crossOrigin = 'anonymous'; im.src = url; S.images.set('url:' + url, im); im.onload = () => emit('asset', url); }
+    return im.complete && im.naturalWidth ? im : null;
+  }
+  let regradeBudget = 0;
+
+  const sp0 = (sp, c) => { const x = sp[c.k % sp.length].white; return { width: x.naturalWidth || x.width, height: x.naturalHeight || x.height }; };
   // ----- layer renderers -----
   const R = {
+    plate(L, env) {
+      const im = loadImg(L.src); if (!im) return;
+      const s = st(L), m = 0.05 + L.depth * 0.07;
+      const sc = Math.max((S.W * (1 + 2 * m)) / im.naturalWidth, (S.H * (1 + 2 * m)) / im.naturalHeight) * (L.zoom || 1);
+      const dw = im.naturalWidth * sc, dh = im.naturalHeight * sc;
+      const dx = (S.W - dw) / 2, dy = (L.anchor === 'center' ? (S.H - dh) / 2 : S.H * (1 + m * 0.5) - dh) + (L.y || 0) * S.H;
+      const g = grading(env, L.snow || 0), key = JSON.stringify(g), tw = Math.round(Math.min(im.naturalWidth, dw * S.dpr)), th = Math.round(tw * im.naturalHeight / im.naturalWidth);
+      if ((!s.cv || s.key !== key || s.tw !== tw) && (regradeBudget > 0 || !s.cv)) { s.cv = relight(im, g, tw, th, s.cv); s.key = key; s.tw = tw; regradeBudget--; }
+      withLayer(L.depth, () => ctx.drawImage(s.cv, dx, dy, dw, dh));
+    },
+
     sky(L, env) {
       const g = ctx.createLinearGradient(0, 0, 0, S.H); g.addColorStop(0, css(env.sky.top)); g.addColorStop(1, css(env.sky.bot));
       ctx.fillStyle = g; ctx.fillRect(0, 0, S.W, S.H);
@@ -454,14 +507,23 @@ export function createLiveBG(canvas, opts = {}) {
     clouds(L, env) {
       const s = st(L), w = env.w, max = 26;
       if (!s.list) { const r = rng(L.id.length * 31 + 5); s.list = Array.from({ length: max }, (_, i) => ({ u: r() * 1.4 - 0.2, y: r(), w: 0.6 + r() * 0.8, sp: 0.6 + r() * 0.8, k: i % cloudSprites.length, d: r() })); }
+      let sprites = cloudSprites;
+      if (L.sprites?.length) {
+        if (!s.sp) s.sp = [];
+        L.sprites.forEach((u, i) => { if (!s.sp[i]) { const im = loadImg(u); if (im) s.sp[i] = {
+          white: im,
+          gray: relight(im, { light: 0.62, night: 0, warm: 0, gray: 1, snow: 0 }, im.naturalWidth >> 1, im.naturalHeight >> 1),
+          warm: relight(im, { light: 1, night: 0, warm: 1, gray: 0, snow: 0 }, im.naturalWidth >> 1, im.naturalHeight >> 1) } } });
+        const ready = s.sp.filter(Boolean); if (ready.length) sprites = ready;
+      }
       const n = Math.round((3 + w.cloud * 20) * (L.density ?? 1)), [y0, y1] = L.alt || [0.05, 0.5];
       const gray = clamp(w.cloud * 0.35 + w.rain * 0.6 + (w.storm ? 0.3 : 0)), night = clamp(-env.sun.el * 2.5), warm = env.sun.el > -0.15 ? 1 - smooth(Math.abs(env.sun.el) / 0.3) : 0;
       const wind = (w.wind || 4) * (L.speed ?? 1) * 0.0009;
       withLayer(L.depth, () => {
         for (let i = 0; i < Math.min(n, max); i++) {
           const c = s.list[i]; c.u += wind * c.sp * S.dt; if (c.u > 1.25) c.u = -0.3 - c.d * 0.2;
-          const cw = S.W * 0.28 * (L.scale ?? 1) * c.w * (0.8 + w.cloud * 0.5), ch = cw * 0.55, x = c.u * S.W, y = lerp(y0, y1, c.y) * S.H;
-          const sp = cloudSprites[c.k], a = 0.55 + 0.4 * (1 - c.d * 0.5);
+          const cw = S.W * 0.28 * (L.scale ?? 1) * c.w * (0.8 + w.cloud * 0.5), ch = cw * (sp0(sprites, c).height / sp0(sprites, c).width), x = c.u * S.W, y = lerp(y0, y1, c.y) * S.H;
+          const sp = sprites[c.k % sprites.length], a = 0.6 + 0.4 * (1 - c.d * 0.5);
           ctx.globalAlpha = a * (1 - gray) * (1 - night * 0.75); ctx.drawImage(sp.white, x, y, cw, ch);
           ctx.globalAlpha = a * Math.max(gray, night * 0.85) * (night ? 1 - 0.55 * night : 1); ctx.drawImage(sp.gray, x, y, cw, ch);
           if (warm > 0.02) { ctx.globalAlpha = a * warm * 0.65 * (1 - gray); ctx.drawImage(sp.warm, x, y, cw, ch); }
@@ -586,6 +648,7 @@ export function createLiveBG(canvas, opts = {}) {
     if (S.input === 'camera') readCamera();
     const k = 1 - Math.exp(-dt * (S.input === 'camera' ? 5 : 7));
     S.v.x += (S.target.x - S.v.x) * k; S.v.y += (S.target.y - S.v.y) * k; S.v.z += (S.target.z - S.v.z) * k;
+    regradeBudget = 1;
     const sun = solar(), w = weather(), env = { sun, w, sky: skyColors(sun, w) };
     ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
     let sunLayer = null;
@@ -603,6 +666,7 @@ export function createLiveBG(canvas, opts = {}) {
     const layers = scene.layers.slice(0, 24).map((l, i) => {
       if (!types.includes(l.type)) throw new Error(`layer ${i}: type must be ${types.join(', ')}`);
       const out = { ...l, id: String(l.id || l.type + i), depth: clamp(+l.depth || 0, 0, 1.2) };
+      if (l.type === 'plate') { const u = String(l.src || ''); if (!/^https:\/\//.test(u) && !/^(\.|\/)[^/]/.test(u) && !u.startsWith(BASE)) throw new Error(`layer ${i}: plate src must be https or same-site`); out.src = new URL(u, BASE).href; }
       if (l.type === 'objects') out.objects = (l.objects || []).slice(0, 40).map((o, j) => cleanObject(o, out.id + '-' + j));
       return out;
     });
