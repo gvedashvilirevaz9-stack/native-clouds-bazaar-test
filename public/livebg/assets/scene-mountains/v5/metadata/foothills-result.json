@@ -1,0 +1,29 @@
+{
+  "layer": "foothills",
+  "requested": "3840x1920",
+  "actual": {
+    "width": 3840,
+    "height": 1920
+  },
+  "model": "gpt-image-2.6-sunburst",
+  "quality": "max",
+  "complexity": "high",
+  "elapsedSeconds": 92.142,
+  "requestId": "req_a510fc5d055d431d9c7e8ae2d1c3eaad",
+  "usage": {
+    "input_tokens": 3168,
+    "input_tokens_details": {
+      "image_tokens": 2493,
+      "text_tokens": 675
+    },
+    "output_tokens": 10798,
+    "output_tokens_details": {
+      "image_tokens": 10798,
+      "text_tokens": 0
+    },
+    "total_tokens": 13966
+  },
+  "bytes": 8282112,
+  "sha256": "6e8085012439bde2194cce0d4593f15b5a8c042bb945cb4fd822b2c0464e2aff",
+  "upscaled": false
+}

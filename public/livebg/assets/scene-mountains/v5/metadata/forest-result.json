@@ -1,0 +1,29 @@
+{
+  "layer": "forest",
+  "requested": "3840x1920",
+  "actual": {
+    "width": 3840,
+    "height": 1920
+  },
+  "model": "gpt-image-2.6-sunburst",
+  "quality": "max",
+  "complexity": "high",
+  "elapsedSeconds": 99.449,
+  "requestId": "req_92729d4a343f4dbaa92ec1fed3780b4b",
+  "usage": {
+    "input_tokens": 3221,
+    "input_tokens_details": {
+      "image_tokens": 2493,
+      "text_tokens": 728
+    },
+    "output_tokens": 10798,
+    "output_tokens_details": {
+      "image_tokens": 10798,
+      "text_tokens": 0
+    },
+    "total_tokens": 14019
+  },
+  "bytes": 8609397,
+  "sha256": "bb0abed8434e2e1550d5dea83b5a3790ea4ebe4748eb2a3e496376efd94dc305",
+  "upscaled": false
+}

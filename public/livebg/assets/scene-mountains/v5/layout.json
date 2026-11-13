@@ -1,0 +1,106 @@
+{
+  "version": 5,
+  "name": "Matched landscape, no people",
+  "canvas": {
+    "width": 3840,
+    "height": 1920,
+    "aspectRatio": "2:1"
+  },
+  "generation": {
+    "model": "gpt-image-2.6-sunburst",
+    "quality": "max",
+    "complexity": "high",
+    "nativeSize": "3840x1920",
+    "upscaledTerrain": false
+  },
+  "previewCanvas": {
+    "width": 2880,
+    "height": 1440,
+    "terrainScale": 0.75,
+    "skyReusedAtNativeSize": true
+  },
+  "parallaxViewportAtPreviewSize": {
+    "x": 64,
+    "y": 32,
+    "width": 2752,
+    "height": 1376
+  },
+  "layers": [
+    {
+      "id": "mountains",
+      "png": "layers/mountains.png",
+      "webp": "layers/mountains.webp",
+      "width": 3840,
+      "height": 1920,
+      "zIndex": 1,
+      "offsetX": 0,
+      "offsetY": -180,
+      "generatedIndependently": true,
+      "reusedApprovedForeground": false,
+      "parallaxMaxAt2880": {
+        "x": 12,
+        "y": 6
+      },
+      "sha256Png": "e2094e83ee13db4eccf85749e7c75a9f18b2f4f8c2fc14da2ec89a48d2c36859"
+    },
+    {
+      "id": "foothills",
+      "png": "layers/foothills.png",
+      "webp": "layers/foothills.webp",
+      "width": 3840,
+      "height": 1920,
+      "zIndex": 2,
+      "offsetX": 0,
+      "offsetY": -240,
+      "generatedIndependently": true,
+      "reusedApprovedForeground": false,
+      "parallaxMaxAt2880": {
+        "x": 20,
+        "y": 10
+      },
+      "sha256Png": "5594a0b0a8b08d6eb8db1ceba8e222bf2ac44db2a79ce5846e60960cf396b3fb"
+    },
+    {
+      "id": "forest",
+      "png": "layers/forest.png",
+      "webp": "layers/forest.webp",
+      "width": 3840,
+      "height": 1920,
+      "zIndex": 3,
+      "offsetX": 0,
+      "offsetY": -160,
+      "generatedIndependently": true,
+      "reusedApprovedForeground": false,
+      "parallaxMaxAt2880": {
+        "x": 28,
+        "y": 14
+      },
+      "sha256Png": "24385eb16e816935e00794805764f4f76d0b77e95142e7d54b116f18012a10aa"
+    },
+    {
+      "id": "foreground",
+      "png": "layers/foreground.png",
+      "webp": "layers/foreground.webp",
+      "width": 3840,
+      "height": 1920,
+      "zIndex": 4,
+      "offsetX": 0,
+      "offsetY": 0,
+      "generatedIndependently": true,
+      "reusedApprovedForeground": true,
+      "parallaxMaxAt2880": {
+        "x": 36,
+        "y": 18
+      },
+      "sha256Png": "623995d9206f21c38e7b0ebd517841d98ddea43c9b1e5b7acca85487a4bbba9c"
+    }
+  ],
+  "sky": {
+    "file": "layers/sky-existing.webp",
+    "width": 2880,
+    "height": 1440,
+    "zIndex": 0,
+    "reused": true,
+    "notRegenerated": true
+  }
+}

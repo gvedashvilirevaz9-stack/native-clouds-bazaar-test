@@ -1,0 +1,25 @@
+{
+  "size": [
+    3840,
+    1920
+  ],
+  "topAtSampleColumns": [
+    1153,
+    1219,
+    1309,
+    1379,
+    1425,
+    1385,
+    1298,
+    1249,
+    1208
+  ],
+  "bottomOpaqueFraction": 1,
+  "alphaBox": [
+    0,
+    1077,
+    3840,
+    1920
+  ],
+  "resized": false
+}

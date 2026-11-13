@@ -1,0 +1,29 @@
+{
+  "layer": "mountains",
+  "requested": "3840x1920",
+  "actual": {
+    "width": 3840,
+    "height": 1920
+  },
+  "model": "gpt-image-2.6-sunburst",
+  "quality": "max",
+  "complexity": "high",
+  "elapsedSeconds": 102.807,
+  "requestId": "req_1665badb1df24024951e78738f6483af",
+  "usage": {
+    "input_tokens": 3188,
+    "input_tokens_details": {
+      "image_tokens": 2493,
+      "text_tokens": 695
+    },
+    "output_tokens": 10798,
+    "output_tokens_details": {
+      "image_tokens": 10798,
+      "text_tokens": 0
+    },
+    "total_tokens": 13986
+  },
+  "bytes": 8910818,
+  "sha256": "5134058d316a9b0f9f87fd60ecd1fcac6812c528f006229a8622f69e7f88bbc1",
+  "upscaled": false
+}

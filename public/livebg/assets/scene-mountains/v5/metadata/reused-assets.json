@@ -1,0 +1,20 @@
+{
+  "foreground": {
+    "source": "meadow-layer-3840x1920.png",
+    "sha256": "623995d9206f21c38e7b0ebd517841d98ddea43c9b1e5b7acca85487a4bbba9c",
+    "size": [
+      3840,
+      1920
+    ],
+    "copiedUnchanged": true
+  },
+  "sky": {
+    "source": "sky.webp",
+    "size": [
+      2880,
+      1440
+    ],
+    "copiedUnchanged": true,
+    "use": "existing sky for review; new terrain remains native 3840x1920"
+  }
+}

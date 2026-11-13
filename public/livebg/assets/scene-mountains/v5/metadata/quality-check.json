@@ -1,0 +1,83 @@
+{
+  "nativeDimensions": {
+    "mountains": [
+      3840,
+      1920
+    ],
+    "foothills": [
+      3840,
+      1920
+    ],
+    "forest": [
+      3840,
+      1920
+    ],
+    "foreground": [
+      3840,
+      1920
+    ]
+  },
+  "pngWebpPixelsIdentical": {
+    "mountains": true,
+    "foothills": true,
+    "forest": true,
+    "foreground": true
+  },
+  "motionChecks": [
+    {
+      "x": -1,
+      "y": -1,
+      "transparent_holes_below_terrain": 0,
+      "bottom_opaque": true
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "transparent_holes_below_terrain": 0,
+      "bottom_opaque": true
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "transparent_holes_below_terrain": 0,
+      "bottom_opaque": true
+    },
+    {
+      "x": 0,
+      "y": -1,
+      "transparent_holes_below_terrain": 0,
+      "bottom_opaque": true
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "transparent_holes_below_terrain": 0,
+      "bottom_opaque": true
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "transparent_holes_below_terrain": 0,
+      "bottom_opaque": true
+    },
+    {
+      "x": 1,
+      "y": -1,
+      "transparent_holes_below_terrain": 0,
+      "bottom_opaque": true
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "transparent_holes_below_terrain": 0,
+      "bottom_opaque": true
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "transparent_holes_below_terrain": 0,
+      "bottom_opaque": true
+    }
+  ],
+  "visualReview": "Reviewed composition and native 1:1 crops. No people. Foreground unchanged."
+}
