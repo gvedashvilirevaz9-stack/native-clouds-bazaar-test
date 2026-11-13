@@ -38,7 +38,7 @@
    "id": "mountains",
    "type": "plate",
    "depth": 0.12,
-   "src": "v5/web/mountains.webp",
+   "src": "v5/site/mountains.webp",
    "snow": 0.6,
    "offsetX": 0,
    "offsetY": -180
@@ -47,7 +47,7 @@
    "id": "foothills",
    "type": "plate",
    "depth": 0.25,
-   "src": "v5/web/foothills.webp",
+   "src": "v5/site/foothills.webp",
    "snow": 0.7,
    "offsetX": 0,
    "offsetY": -240
@@ -112,7 +112,7 @@
    "id": "forest",
    "type": "plate",
    "depth": 0.45,
-   "src": "v5/web/forest.webp",
+   "src": "v5/site/forest.webp",
    "snow": 0.6,
    "offsetX": 0,
    "offsetY": -160
@@ -172,7 +172,7 @@
    "id": "foreground",
    "type": "plate",
    "depth": 0.88,
-   "src": "v5/web/foreground.webp",
+   "src": "v5/site/foreground.webp",
    "snow": 0.8,
    "offsetX": 0,
    "offsetY": 0
