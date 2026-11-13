@@ -1,5 +1,6 @@
 // Native Clouds · desktop widgets delivered by Live Background couriers.
 // A courier (airship / balloon / eagle) drops a widget; the widget falls to its spot and stays.
+// Places: 3 rows × 5 — eagle drops in the sky row, balloon in the mountain row, airship in the lower row.
 // No frame and no background at rest; on hover a glass frame appears — drag it, or close it with ×.
 //
 //   import { attachWidgets } from '/livebg/widgets.js'
@@ -45,7 +46,11 @@ const WX = { 0: ['☀️', 'ясно'], 1: ['🌤️', 'почти ясно'], 2
   51: ['🌦️', 'морось'], 53: ['🌦️', 'морось'], 55: ['🌦️', 'морось'], 61: ['🌧️', 'дождь'], 63: ['🌧️', 'дождь'], 65: ['🌧️', 'ливень'],
   71: ['🌨️', 'снег'], 73: ['🌨️', 'снег'], 75: ['❄️', 'снегопад'], 80: ['🌦️', 'ливень'], 81: ['🌧️', 'ливень'], 82: ['🌧️', 'ливень'], 95: ['⛈️', 'гроза'], 96: ['⛈️', 'гроза'], 99: ['⛈️', 'гроза'] };
 
-const KEY = 'lw.widgets.v1';
+// Drop grid: 3 rows (by courier) × 5 places. Eagle drops in the sky, balloon at the mountains, airship lower.
+export const ROWS = { eagle: 0.27, balloon: 0.45, airship: 0.64 };
+export const COLS = [0.22, 0.36, 0.5, 0.64, 0.78];
+const ORDER = [2, 3, 1, 4, 0]; // centre first, then alternating outwards; the clock always takes the centre
+const KEY = 'lw.widgets.v2';
 const save = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* storage may be unavailable */ } };
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
 
@@ -53,6 +58,7 @@ export function attachWidgets(bg, root = document.body) {
   if (!document.getElementById('lw-css')) { const st = document.createElement('style'); st.id = 'lw-css'; st.textContent = CSS; document.head.append(st); }
   const layer = document.createElement('div'); layer.className = 'lw-layer'; root.append(layer);
   const items = new Map();
+  const slots = new Map(); // 'row:col' -> widget id (or 'pending')
   let seq = 1;
 
   const KINDS = {
@@ -117,7 +123,8 @@ export function attachWidgets(bg, root = document.body) {
     const body = document.createElement('div'); const stop = kind(body, rec.data || {});
     const bar = document.createElement('div'); bar.className = 'lw-bar'; bar.innerHTML = '<span class="lw-grip">⠿</span><button class="lw-x" title="Убрать">×</button>';
     el.append(bar, body); layer.append(el);
-    const id = rec.id || seq++; rec.id = id; items.set(id, { el, rec, stop });
+    const id = rec.id || seq++; rec.id = id; items.set(id, { el, rec, stop, born: Date.now() });
+    if (rec.row && rec.col != null) slots.set(rec.row + ':' + rec.col, id);
     bar.querySelector('.lw-x').onclick = (e) => { e.stopPropagation(); remove(id); };
     drag(el, rec);
     if (from) {
@@ -138,27 +145,69 @@ export function attachWidgets(bg, root = document.body) {
       const sx = e.clientX, sy = e.clientY, x0 = parseFloat(el.style.left), y0 = parseFloat(el.style.top);
       el.setPointerCapture(e.pointerId); el.classList.add('drag');
       const mv = (ev) => { el.style.left = x0 + ev.clientX - sx + 'px'; el.style.top = y0 + ev.clientY - sy + 'px'; };
-      const up = () => { el.classList.remove('drag'); el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up);
-        rec.x = parseFloat(el.style.left) / innerWidth; rec.y = parseFloat(el.style.top) / innerHeight; persist(); };
+      const up = (ev) => { el.classList.remove('drag'); el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up);
+        rec.x = parseFloat(el.style.left) / innerWidth; rec.y = parseFloat(el.style.top) / innerHeight;
+        // moved by hand: it no longer holds its drop place
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 12 && rec.row) { free(rec.row, rec.col, rec.id); rec.row = null; rec.col = null; }
+        persist(); };
       el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up);
     });
   }
-  function remove(id) { const it = items.get(id); if (!it) return; it.stop?.(); it.el.remove(); items.delete(id); persist(); }
-  function persist() { save([...items.values()].map(({ rec }) => ({ kind: rec.kind, data: rec.data || null, size: rec.size, x: rec.x, y: rec.y }))); }
+  function remove(id) { const it = items.get(id); if (!it) return; it.stop?.(); it.el.remove(); items.delete(id); if (it.rec.row) free(it.rec.row, it.rec.col, id); persist(); }
+  function free(row, col, id) { const k = row + ':' + col; if (slots.get(k) === id) slots.delete(k); }
+  function moveTo(id, row, col) {
+    const it = items.get(id); if (!it) return; free(it.rec.row, it.rec.col, id);
+    it.rec.row = row; it.rec.col = col; it.rec.x = COLS[col]; it.rec.y = ROWS[row]; slots.set(row + ':' + col, id);
+    it.el.animate([{ left: it.el.style.left, top: it.el.style.top }, { left: COLS[col] * innerWidth + 'px', top: ROWS[row] * innerHeight + 'px' }], { duration: 600, easing: 'ease-in-out' });
+    it.el.style.left = COLS[col] * innerWidth + 'px'; it.el.style.top = ROWS[row] * innerHeight + 'px';
+  }
+  function persist() { save([...items.values()].map(({ rec }) => ({ kind: rec.kind, data: rec.data || null, size: rec.size, x: rec.x, y: rec.y, row: rec.row || null, col: rec.col ?? null }))); }
 
   // restore widgets the person kept from last time (no courier needed)
   for (const r of load()) create({ ...r });
 
+  const keyOf = (k, dt) => k + '|' + JSON.stringify(dt || null);
+  const holder = (row, col) => slots.get(row + ':' + col);
+
+  // choose the place before the courier takes off, so two couriers never aim at one place
+  function pick(row, widget, data) {
+    const k = keyOf(widget, data);
+    for (const [id, it] of items) if (keyOf(it.rec.kind, it.rec.data) === k && it.rec.row === row) return it.rec.col; // same thing again: same place
+    if (widget === 'clock') return 2;
+    const freeCol = ORDER.find((c) => !holder(row, c));
+    if (freeCol != null) return freeCol;
+    // all five taken: overwrite the oldest one in this row (never the clock if avoidable)
+    let best = null, bestT = Infinity;
+    for (const c of ORDER) { const it = items.get(holder(row, c)); if (it && it.rec.kind !== 'clock' && it.born < bestT) { best = c; bestT = it.born; } }
+    return best ?? 0;
+  }
+  const rawDeliver = bg.deliver.bind(bg);
+  bg.deliver = (widget, o = {}) => {
+    const by = ROWS[o.by] ? o.by : 'airship', row = by;
+    const col = Number.isInteger(o.col) && o.col >= 0 && o.col < 5 ? o.col : pick(row, widget, o.data);
+    if (!holder(row, col)) slots.set(row + ':' + col, 'pending');
+    return rawDeliver(widget, { ...o, by, at: [COLS[col], ROWS[row]], tag: { row, col } });
+  };
+
   bg.on('drop', (d) => {
-    // one widget of each kind: a new delivery replaces the old one
-    const key = (k, dt) => k + '|' + JSON.stringify(dt || null);
-    for (const [id, it] of items) if (key(it.rec.kind, it.rec.data) === key(d.widget, d.data)) remove(id);
-    create({ kind: d.widget, data: d.data, size: d.size, x: d.to[0] / innerWidth, y: d.to[1] / innerHeight }, d.from);
+    const row = d.tag?.row, col = d.tag?.col, k = keyOf(d.widget, d.data);
+    for (const [id, it] of items) if (keyOf(it.rec.kind, it.rec.data) === k) remove(id); // same thing: replace
+    if (row) {
+      const occ = holder(row, col);
+      if (occ && occ !== 'pending' && items.has(occ)) {
+        // the clock takes the centre: the current occupant moves to a free place, otherwise it is overwritten
+        const alt = d.widget === 'clock' ? ORDER.find((c) => c !== col && !holder(row, c)) : null;
+        if (alt != null) moveTo(occ, row, alt); else remove(occ);
+      }
+      slots.delete(row + ':' + col);
+    }
+    create({ kind: d.widget, data: d.data, size: d.size, row: row || null, col: row ? col : null, x: row ? COLS[col] : d.to[0] / innerWidth, y: row ? ROWS[row] : d.to[1] / innerHeight }, d.from);
   });
 
   return {
     kinds: Object.keys(KINDS),
     list: () => [...items.values()].map(({ rec }) => ({ ...rec })),
     remove, clear: () => [...items.keys()].forEach(remove),
+    slots: () => Object.fromEntries([...slots].map(([k, v]) => [k, v === 'pending' ? 'pending' : items.get(v)?.rec.kind])),
   };
 }

@@ -88,7 +88,7 @@
     <div class="seg" id="quick" style="margin-top:6px"><button data-w="clock">Часы</button><button data-q="погода">Погода</button><button data-q="курс биткоина">Биткоин</button><button data-q="курс доллара">Доллар</button><button data-q="индекс страха и жадности">Страх/жадность</button></div>
     <div class="row" style="margin-top:6px"><span>Кто несёт</span><div class="seg" id="by"><button data-v="airship">Дирижабль</button><button data-v="balloon">Шар</button><button data-v="eagle">Орёл</button></div></div>
     <div class="row" style="margin-top:4px"><span>Размер</span><div class="seg" id="size"><button data-v="S">S</button><button data-v="M">M</button><button data-v="L">L</button></div></div>
-    <div class="note">Данные — из Agent Marketplace. Виджет без рамки; наведите мышь — появится стекло: тащите или закройте ×.</div>
+    <div class="note">Орёл кладёт в небо, шар — на уровень гор, дирижабль — ниже. В каждом ряду 5 мест, часы всегда в центре. S — маленький и медленный вдалеке, L — большой и быстрый. Данные — из Agent Marketplace; наведите мышь на виджет — появится стекло.</div>
   </div>
 
   <div class="sec"><b>Кто летает</b>
@@ -200,7 +200,7 @@ $('copy').onclick = () => navigator.clipboard.writeText($('json').value).then(()
 let by = 'airship', size = 'M'; seg('by', by); seg('size', size);
 $('by').onclick = (e) => { const v = e.target.dataset.v; if (v) { by = v; seg('by', v); } };
 $('size').onclick = (e) => { const v = e.target.dataset.v; if (v) { size = v; seg('size', v); } };
-const send = (widget, data) => bg.deliver(widget, { by, size, data, at: [0.5, 0.42] });
+const send = (widget, data) => bg.deliver(widget, { by, size, data });
 $('quick').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; b.dataset.w ? send(b.dataset.w) : send('agent', { q: b.dataset.q }); };
 $('askGo').onclick = () => { const q = $('ask').value.trim(); if (!q) return; /время|час/i.test(q) && q.length < 25 ? send('clock') : send('agent', { q }); };
 $('ask').onkeydown = (e) => { if (e.key === 'Enter') $('askGo').onclick(); };

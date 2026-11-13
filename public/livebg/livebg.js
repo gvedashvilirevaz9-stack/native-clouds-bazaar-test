@@ -57,7 +57,13 @@ export const COURIER = {
   balloon: { S: 0.07, M: 0.11, L: 0.17 },
   eagle: { S: 0.05, M: 0.08, L: 0.12 },
 };
-export const WIDGET_SCALE = { S: 0.75, M: 1, L: 1.45 };
+export const WIDGET_SCALE = { S: 0.75, M: 1, L: 1.3 };
+// bigger courier = nearer plane = faster; small ones drift slowly far away
+export const COURIER_MOTION = {
+  S: { depth: 0.16, arrive: 12, cruise: 0.05 },
+  M: { depth: 0.32, arrive: 6.5, cruise: 0.1 },
+  L: { depth: 0.62, arrive: 3.4, cruise: 0.22 },
+};
 
 export const PRESETS = {
   'mountains-v5': () => ({ name: 'Горы · v5', url: BASE + 'scene-mountains/v5/scene.json', live: true }),
@@ -567,29 +573,31 @@ export function createLiveBG(canvas, opts = {}) {
     },
     courier(L, env) {
       if (!S.couriers.length) return;
-      const light = objLight(env), o = offset(L.depth);
-      withLayer(L.depth, () => {
-        for (const c of S.couriers) {
-          const w = c.h * FLY[c.type].aspect, tx = c.at[0] * S.W;
-          if (c.state === 'in') {
-            // ease into the drop point (critically damped)
-            const k = 1 - Math.exp(-S.dt * 2.2); c.x += Math.min((tx - c.x) * k, c.vmax * S.dt);
-            if (Math.abs(tx - c.x) < 3) { c.state = 'hover'; c.t = 0.7; }
-          } else if (c.state === 'hover') {
-            c.t -= S.dt;
-            if (!c.dropped && c.t < 0.35) {
-              c.dropped = true;
-              const dropY = c.y + c.h * (c.type === 'airship' ? 0.45 : c.type === 'balloon' ? 0.5 : 0.25);
-              emit('drop', { id: c.id, widget: c.widget, data: c.data, size: c.size, from: [c.x + o.x, dropY + o.y], to: [c.at[0] * S.W, c.at[1] * S.H] });
-              c.resolve?.(c.id);
-            }
-            if (c.t <= 0) { c.state = 'out'; c.v = 0; }
-          } else { c.v = Math.min(c.vmax, (c.v || 0) + c.vmax * S.dt * 0.8); c.x += c.v * S.dt; }
-          c.y = c.y0 + Math.sin(S.t * 0.9 + c.id) * c.h * (c.type === 'airship' ? 0.06 : 0.12);
-          drawFlyer(c, light);
+      const light = objLight(env);
+      for (const c of S.couriers) {
+        const M = COURIER_MOTION[c.size], w = c.h * FLY[c.type].aspect, tx = c.at[0] * S.W, o = offset(M.depth);
+        c.t += S.dt;
+        if (c.state === 'in') {
+          // enters at cruise speed and brakes smoothly to zero at the drop point (ease-out cubic)
+          const u = Math.min(1, c.t / M.arrive); c.x = c.x0 + (tx - c.x0) * (1 - Math.pow(1 - u, 3));
+          if (u >= 1) { c.state = 'hover'; c.t = 0; }
+        } else if (c.state === 'hover') {
+          if (!c.dropped && c.t > 0.3) {
+            c.dropped = true;
+            const dropY = c.y + c.h * (c.type === 'airship' ? 0.45 : c.type === 'balloon' ? 0.5 : 0.25);
+            emit('drop', { id: c.id, widget: c.widget, data: c.data, size: c.size, tag: c.tag, from: [c.x + o.x, dropY + o.y], to: [c.at[0] * S.W, c.at[1] * S.H] });
+            c.resolve?.(c.id);
+          }
+          if (c.t > 1.1) { c.state = 'out'; c.t = 0; }
+        } else {
+          // accelerates gently from rest to cruise speed (no jump)
+          const cruise = M.cruise * S.W, ramp = 1.6, v = cruise * Math.min(1, c.t / ramp);
+          c.x += v * S.dt;
         }
-        S.couriers = S.couriers.filter((c) => !(c.state === 'out' && c.x > S.W + c.h * FLY[c.type].aspect));
-      });
+        c.y = c.y0 + Math.sin(S.t * 0.8 + c.id) * c.h * (c.type === 'airship' ? 0.05 : 0.1);
+        withLayer(M.depth, () => drawFlyer(c, light));
+      }
+      S.couriers = S.couriers.filter((c) => !(c.state === 'out' && c.x > S.W + c.h * FLY[c.type].aspect));
     },
     plate(L, env) {
       const im = loadImg(L.src); if (!im) return;
@@ -877,9 +885,9 @@ export function createLiveBG(canvas, opts = {}) {
     // a courier flies in, drops a widget at `at` (screen fractions), and flies away; resolves on drop
     deliver(widget, o = {}) {
       const type = FLY[o.by] ? o.by : 'airship', size = ['S', 'M', 'L'].includes(o.size) ? o.size : 'M';
-      const at = [clamp(+(o.at?.[0] ?? 0.5), 0.1, 0.9), clamp(+(o.at?.[1] ?? 0.45), 0.2, 0.85)];
+      const at = [clamp(+(o.at?.[0] ?? 0.5), 0.05, 0.95), clamp(+(o.at?.[1] ?? 0.45), 0.1, 0.9)];
       const h = COURIER[type][size] * S.H, w = h * FLY[type].aspect;
-      const c = { id: courierSeq++, type, size, widget: String(widget).slice(0, 40), data: o.data || null, at, h, x: -w, state: 'in', vmax: S.W * (type === 'eagle' ? 0.4 : type === 'airship' ? 0.22 : 0.16) };
+      const c = { id: courierSeq++, type, size, widget: String(widget).slice(0, 40), data: o.data || null, tag: o.tag ?? null, at, h, x: -w, x0: -w, t: 0, state: 'in' };
       c.y0 = c.y = Math.max(h * 0.8, at[1] * S.H - h * (type === 'airship' ? 1.4 : 1.1) - S.H * 0.08);
       S.couriers.push(c);
       if (!S.scene.layers.some((l) => l.type === 'courier')) S.scene.layers.splice(S.scene.layers.length - 2, 0, { id: 'courier', type: 'courier', depth: 0.7 });

@@ -25,6 +25,26 @@ export const TOOLS = {
     inputSchema: O({q: str('question in words, e.g. "погода в Батуми", "курс доллара"'), service: str('service id, e.g. weather, fx, news, crypto_price (optional)'), package: str('morning | money | travel | evening | crypto (optional)'), city: str('city (optional)'), country: str('ISO country (optional)')}),
     run: (a) => callApi(money, a.q || a.service || a.package ? a : {meta: '1'}),
   },
+  background_deliver: {
+    description: 'Live background (desktop wallpaper): a courier flies in and drops a transparent widget on the desktop, then flies away. Rows by courier: eagle → sky row, balloon → mountain row, airship → lower row; 5 places per row, the clock always takes the centre, others fill next to it; when a row is full the oldest is overwritten. size S/M/L: small slow far courier → big fast near one; the widget size follows. widget "clock" is local; widget "agent" shows any Agent Marketplace answer (give q in words, e.g. "курс биткоина", or a service id). Returns the answer and the page command {type:"livebg", cmd:"deliver", args} for the open background page.',
+    inputSchema: O({widget: {type: 'string', enum: ['clock', 'agent']}, q: str('for widget=agent: question in words, e.g. "курс биткоина", "погода", "курс доллара"'), service: str('for widget=agent: service id instead of q, e.g. crypto_price, fx, weather (optional)'),
+      by: {type: 'string', enum: ['eagle', 'balloon', 'airship'], description: 'courier = row: eagle sky, balloon mountains, airship lower (default airship)'}, size: {type: 'string', enum: ['S', 'M', 'L']}, col: {type: 'integer', minimum: 0, maximum: 4, description: 'place in the row 0..4 (optional, 2 = centre)'}}, ['widget']),
+    async run(a) {
+      const agent = a.widget === 'agent';
+      if (agent && !a.q && !a.service) return {error: 'widget=agent needs q or service'};
+      const data = agent ? (a.service ? {service: String(a.service)} : {q: String(a.q).slice(0, 200)}) : null;
+      let answer = null;
+      if (agent) { const r = await callApi(money, data.service ? {service: data.service} : {q: data.q}); const it = (r.items || [])[0]; answer = it ? {title: it.title, summary: it.summary, ok: it.ok} : {question: r.question || null}; }
+      const opts = {by: a.by || 'airship', size: a.size || 'M', data}; if (Number.isInteger(a.col)) opts.col = a.col;
+      return {command: {type: 'livebg', cmd: 'deliver', args: [a.widget, opts]}, answer,
+        channel: 'Send `command` to the open background page (window.postMessage or the portal channel). The page already accepts it.'};
+    },
+  },
+  background_flyers: {
+    description: 'Live background: how many eagles, airships and balloons fly on each depth plane (far / mid / near), 0..8 each. Returns the page command.',
+    inputSchema: O({far: {type: 'object', description: '{eagle, airship, balloon}'}, mid: {type: 'object'}, near: {type: 'object'}}),
+    run: (a) => ({command: {type: 'livebg', cmd: 'setFlyers', args: [{...(a.far ? {far: a.far} : {}), ...(a.mid ? {mid: a.mid} : {}), ...(a.near ? {near: a.near} : {})}]}}),
+  },
   status: {
     description: 'What this Bazaar server can do right now: networks, configured catalogs, Shopify store, agent test wallet and its limits. Call first.',
     inputSchema: O({}),
