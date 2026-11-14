@@ -384,10 +384,11 @@ export function createVoxelIsland(canvas, opts = {}) {
   const wfAlpha = new THREE.CanvasTexture(faCv); wfAlpha.wrapS = wfAlpha.wrapT = THREE.ClampToEdgeWrapping;
   const wfMat = new THREE.MeshBasicMaterial({ map: wfMap, alphaMap: wfAlpha, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide, color: 0xffffff });
   const wfGeo = new THREE.PlaneGeometry(7, 22), wfY = 0.3 - 11, R = G + 0.55, PER = 6, span = 2 * G / PER;
+  const wfFalls = [];
   for (let j = 0; j < PER; j++) {
     const t = Math.round(-G + (j + 0.5) * span);
     for (const [px, pz, ry] of [[t, R, 0], [t, -R, Math.PI], [R, t, Math.PI / 2], [-R, t, -Math.PI / 2]]) {
-      const mf = new THREE.Mesh(wfGeo, wfMat); mf.position.set(px, wfY - (rng() * 2), pz); mf.rotation.y = ry; scene.add(mf);
+      const mf = new THREE.Mesh(wfGeo, wfMat); mf.position.set(px, wfY - (rng() * 2), pz); mf.rotation.y = ry; scene.add(mf); wfFalls.push(mf);
     }
   }
   // falling mist that drifts down off the rim and disappears
@@ -397,6 +398,14 @@ export function createVoxelIsland(canvas, opts = {}) {
   const mistGeo = new THREE.BufferGeometry(); mistGeo.setAttribute('position', new THREE.BufferAttribute(mistPos, 3));
   const mistPts = new THREE.Points(mistGeo, new THREE.PointsMaterial({ color: 0xbfe6ff, size: 0.8, transparent: true, opacity: 0.5, depthWrite: false }));
   scene.add(mistPts);
+
+  // alternate backdrop for "infinite board" mode: endless blue sea with white flecks
+  const seaCv = document.createElement('canvas'); seaCv.width = seaCv.height = 128;
+  { const g = seaCv.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, '#2a84c8'); gr.addColorStop(1, '#1c63ad'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 200; i++) { const x = rng() * 128 | 0, y = rng() * 128 | 0, s = rng() < 0.8 ? 1 : 2; g.globalAlpha = 0.3 + rng() * 0.6; g.fillStyle = rng() < 0.5 ? '#bfeaff' : '#ffffff'; g.fillRect(x, y, s, s); }
+    g.globalAlpha = 1; }
+  const seaTex = new THREE.CanvasTexture(seaCv); seaTex.colorSpace = THREE.SRGBColorSpace; seaTex.magFilter = THREE.NearestFilter;
+  let infMode = false;
 
   // ---------- ship model ----------
   function buildShip(flagCol = PAL.red) {
@@ -641,6 +650,9 @@ export function createVoxelIsland(canvas, opts = {}) {
       rebuildFlyers(); return { ...S.flyers }; },
     getFlyers: () => ({ ...S.flyers }),
     setInput() {}, calibrate() {}, setStrength() {}, setEffects() {}, getInput: () => 'off',
+    setInfinite(on) { infMode = (on == null ? !infMode : !!on); const show = !infMode;
+      earthMesh.visible = show; textMesh.visible = show; mistPts.visible = show; for (const m of wfFalls) m.visible = show;
+      scene.background = infMode ? seaTex : bgTex; return infMode; },
     getScene: () => ({ name: 'Воксельный остров', is3D: true, voxels: land.m.size, water: water.length }),
     destroy() { cancelAnimationFrame(S.raf); ro.disconnect(); clearTimeout(wTimer); renderer.dispose(); },
     _state: S,
