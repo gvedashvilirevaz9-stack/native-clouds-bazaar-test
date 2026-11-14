@@ -90,12 +90,16 @@ export function createVoxelIsland(canvas, opts = {}) {
   let bgKey = '';
   function paintBg(night, warm) {
     const k = (night * 10 | 0) + '|' + (warm * 6 | 0); if (k === bgKey) return; bgKey = k;
-    const g = bgCv.getContext('2d'), gr = g.createRadialGradient(80, 72, 8, 80, 80, 120);
-    const cen = [lerp(24, 13, night) + warm * 12, lerp(40, 20, night) + warm * 4, lerp(78, 46, night)];
-    const edge = [lerp(6, 3, night), lerp(11, 6, night), lerp(26, 15, night)];
+    const g = bgCv.getContext('2d');
+    g.fillStyle = '#05060b'; g.fillRect(0, 0, 160, 160);                 // near-black field (stays put while the land rotates)
+    const gr = g.createRadialGradient(80, 83, 5, 80, 86, 82);            // centered glow spot = backlight behind the island
+    const glow = [lerp(116, 54, night) + warm * 24, lerp(140, 76, night) + warm * 12, lerp(176, 118, night)];
+    const mid = [glow[0] * 0.34 + 7, glow[1] * 0.34 + 8, glow[2] * 0.4 + 12];
+    const edge = [5, 6, 12];
     const hx = (c) => '#' + c.map((v) => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0')).join('');
-    gr.addColorStop(0, hx(cen)); gr.addColorStop(1, hx(edge)); g.fillStyle = gr; g.fillRect(0, 0, 160, 160); bgTex.needsUpdate = true;
-  }
+    gr.addColorStop(0, hx(glow)); gr.addColorStop(0.42, hx(mid)); gr.addColorStop(1, hx(edge));
+    g.fillStyle = gr; g.fillRect(0, 0, 160, 160); bgTex.needsUpdate = true;
+    }
 
   // ---------- terrain grid: big, flat, open island ----------
   const G = 62, SZ = 2 * G + 1;
@@ -321,26 +325,60 @@ export function createVoxelIsland(canvas, opts = {}) {
   }
   scene.add(waterMesh);
   const waterBase = Float32Array.from(waterMesh.instanceColor.array);
-  // bounded square platform (dark navy) + branded pixel border — no infinite ocean, no far seam
-  const BORDER = 13, SQ = G + BORDER;
-  const base = new THREE.Mesh(new THREE.BoxGeometry(2 * SQ + 2, 3.6, 2 * SQ + 2), new THREE.MeshLambertMaterial({ color: 0x0e1733 }));
-  base.position.set(0.5, 0.2 - 1.8, 0.5); base.receiveShadow = true; scene.add(base);
-  // a slightly lighter inner frame right at the water's edge (contour)
-  const edgeFrame = new THREE.Mesh(new THREE.BoxGeometry(2 * G + 5, 0.5, 2 * G + 5), new THREE.MeshLambertMaterial({ color: 0x14224a }));
-  edgeFrame.position.set(0.5, 0.22, 0.5); scene.add(edgeFrame);
-  // "sunspace.club" in light-blue pixels around all four sides (part of the 3D scene -> rotates in perspective)
-  const FONT = { A: ["01110","10001","10001","11111","10001","10001","10001"], B: ["11110","10001","10001","11110","10001","10001","11110"], C: ["01111","10000","10000","10000","10000","10000","01111"], E: ["11111","10000","10000","11110","10000","10000","11111"], L: ["10000","10000","10000","10000","10000","10000","11111"], N: ["10001","11001","10101","10011","10001","10001","10001"], P: ["11110","10001","10001","11110","10000","10000","10000"], S: ["01111","10000","10000","01110","00001","00001","11110"], U: ["10001","10001","10001","10001","10001","10001","01110"], ".": ["00000","00000","00000","00000","00000","01100","01100"] };
-  const TXT = "SUNSPACE.CLUB", textPix = [];
-  function sideText(ax, az, ux, uz, ox, oz) {
-    const total = TXT.length * 6; let cur = -total / 2 + 0.5;
-    for (const ch of TXT) { const g = FONT[ch] || FONT['.']; for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) if (g[r][c] === '1') { const a = cur + c, v = 6 - r; textPix.push([Math.round(ox + ax * a + ux * v), Math.round(oz + az * a + uz * v)]); } cur += 6; }
+  // ---------- floating earth slab: a brown pixel cliff under the water, tapering to a point ----------
+  const EARTH = { dirt: 0x9c6a35, dirt2: 0xb07c3f, clay: 0xc69050, dirtDk: 0x7a4e26, rock: 0x6b4a30, rockDk: 0x50372450 & 0xffffff, moss: 0x6b9138 };
+  EARTH.rockDk = 0x503724;
+  const earthV = new Vox(), DEEP = 26, CLIFF = 7;   // CLIFF = full-width vertical brown band right under the rim
+  for (let i = 0; i <= DEEP; i++) {
+    const yL = -(i + 1), cap = i >= DEEP - 1;
+    let r; if (i < CLIFF) r = G; else { const t = (i - CLIFF) / (DEEP - CLIFF); r = Math.round(G - (G - 4) * t); }
+    for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) {
+      const m = Math.max(Math.abs(x), Math.abs(z));
+      if (i < CLIFF) { if (m !== G) continue; }              // thin vertical wall ring (stacks into a solid cliff)
+      else if (!cap && m <= r - 3) continue;                 // tapering shell below
+      const nz = (vnoise(x * 0.26 + i * 0.4, z * 0.26) + 1) * 0.5;
+      let c;
+      if (i === 0) c = nz < 0.4 ? EARTH.moss : (nz < 0.7 ? EARTH.clay : EARTH.dirt2);
+      else if (i < CLIFF) c = nz < 0.4 ? EARTH.clay : (nz < 0.7 ? EARTH.dirt2 : EARTH.dirt);
+      else if (i < DEEP * 0.55) c = nz < 0.5 ? EARTH.dirt : EARTH.dirtDk;
+      else if (i < DEEP * 0.8) c = nz < 0.5 ? EARTH.dirtDk : EARTH.rock;
+      else c = nz < 0.5 ? EARTH.rock : EARTH.rockDk;
+      earthV.put(x, yL, z, c);
+    }
   }
-  const rc = G + 4;
-  sideText(1, 0, 0, 1, 0, rc); sideText(-1, 0, 0, -1, 0, -rc); sideText(0, 1, 1, 0, rc, 0); sideText(0, -1, -1, 0, -rc, 0);
-  const textMat = new THREE.MeshLambertMaterial({ color: 0x74d6ff, emissive: new THREE.Color(0x2f7fb0), emissiveIntensity: 0.6 });
-  const textMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.92, 0.5, 0.92), textMat, Math.max(1, textPix.length));
-  { const m = new THREE.Matrix4(); textPix.forEach(([x, z], i) => { m.makeTranslation(x + 0.5, 0.32, z + 0.5); textMesh.setMatrixAt(i, m); }); textMesh.count = textPix.length; }
-  scene.add(textMesh);
+  for (let i = 0; i < 18; i++) {                              // rocky roots dangling underneath
+    const ang = rng() * 6.283, rr = 4 + rng() * 14, rx = Math.round(Math.cos(ang) * rr), rz = Math.round(Math.sin(ang) * rr);
+    const len = 3 + (rng() * 7 | 0), y0 = -DEEP - 1;
+    for (let k = 0; k < len; k++) earthV.put(rx, y0 - k, rz, k > len - 2 ? EARTH.rockDk : (k % 2 ? EARTH.rock : EARTH.dirtDk));
+  }
+  const earthMesh = earthV.mesh(new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x1c1206, emissiveIntensity: 0.55 }), 0.06, rng);
+  earthMesh.castShadow = false; scene.add(earthMesh);
+
+  // ---------- edge waterfalls: discrete streams pouring off the rim, fading as they fall ----------
+  const wfCv = document.createElement('canvas'); wfCv.width = 32; wfCv.height = 64;
+  { const g = wfCv.getContext('2d'); g.clearRect(0, 0, 32, 64); const cols = ['#9bd8ff', '#c8ecff', '#6fb6e8', '#ffffff', '#58a6db'];
+    for (let cx = 0; cx < 32; cx += 2) { const col = cols[(rng() * cols.length) | 0]; let on = rng() < 0.75;
+      for (let y = 0; y < 64; y++) { if (rng() < 0.07) on = !on; if (!on) continue; g.globalAlpha = 0.5 + rng() * 0.5; g.fillStyle = col; g.fillRect(cx, y, 2, 1); } }
+    g.globalAlpha = 1; }
+  const wfMap = new THREE.CanvasTexture(wfCv); wfMap.wrapS = wfMap.wrapT = THREE.RepeatWrapping; wfMap.magFilter = THREE.NearestFilter; wfMap.minFilter = THREE.NearestFilter; wfMap.colorSpace = THREE.SRGBColorSpace; wfMap.repeat.set(2, 3);
+  const faCv = document.createElement('canvas'); faCv.width = 2; faCv.height = 64;
+  { const g = faCv.getContext('2d'); for (let y = 0; y < 64; y++) { const t = 1 - y / 63; const a = Math.round(clamp(Math.pow(t, 0.8), 0, 1) * 255); g.fillStyle = 'rgb(' + a + ',' + a + ',' + a + ')'; g.fillRect(0, y, 2, 1); } }
+  const wfAlpha = new THREE.CanvasTexture(faCv); wfAlpha.wrapS = wfAlpha.wrapT = THREE.ClampToEdgeWrapping;
+  const wfMat = new THREE.MeshBasicMaterial({ map: wfMap, alphaMap: wfAlpha, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide, color: 0xffffff });
+  const wfGeo = new THREE.PlaneGeometry(7, 22), wfY = 0.3 - 11, R = G + 0.55, PER = 6, span = 2 * G / PER;
+  for (let j = 0; j < PER; j++) {
+    const t = Math.round(-G + (j + 0.5) * span);
+    for (const [px, pz, ry] of [[t, R, 0], [t, -R, Math.PI], [R, t, Math.PI / 2], [-R, t, -Math.PI / 2]]) {
+      const mf = new THREE.Mesh(wfGeo, wfMat); mf.position.set(px, wfY - (rng() * 2), pz); mf.rotation.y = ry; scene.add(mf);
+    }
+  }
+  // falling mist that drifts down off the rim and disappears
+  const MIST = 380, mistPos = new Float32Array(MIST * 3);
+  const mistSpawn = (i) => { const e = (rng() * 4) | 0, t = (rng() - 0.5) * 2 * G; if (e === 0) { mistPos[i * 3] = t; mistPos[i * 3 + 2] = G + 0.5; } else if (e === 1) { mistPos[i * 3] = t; mistPos[i * 3 + 2] = -G - 0.5; } else if (e === 2) { mistPos[i * 3] = G + 0.5; mistPos[i * 3 + 2] = t; } else { mistPos[i * 3] = -G - 0.5; mistPos[i * 3 + 2] = t; } mistPos[i * 3 + 1] = -1 - rng() * 18; };
+  for (let i = 0; i < MIST; i++) mistSpawn(i);
+  const mistGeo = new THREE.BufferGeometry(); mistGeo.setAttribute('position', new THREE.BufferAttribute(mistPos, 3));
+  const mistPts = new THREE.Points(mistGeo, new THREE.PointsMaterial({ color: 0xbfe6ff, size: 0.8, transparent: true, opacity: 0.5, depthWrite: false }));
+  scene.add(mistPts);
 
   // ---------- ship model ----------
   function buildShip(flagCol = PAL.red) {
@@ -451,7 +489,6 @@ export function createVoxelIsland(canvas, opts = {}) {
     let top = topD.map((v, i) => lerp(v, topN[i], night)), hor = horD.map((v, i) => lerp(lerp(v, horW[i], warm * 0.8), horN[i], night));
     top = top.map((v, i) => lerp(v, [120, 128, 146][i], gray * 0.6)); hor = hor.map((v, i) => lerp(v, [170, 178, 192][i], gray * 0.6));
     paintBg(night, warm);
-    textMat.emissiveIntensity = lerp(0.5, 1.5, clamp(night));
     rain.visible = w.rain > 0.05 || w.snow > 0.05;
     rain.material.color.setHex(w.snow > w.rain ? 0xffffff : 0xcfe3f7); rain.material.size = w.snow > w.rain ? 3 : 2;
     return { s, w };
@@ -553,6 +590,9 @@ export function createVoxelIsland(canvas, opts = {}) {
       for (let i = 0; i < p.count; i++) { let y = p.getY(i) - fall * dt; if (y < 0.5) y = 40; p.setY(i, y); }
       p.needsUpdate = true;
     }
+    wfMap.offset.y = (wfMap.offset.y + dt * 1.15) % 1;
+    for (let i = 0; i < MIST; i++) { mistPos[i * 3 + 1] -= (7 + (i % 3)) * dt; if (mistPos[i * 3 + 1] < -20) mistSpawn(i); }
+    mistGeo.attributes.position.needsUpdate = true;
     stepCouriers();
     renderer.render(scene, cam);
   }
