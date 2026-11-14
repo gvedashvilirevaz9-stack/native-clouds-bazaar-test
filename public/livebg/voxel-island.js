@@ -325,34 +325,52 @@ export function createVoxelIsland(canvas, opts = {}) {
   }
   scene.add(waterMesh);
   const waterBase = Float32Array.from(waterMesh.instanceColor.array);
-  // ---------- floating earth slab: a brown pixel cliff under the water, tapering to a point ----------
-  const EARTH = { dirt: 0x9c6a35, dirt2: 0xb07c3f, clay: 0xc69050, dirtDk: 0x7a4e26, rock: 0x6b4a30, rockDk: 0x50372450 & 0xffffff, moss: 0x6b9138 };
-  EARTH.rockDk = 0x503724;
-  const earthV = new Vox(), DEEP = 26, CLIFF = 7;   // CLIFF = full-width vertical brown band right under the rim
-  for (let i = 0; i <= DEEP; i++) {
-    const yL = -(i + 1), cap = i >= DEEP - 1;
-    let r; if (i < CLIFF) r = G; else { const t = (i - CLIFF) / (DEEP - CLIFF); r = Math.round(G - (G - 4) * t); }
-    for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) {
-      const m = Math.max(Math.abs(x), Math.abs(z));
-      if (i < CLIFF) { if (m !== G) continue; }              // thin vertical wall ring (stacks into a solid cliff)
-      else if (!cap && m <= r - 3) continue;                 // tapering shell below
-      const nz = (vnoise(x * 0.26 + i * 0.4, z * 0.26) + 1) * 0.5;
-      let c;
-      if (i === 0) c = nz < 0.4 ? EARTH.moss : (nz < 0.7 ? EARTH.clay : EARTH.dirt2);
-      else if (i < CLIFF) c = nz < 0.4 ? EARTH.clay : (nz < 0.7 ? EARTH.dirt2 : EARTH.dirt);
-      else if (i < DEEP * 0.55) c = nz < 0.5 ? EARTH.dirt : EARTH.dirtDk;
-      else if (i < DEEP * 0.8) c = nz < 0.5 ? EARTH.dirtDk : EARTH.rock;
-      else c = nz < 0.5 ? EARTH.rock : EARTH.rockDk;
-      earthV.put(x, yL, z, c);
+  // ---------- floating slab: a water-blue rim (with the brand text) over a brown earth cone ----------
+  const EARTH = { dirt: 0x9c6a35, dirtDk: 0x7a4e26, rock: 0x6b4a30, rockDk: 0x503724 };
+  const RIM = { c1: PAL.deep, c2: PAL.mid2, c3: PAL.deep2 };
+  const RIMH = 9, DEEP = 34;
+  const FONT = { A: ["01110","10001","10001","11111","10001","10001","10001"], B: ["11110","10001","10001","11110","10001","10001","11110"], C: ["01111","10000","10000","10000","10000","10000","01111"], E: ["11111","10000","10000","11110","10000","10000","11111"], L: ["10000","10000","10000","10000","10000","10000","11111"], N: ["10001","11001","10101","10011","10001","10001","10001"], P: ["11110","10001","10001","11110","10000","10000","10000"], S: ["01111","10000","10000","01110","00001","00001","11110"], U: ["10001","10001","10001","10001","10001","10001","01110"], ".": ["00000","00000","00000","00000","00000","01100","01100"] };
+  const TXT = "SUNSPACE.CLUB", GW = 5, GH = 7, SP = 6, totalW = TXT.length * SP;
+  const textKeys = new Set(), textList = [];
+  function stamp(axis, dir, wall) {
+    let cur = -totalW / 2 + 0.5;
+    for (const ch of TXT) { const g = FONT[ch] || FONT['.'];
+      for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) if (g[r][c] === '1') {
+        const a = cur + c, y = -(r + 2); let x, z;
+        if (axis === 'x') { x = Math.round(dir * a); z = wall; } else { z = Math.round(dir * a); x = wall; }
+        const k = x + '|' + y + '|' + z; if (!textKeys.has(k)) { textKeys.add(k); textList.push([x, y, z]); }
+      }
+      cur += SP;
     }
   }
-  for (let i = 0; i < 18; i++) {                              // rocky roots dangling underneath
-    const ang = rng() * 6.283, rr = 4 + rng() * 14, rx = Math.round(Math.cos(ang) * rr), rz = Math.round(Math.sin(ang) * rr);
-    const len = 3 + (rng() * 7 | 0), y0 = -DEEP - 1;
-    for (let k = 0; k < len; k++) earthV.put(rx, y0 - k, rz, k > len - 2 ? EARTH.rockDk : (k % 2 ? EARTH.rock : EARTH.dirtDk));
+  stamp('x', 1, G); stamp('x', -1, -G); stamp('z', -1, G); stamp('z', 1, -G);
+
+  const earthV = new Vox();
+  for (let i = 0; i <= DEEP; i++) {
+    const yL = -(i + 1), cap = i >= DEEP - 1;
+    let r; if (i < RIMH) r = G; else { const t = (i - RIMH) / (DEEP - RIMH); r = Math.round(G - (G - 3) * t); }
+    for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) {
+      const m = Math.max(Math.abs(x), Math.abs(z));
+      if (i < RIMH) { if (m !== G) continue; } else if (!cap && m <= r - 3) continue;
+      if (i < RIMH) {
+        if (textKeys.has(x + '|' + yL + '|' + z)) continue;       // leave the text voxels blank
+        const nz = (vnoise(x * 0.3 + i, z * 0.3) + 1) * 0.5;
+        earthV.put(x, yL, z, nz < 0.4 ? RIM.c2 : (nz < 0.75 ? RIM.c1 : RIM.c3));
+      } else {
+        const nz = (vnoise(x * 0.26 + i * 0.4, z * 0.26) + 1) * 0.5; let c;
+        if (i < DEEP * 0.45) c = nz < 0.5 ? EARTH.dirt : EARTH.dirtDk;
+        else if (i < DEEP * 0.78) c = nz < 0.5 ? EARTH.dirtDk : EARTH.rock;
+        else c = nz < 0.5 ? EARTH.rock : EARTH.rockDk;
+        earthV.put(x, yL, z, c);
+      }
+    }
   }
-  const earthMesh = earthV.mesh(new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x1c1206, emissiveIntensity: 0.55 }), 0.06, rng);
+  const earthMesh = earthV.mesh(new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x120a04, emissiveIntensity: 0.5 }), 0.05, rng);
   earthMesh.castShadow = false; scene.add(earthMesh);
+  // light-blue brand text glowing on the blue rim
+  const textV = new Vox(); for (const [x, y, z] of textList) textV.put(x, y, z, 0x9fe6ff);
+  const textMesh = textV.mesh(new THREE.MeshLambertMaterial({ color: 0x9fe6ff, emissive: 0x4aa8dc, emissiveIntensity: 0.95 }), 0, rng);
+  textMesh.castShadow = false; scene.add(textMesh);
 
   // ---------- edge waterfalls: discrete streams pouring off the rim, fading as they fall ----------
   const wfCv = document.createElement('canvas'); wfCv.width = 32; wfCv.height = 64;
