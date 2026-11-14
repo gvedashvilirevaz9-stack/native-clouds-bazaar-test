@@ -164,3 +164,20 @@ L влетает на скорости и плавно тормозит до н�
 - Ассеты для новых сцен генерировать по `assets/scene-mountains/v5/README.md`:
   - каждый слой отдельно, без вырезания из общего кадра, сплошной до нижнего края;
   - нативное разрешение, без растягивания.
+
+---
+
+## 11. Сцена «Летающий остров» (3D, отдельный движок)
+
+Файлы: `public/livebg/island.js` + `public/livebg/vendor/three.module.min.js` (~732 КБ) + демо `public/livebg/island.html`. Строится кодом на three.js, без генерации картинок и без параллакса.
+
+Монтируется так же, как 2D-движок, и **совместим с `widgets.js` и MCP-командами**:
+```js
+import { createIsland } from '/livebg/island.js';
+import { attachWidgets } from '/livebg/widgets.js';
+const bg = createIsland(canvas, { bridge:true, bridgeOrigin:location.origin });
+attachWidgets(bg);
+```
+API тот же: `deliver`, `setWeather`, `setTime`, `setFlyers`, `setLocation`, `on('drop'|'weather')`, `destroy`. Команды `background_deliver` / `background_flyers` работают без изменений. Курьеры: дирижабль→шар, шар→корабль (плывёт по морю), орёл→попугай. Виджеты падают в ту же сетку 3×5.
+
+2D-движок (`createLiveBG`) и 3D-остров (`createIsland`) — взаимозаменяемые: в комнате выбираешь, какой создать. three.js уже есть в бандле портала — для продакшена можно импортировать его оттуда вместо `vendor/`.

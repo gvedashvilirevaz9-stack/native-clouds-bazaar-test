@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Летающий остров · Native Clouds</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#05060e;font-family:Inter,system-ui,sans-serif}
+  #bg{position:fixed;inset:0;width:100%;height:100%;display:block}
+  .panel{position:fixed;z-index:10;top:16px;right:16px;width:300px;max-height:calc(100% - 32px);overflow:auto;scrollbar-width:none;padding:14px;border-radius:20px;background:rgba(255,255,255,.5);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.6);box-shadow:0 10px 40px rgba(15,23,42,.2);font-size:13px;color:#0f172a;transition:transform .3s}
+  .panel.min{transform:translateX(calc(100% + 24px))}
+  .panel h1{font-size:15px;margin:0 0 2px}.sub{color:#475569;font-size:12px;margin-bottom:8px}
+  .sec{margin:12px 0 0}.sec>b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#64748b;margin-bottom:6px}
+  .seg{display:flex;flex-wrap:wrap;gap:4px}
+  .seg button,.btn{border:1px solid rgba(15,23,42,.08);background:rgba(255,255,255,.6);border-radius:10px;padding:6px 10px;font:inherit;cursor:pointer;color:#0f172a}
+  .seg button[aria-pressed=true]{background:#0f172a;color:#fff}
+  .row{display:flex;gap:6px;align-items:center;margin-top:6px}.row input[type=text]{flex:1;min-width:0;border:1px solid rgba(15,23,42,.1);border-radius:10px;padding:6px 9px;font:inherit}
+  input[type=range]{width:100%}.note{font-size:12px;color:#475569;margin-top:4px}
+  .fab{position:fixed;z-index:10;top:16px;right:16px;width:42px;height:42px;border-radius:14px;border:1px solid rgba(255,255,255,.6);background:rgba(255,255,255,.5);backdrop-filter:blur(14px);cursor:pointer;font-size:18px;display:none}
+  .panel.min~.fab{display:block}
+</style></head>
+<body>
+<canvas id="bg"></canvas>
+<div class="panel" id="panel">
+  <div class="row" style="justify-content:space-between;margin:0"><h1>Летающий остров</h1><button class="btn" id="hide">→</button></div>
+  <div class="sub">3D-сцена из кода · те же команды</div>
+  <div class="sec"><b>Погода</b><div class="seg" id="weather">
+    <button data-v="live">Живая</button><button data-v="clear">Ясно</button><button data-v="partly">Облачно</button>
+    <button data-v="rain">Дождь</button><button data-v="storm">Гроза</button><button data-v="snow">Снег</button></div>
+    <div class="row"><input type="text" id="city" placeholder="Город, напр. Batumi"><button class="btn" id="cityGo">OK</button></div>
+    <div class="note" id="wNote"></div></div>
+  <div class="sec"><b>Время суток</b><div class="seg" id="time"><button data-v="live">Живое</button><button data-v="fixed">Вручную</button><button data-v="lapse">Ускорить</button></div>
+    <input type="range" id="hour" min="0" max="24" step="0.05" value="12"><div class="note" id="tNote"></div></div>
+  <div class="sec"><b>Доставка (кто несёт)</b>
+    <div class="seg" id="quick"><button data-w="clock">Часы</button><button data-q="погода">Погода</button><button data-q="курс биткоина">Биткоин</button></div>
+    <div class="row"><span>Несёт</span><div class="seg" id="by"><button data-v="balloon">Шар</button><button data-v="airship">Шар#2</button><button data-v="eagle">Попугай</button></div></div>
+  </div>
+</div>
+<button class="fab" id="show">☰</button>
+<script type="module">
+import { createIsland } from './island.js';
+import { attachWidgets } from './widgets.js';
+const $=(id)=>document.getElementById(id);
+const bg=createIsland($('bg'),{ input:'off' }); window.LiveBG=bg;
+const widgets=attachWidgets(bg); window.LiveWidgets=widgets;
+function seg(id,v){ $(id).querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v))); }
+let wMode='live'; seg('weather','live');
+$('weather').onclick=e=>{const v=e.target.dataset.v;if(!v)return;wMode=v;bg.setWeather(v);seg('weather',v);};
+$('cityGo').onclick=async()=>{const v=$('city').value.trim();if(!v)return;try{await bg.setLocation(v);bg.setWeather('live');seg('weather','live');}catch(e){$('wNote').textContent=e.message;}};
+bg.on('weather',w=>{ if(w.error){$('wNote').textContent='Погода: '+w.error;return;} if(w.temp!=null)$('wNote').textContent=`${bg.getWeather().location.name}: ${Math.round(w.temp)}°, облачность ${Math.round(w.cloud*100)}%`; });
+let tMode='live'; seg('time','live');
+const fmt=h=>`${String(Math.floor(h)).padStart(2,'0')}:${String(Math.floor((h%1)*60)).padStart(2,'0')}`;
+$('time').onclick=e=>{const v=e.target.dataset.v;if(!v)return;tMode=v;seg('time',v);if(v==='live')bg.setTime(null);else bg.setTime(+$('hour').value,v==='lapse'?3600*1.2:0);};
+$('hour').oninput=e=>{if(tMode==='live'){tMode='fixed';seg('time','fixed');}bg.setTime(+e.target.value,tMode==='lapse'?3600*1.2:0);};
+setInterval(()=>{const t=bg.getTime();if(tMode!=='fixed')$('hour').value=t.hour;$('tNote').textContent=`Сейчас ${fmt(t.hour)} · восход ${fmt(t.sunrise)} · закат ${fmt(t.sunset)}`;},300);
+let by='balloon'; seg('by','balloon'); $('by').onclick=e=>{const v=e.target.dataset.v;if(v){by=v;seg('by',v);}};
+$('quick').onclick=e=>{const b=e.target.closest('button');if(!b)return;b.dataset.w?bg.deliver(b.dataset.w,{by,size:'M'}):bg.deliver('agent',{by,size:'M',data:{q:b.dataset.q}});};
+$('hide').onclick=()=>$('panel').classList.add('min'); $('show').onclick=()=>$('panel').classList.remove('min');
+</script></body></html>
