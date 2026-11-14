@@ -1,0 +1,575 @@
+// Native Clouds · Voxel Island — a hand-built voxel (pixel-cube) island scene in three.js.
+// Inspired by isometric voxel games; all models are original (no copied art, logos or characters).
+// Same API as the other background engines: deliver / setWeather / setTime / setFlyers / on('drop') …
+//
+//   import { createVoxelIsland } from '/livebg/voxel-island.js'
+//   const bg = createVoxelIsland(canvas, { view:'iso' })
+//   import { attachWidgets } from '/livebg/widgets.js'; attachWidgets(bg)
+
+import * as THREE from './vendor/three.module.min.js';
+import { fetchWeather, geocode, WEATHER_PRESETS } from './livebg.js';
+
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (t) => { t = clamp(t); return t * t * (3 - 2 * t); };
+function mulberry(seed) { return () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function hash(x, z) { const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return s - Math.floor(s); }
+function vnoise(x, z) {
+  const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi, u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+  const a = hash(xi, zi), b = hash(xi + 1, zi), c = hash(xi, zi + 1), d = hash(xi + 1, zi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+
+// ---------- palette (saturated, warm) ----------
+export const PAL = {
+  sandTop: 0xf6e2b0, sand: 0xead196, sandDk: 0xd8b77a, sandDeep: 0xc9a466, path: 0xf1dba6,
+  grass: 0x79cd45, grass2: 0x6cc03b, grass3: 0x8ad957, grassDk: 0x5aae33,
+  foam: 0xe8fcff, foam2: 0xc3f3fb, shallow: 0x6fe0f0, shallow2: 0x48cfe8, mid: 0x31b3df, mid2: 0x2a98d6, deep: 0x2479c4, deep2: 0x1f68b4,
+  wood: 0xd59a52, wood2: 0xc4863f, woodDk: 0x7e4f25, woodLt: 0xe8b46c, plank: 0xb87a3e,
+  roof: 0xec7a2c, roof2: 0xf58f3e, roofDk: 0xc85a1c, roofB: 0x3f86d6, roofB2: 0x5498e0, roofR: 0xd9483b, roofR2: 0xe85e4d,
+  wall: 0xf5e6c4, wall2: 0xebd7ad, stone: 0xa3a8ae, stone2: 0x8c9198, stoneDk: 0x6e737a, stoneLt: 0xc2c6cb,
+  glass: 0x3f7fd6, fire: 0xff8a1e, fire2: 0xffc63d, ember: 0xff5a1a,
+  red: 0xdc4638, white: 0xf7f2e6, green: 0x3fae5a, yellow: 0xf6c344, teal: 0x2fb3a8, purple: 0x8a5cc4, pink: 0xff7aa8, black: 0x2a2a30,
+  leaf: 0x3eb04e, leaf2: 0x2e9140, leafLt: 0x5dcc5d, trunk: 0xb0743c, trunk2: 0x8e5a2b, coconut: 0x6b4423,
+  rock: 0xbfc3c8, rock2: 0xa5aab0, rockTop: 0xdadde1, hedge: 0x3c9a3e, hedge2: 0x2f8634,
+};
+
+class Vox {
+  constructor() { this.m = new Map(); }
+  put(x, y, z, c) { this.m.set(x + '|' + y + '|' + z, c); }
+  has(x, y, z) { return this.m.has(x + '|' + y + '|' + z); }
+  box(x0, y0, z0, w, h, d, c) { for (let x = x0; x < x0 + w; x++) for (let y = y0; y < y0 + h; y++) for (let z = z0; z < z0 + d; z++) this.put(x, y, z, typeof c === 'function' ? c(x, y, z) : c); }
+  mesh(material, jitter = 0.03, rng = Math.random) {
+    const n = this.m.size, im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), material, Math.max(1, n));
+    const mtx = new THREE.Matrix4(), col = new THREE.Color(); let i = 0;
+    for (const [k, c] of this.m) {
+      const [x, y, z] = k.split('|').map(Number);
+      mtx.makeTranslation(x + 0.5, y + 0.5, z + 0.5); im.setMatrixAt(i, mtx);
+      col.setHex(c); if (jitter) col.offsetHSL(0, (rng() - 0.5) * jitter * 0.6, (rng() - 0.5) * 2 * jitter); im.setColorAt(i, col); i++;
+    }
+    im.count = n; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
+    im.castShadow = true; im.receiveShadow = true; return im;
+  }
+}
+
+export function createVoxelIsland(canvas, opts = {}) {
+  const listeners = {};
+  const emit = (e, d) => (listeners[e] || []).forEach((f) => { try { f(d); } catch { /* ignore */ } });
+  const rng = mulberry(opts.seed || 7);
+  const PIX = opts.pixel || 2; // render scale -> chunky crisp pixels
+
+  // ---------- renderer / scene / camera ----------
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  canvas.style.imageRendering = 'pixelated';
+  const scene = new THREE.Scene();
+  const cam = new THREE.OrthographicCamera(-30, 30, 20, -20, 0.1, 1200);
+  const S = {
+    t: 0, dt: 0, raf: 0, last: 0, W: 1, H: 1,
+    view: { az: Math.PI / 4, el: 0.72, zoom: 26 }, viewTarget: { az: Math.PI / 4, el: 0.72, zoom: 26 }, autoRotate: false,
+    location: opts.location || { lat: 41.7151, lon: 44.8271, name: 'Тбилиси' },
+    weatherMode: 'live', weather: { ...WEATHER_PRESETS.partly }, live: null,
+    timeMode: 'live', hour: 12, speed: 0, curH: 12,
+    flyers: { ship: 2, parrot: 4 }, couriers: [], seq: 1,
+  };
+  const VIEWS = { iso: { el: 0.72 }, top: { el: 1.36 }, side: { el: 0.28 } };
+  if (opts.view && VIEWS[opts.view]) { S.view.el = S.viewTarget.el = VIEWS[opts.view].el; }
+
+  // ---------- lights ----------
+  const amb = new THREE.AmbientLight(0xffffff, 0.55); scene.add(amb);
+  const hemi = new THREE.HemisphereLight(0xdff3ff, 0x7aa36a, 0.45); scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xfff1d6, 1.55);
+  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -62, right: 62, top: 62, bottom: -62, near: 1, far: 300 });
+  sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
+  scene.add(sun, sun.target);
+
+  // sky gradient (only seen in the side view)
+  const skyCv = document.createElement('canvas'); skyCv.width = 2; skyCv.height = 256;
+  const skyTex = new THREE.CanvasTexture(skyCv); skyTex.colorSpace = THREE.SRGBColorSpace; scene.background = skyTex;
+  let skyKey = '';
+  function paintSky(top, hor) {
+    const k = top + hor; if (k === skyKey) return; skyKey = k;
+    const g = skyCv.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+    gr.addColorStop(0, top); gr.addColorStop(0.62, hor); gr.addColorStop(1, hor); g.fillStyle = gr; g.fillRect(0, 0, 2, 256); skyTex.needsUpdate = true;
+  }
+
+  // ---------- terrain grid ----------
+  const G = 58, SZ = 2 * G + 1;
+  const H = new Int8Array(SZ * SZ), T = new Uint8Array(SZ * SZ); // T: 0 ground, 1 path, 2 rock, 3 pier
+  const I = (x, z) => (x + G) * SZ + (z + G);
+  const inG = (x, z) => x >= -G && x <= G && z >= -G && z <= G;
+  const hAt = (x, z) => (inG(x, z) ? H[I(x, z)] : 0);
+
+  const ISLETS = [[-33, -5, 5.5], [30, -21, 4.8], [-19, 26, 3.4]];
+  for (let x = -G; x <= G; x++) for (let z = -G; z <= G; z++) {
+    const n = vnoise(x * 0.11, z * 0.11) * 5.5 + vnoise(x * 0.27 + 9, z * 0.27 - 4) * 2.2;
+    const d = Math.hypot(x * 0.92, (z - 1) * 1.02) - n;
+    let h = 0;
+    if (d < 21) h = 1;
+    if (d < 17.5) h = 2;
+    if (d < 11.5) h = 3;
+    if (Math.hypot(x + 8, z + 9) - n * 0.45 < 6.2) h = 4;
+    if (Math.hypot(x + 8, z + 9) - n * 0.3 < 3.2) h = 5;
+    for (const [ix, iz, r] of ISLETS) { const di = Math.hypot(x - ix, z - iz) - vnoise(x * 0.4, z * 0.4) * 1.6; if (di < r) h = Math.max(h, di < r - 1.8 ? 2 : 1); }
+    H[I(x, z)] = h;
+  }
+  const flat = (x0, z0, w, d, lv) => { for (let x = x0; x < x0 + w; x++) for (let z = z0; z < z0 + d; z++) if (inG(x, z)) { H[I(x, z)] = lv; T[I(x, z)] = 0; } };
+  const markPath = (pts, wdt = 2) => {
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, az] = pts[i], [bx, bz] = pts[i + 1], steps = Math.max(Math.abs(bx - ax), Math.abs(bz - az));
+      for (let s = 0; s <= steps; s++) {
+        const x = Math.round(ax + (bx - ax) * s / steps), z = Math.round(az + (bz - az) * s / steps);
+        for (let ox = 0; ox < wdt; ox++) for (let oz = 0; oz < wdt; oz++) if (inG(x + ox, z + oz) && H[I(x + ox, z + oz)] >= 1) T[I(x + ox, z + oz)] = 1;
+      }
+    }
+  };
+
+  // layout: flatten building pads
+  flat(-5, -1, 11, 9, 3);      // tavern pad
+  flat(-12, -13, 9, 9, 5);     // watchtower hilltop
+  flat(7, -10, 8, 7, 2);       // forge
+  flat(8, -2, 13, 6, 2);       // market
+  flat(14, 5, 8, 8, 1);        // harbour beach
+  flat(-1, 9, 9, 9, 2);        // totem garden
+  flat(-17, 0, 7, 7, 2);       // house west
+  flat(-12, 9, 7, 7, 2);       // house south
+  flat(4, 16, 5, 4, 1);        // flag beach
+  markPath([[0, 8], [3, 9], [9, 9], [16, 8]]);
+  markPath([[3, 8], [12, 2], [12, -3]]);
+  markPath([[10, -3], [6, -6], [-3, -5], [-6, -6]]);
+  markPath([[-4, 4], [-11, 4], [-12, 10]]);
+
+  // rocks in the sea (count as land for foam)
+  const ROCKS = [[-26, -17, 2], [-29, -15, 1], [25, 19, 2], [33, -7, 1], [12, -27, 2], [-7, 28, 1], [-38, 10, 1], [38, 4, 2]];
+  for (const [rx, rz, s] of ROCKS) for (let x = rx; x < rx + 1 + s; x++) for (let z = rz; z < rz + 1 + s; z++) { if (!hAt(x, z)) { H[I(x, z)] = (x + z) % 2 ? 2 : 1; T[I(x, z)] = 2; } }
+
+  // pier (over water, deck at y=0)
+  const PIER = { x0: 22, x1: 35, z0: 10, z1: 12 };
+  for (let x = PIER.x0; x <= PIER.x1; x++) for (let z = PIER.z0; z <= PIER.z1; z++) if (!hAt(x, z)) T[I(x, z)] = 3;
+
+  // ---------- voxelize terrain ----------
+  const land = new Vox();
+  for (let x = -G; x <= G; x++) for (let z = -G; z <= G; z++) {
+    const h = H[I(x, z)]; if (!h) continue;
+    const tp = T[I(x, z)];
+    const nb = Math.min(hAt(x + 1, z), hAt(x - 1, z), hAt(x, z + 1), hAt(x, z - 1));
+    for (let y = Math.max(0, Math.min(nb, h - 1) - 1); y < h; y++) {
+      let c;
+      if (tp === 2) c = y === h - 1 ? PAL.rockTop : (y % 2 ? PAL.rock : PAL.rock2);
+      else if (y === h - 1) {
+        if (h === 1) c = rng() < 0.2 ? PAL.sand : PAL.sandTop;
+        else if (tp === 1) c = rng() < 0.25 ? PAL.sandTop : PAL.path;
+        else { const r = rng(); c = r < 0.18 ? PAL.grass3 : r < 0.45 ? PAL.grass2 : r < 0.53 ? PAL.grassDk : PAL.grass; }
+      } else c = y === 0 ? PAL.sandDeep : ((y + (x & 1)) % 3 === 0 ? PAL.sandDk : PAL.sand);
+      land.put(x, y, z, c);
+    }
+  }
+
+  // ---------- props ----------
+  const vox = land;               // static props share the land mesh
+  const glow = new Vox();         // windows / lanterns (emissive at night)
+  const fireV = new Vox();        // always-glowing fire
+
+  function palm(x, z, ht = 6, lean = 1) {
+    const y0 = hAt(x, z); let px = x, pz = z;
+    const dx = lean * (rng() < 0.5 ? 1 : -1), dz = rng() < 0.5 ? 1 : -1;
+    for (let i = 0; i < ht; i++) { if (i > 2 && i % 2 === 0) { px += rng() < 0.6 ? dx : 0; } vox.put(px, y0 + i, pz, i % 2 ? PAL.trunk : PAL.trunk2); }
+    const ty = y0 + ht, dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+    vox.put(px, ty, pz, PAL.leaf);
+    for (const [ax, az] of dirs) {
+      const len = ax && az ? 3 : 4;
+      for (let k = 1; k <= len; k++) {
+        const yy = ty - (k > 2 ? k - 2 : 0);
+        vox.put(px + ax * k, yy, pz + az * k, k === len ? PAL.leafLt : (k % 2 ? PAL.leaf : PAL.leaf2));
+        if (k === 2 && !(ax && az)) { vox.put(px + ax * k + az, yy, pz + az * k + ax, PAL.leaf2); vox.put(px + ax * k - az, yy, pz + az * k - ax, PAL.leaf2); }
+      }
+    }
+    vox.put(px + 1, ty - 1, pz, PAL.coconut); vox.put(px, ty - 1, pz + 1, PAL.coconut);
+  }
+
+  function house(x0, z0, w, d, wh, o = {}) {
+    const y0 = hAt(x0, z0), wall = o.wall || PAL.wall, wall2 = o.wall2 || PAL.wall2, r1 = o.roof || PAL.roof, r2 = o.roof2 || PAL.roof2, rd = o.roofDk || PAL.roofDk;
+    for (let x = 0; x < w; x++) for (let z = 0; z < d; z++) for (let y = 0; y < wh; y++) {
+      const edge = x === 0 || x === w - 1 || z === 0 || z === d - 1; if (!edge) continue;
+      const corner = (x === 0 || x === w - 1) && (z === 0 || z === d - 1);
+      let c = corner ? PAL.woodDk : (y === 0 ? PAL.stone2 : ((x + z) % 2 ? wall : wall2));
+      const frontZ = z === d - 1, frontX = x === w - 1;
+      if (!corner && y === wh - 1) c = PAL.woodDk;
+      // door (front z face, centre)
+      if (frontZ && y < 2 && Math.abs(x - (w - 1) / 2) < 1) c = PAL.woodDk;
+      // windows
+      const win = y === 2 && !corner && ((frontZ && (x === 1 || x === w - 2) && w > 4) || (frontX && (z === 1 || z === d - 2)));
+      if (win) { glow.put(x0 + x, y0 + y, z0 + z, PAL.glass); continue; }
+      vox.put(x0 + x, y0 + y, z0 + z, c);
+    }
+    // gable roof, ridge along x, overhang 1
+    for (let k = 0; ; k++) {
+      const zl = -1 + k, zr = d - k; if (zl > zr) break;
+      const yy = y0 + wh + k;
+      for (let x = -1; x <= w; x++) for (let z = zl; z <= zr; z++) {
+        const shell = z === zl || z === zr || zl + 1 >= zr;
+        if (!shell) continue;
+        const isRidge = zl + 1 >= zr;
+        vox.put(x0 + x, yy, z0 + z, isRidge ? rd : (k === 0 ? rd : ((x + k) % 2 ? r1 : r2)));
+      }
+      if (zl + 1 < zr) for (const gx of [0, w - 1]) for (let z = zl + 1; z < zr; z++) vox.put(x0 + gx, yy, z0 + z, wall2);
+    }
+    if (o.chimney) { const cx = x0 + w - 2, cz = z0 + 1; for (let y = y0 + wh; y < y0 + wh + Math.ceil(d / 2) + 2; y++) vox.put(cx, y, cz, y % 2 ? PAL.stone : PAL.stone2); }
+    return { y0, top: y0 + wh + Math.ceil(d / 2) };
+  }
+
+  // tavern (big, golden wood, blue round emblem)
+  const tav = house(-4, 0, 9, 7, 5, { wall: PAL.wood, wall2: PAL.woodLt, roof: PAL.roof, roof2: PAL.roof2, chimney: true });
+  for (let a = 0; a < 16; a++) { const ang = a / 16 * Math.PI * 2; const ex = Math.round(Math.cos(ang) * 1.6), ey = Math.round(Math.sin(ang) * 1.6); vox.put(-4 + 4 + ex, tav.y0 + 3 + ey, 0 + 7, PAL.roofB); }
+  vox.put(0, tav.y0 + 3, 7, PAL.white); vox.put(1, tav.y0 + 3, 7, PAL.yellow); vox.put(-1, tav.y0 + 3, 7, PAL.yellow); vox.put(0, tav.y0 + 4, 7, PAL.yellow); vox.put(0, tav.y0 + 2, 7, PAL.yellow);
+  // barrels by the tavern
+  for (const [bx, bz] of [[6, 2], [6, 4], [-6, 5]]) { const by = hAt(bx, bz); vox.put(bx, by, bz, PAL.plank); vox.put(bx, by + 1, bz, PAL.woodDk); vox.put(bx, by + 2, bz, PAL.plank); }
+  glow.put(-1, tav.y0 + 1, 7, 0xffc86b);
+
+  // watchtower on the hill
+  {
+    const x0 = -11, z0 = -12, y0 = hAt(x0, z0);
+    for (const [cx, cz] of [[0, 0], [4, 0], [0, 4], [4, 4]]) for (let y = 0; y < 7; y++) vox.put(x0 + cx, y0 + y, z0 + cz, PAL.woodDk);
+    for (let x = 0; x < 5; x++) for (let z = 0; z < 5; z++) vox.put(x0 + x, y0 + 6, z0 + z, (x + z) % 2 ? PAL.plank : PAL.wood);
+    for (let i = 0; i < 5; i++) { vox.put(x0 + i, y0 + 3, z0, PAL.woodDk); vox.put(x0 + i, y0 + 3, z0 + 4, PAL.woodDk); vox.put(x0, y0 + 3, z0 + i, PAL.woodDk); vox.put(x0 + 4, y0 + 3, z0 + i, PAL.woodDk); }
+    for (let i = 0; i < 5; i++) { vox.put(x0 + i, y0 + 7, z0, PAL.wood); vox.put(x0 + i, y0 + 7, z0 + 4, PAL.wood); }
+    for (let k = 0; k < 4; k++) for (let x = -1 + k; x <= 5 - k; x++) for (let z = -1 + k; z <= 5 - k; z++) { const sh = x === -1 + k || x === 5 - k || z === -1 + k || z === 5 - k; if (sh || k === 3) vox.put(x0 + x, y0 + 9 + k, z0 + z, k === 0 ? PAL.roofDk : ((x + z) % 2 ? PAL.roof : PAL.roof2)); }
+    for (let y = 0; y < 3; y++) vox.put(x0 + 2, y0 + 13 + y, z0 + 2, PAL.woodDk);
+    for (let x = 1; x <= 3; x++) for (let y = 0; y < 2; y++) vox.put(x0 + 2 + x, y0 + 14 + y, z0 + 2, y === 1 && x === 2 ? PAL.yellow : PAL.red);
+    // stair steps down the hill (path)
+    for (let i = 0; i < 4; i++) vox.put(x0 + 6 + i, y0 - 1 - Math.floor(i / 2), z0 + 6, PAL.plank);
+  }
+
+  // forge (stone, fire, tall chimney, anvil)
+  {
+    const x0 = 8, z0 = -9, y0 = hAt(x0, z0), w = 6, d = 5;
+    for (let x = 0; x < w; x++) for (let z = 0; z < d; z++) for (let y = 0; y < 4; y++) {
+      const edge = x === 0 || x === w - 1 || z === 0; if (!edge) continue; // open front (z=d-1)
+      vox.put(x0 + x, y0 + y, z0 + z, (x + y + z) % 3 ? PAL.stone : PAL.stone2);
+    }
+    for (let x = -1; x <= w; x++) for (let z = -1; z <= d; z++) vox.put(x0 + x, y0 + 4, z0 + z, (x + z) % 2 ? PAL.roofR : PAL.roofR2);
+    for (let x = 0; x < w; x++) for (let z = 0; z < d - 1; z++) vox.put(x0 + x, y0 + 5, z0 + z, (x + z) % 2 ? PAL.roofR2 : PAL.roofR);
+    for (let y = 0; y < 10; y++) { vox.put(x0 + 1, y0 + y, z0 + 1, y % 2 ? PAL.stoneDk : PAL.stone2); vox.put(x0 + 2, y0 + y, z0 + 1, PAL.stone2); }
+    fireV.put(x0 + 3, y0, z0 + 2, PAL.fire); fireV.put(x0 + 4, y0, z0 + 2, PAL.fire2); fireV.put(x0 + 3, y0 + 1, z0 + 2, PAL.fire2); fireV.put(x0 + 4, y0, z0 + 3, PAL.ember);
+    vox.put(x0 + 3, y0, z0 + 6, PAL.stoneDk); vox.put(x0 + 3, y0 + 1, z0 + 6, PAL.black); vox.put(x0 + 4, y0 + 1, z0 + 6, PAL.black);
+  }
+
+  // market stalls with striped awnings and goods
+  [[9, -1, PAL.red], [13, -1, PAL.green], [17, -1, PAL.purple]].forEach(([x0, z0, col], si) => {
+    const y0 = hAt(x0, z0);
+    for (const [cx, cz] of [[0, 0], [3, 0], [0, 2], [3, 2]]) for (let y = 0; y < 3; y++) vox.put(x0 + cx, y0 + y, z0 + cz, PAL.woodDk);
+    for (let x = -1; x <= 4; x++) for (let z = -1; z <= 3; z++) vox.put(x0 + x, y0 + 3 + (z > 1 ? 0 : 1) - (z < 0 ? 0 : 0), z0 + z, x % 2 ? col : PAL.white);
+    for (let x = 0; x < 4; x++) vox.put(x0 + x, y0 + 1, z0 + 1, PAL.plank);
+    const goods = [[PAL.red, PAL.yellow, PAL.green], [PAL.yellow, PAL.pink, PAL.teal], [PAL.purple, PAL.red, PAL.yellow]][si];
+    for (let x = 0; x < 4; x++) vox.put(x0 + x, y0 + 2, z0 + 1, goods[x % 3]);
+    vox.put(x0 + 4, y0, z0 + 3, PAL.woodLt); vox.put(x0 + 5, y0, z0 + 3, PAL.wood); vox.put(x0 + 4, y0 + 1, z0 + 3, PAL.woodLt);
+  });
+
+  // harbour house + pier with posts and lanterns
+  house(15, 5, 6, 5, 4, { roof: PAL.roofB, roof2: PAL.roofB2, roofDk: 0x2c66b0 });
+  for (let x = PIER.x0 - 2; x <= PIER.x1; x++) for (let z = PIER.z0; z <= PIER.z1; z++) {
+    if (hAt(x, z) > 1) continue;
+    vox.put(x, 0, z, (x + z) % 2 ? PAL.plank : PAL.wood);
+  }
+  for (let x = PIER.x0; x <= PIER.x1; x += 3) for (const z of [PIER.z0 - 1, PIER.z1 + 1]) { vox.put(x, -1, z, PAL.woodDk); vox.put(x, 0, z, PAL.woodDk); vox.put(x, 1, z, PAL.woodDk); }
+  for (const z of [PIER.z0 - 1, PIER.z1 + 1]) { vox.put(PIER.x1, 2, z, PAL.woodDk); glow.put(PIER.x1, 3, z, 0xffd36b); }
+  [[19, 11], [20, 12], [21, 11]].forEach(([cx, cz]) => { vox.put(cx, 1, cz, PAL.woodLt); });
+  vox.put(20, 2, 11, PAL.wood);
+
+  // totem garden with hedge ring and flowers
+  {
+    const cx = 3, cz = 13, y0 = hAt(cx, cz);
+    for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) { const ring = Math.max(Math.abs(x), Math.abs(z)) === 3; if (ring && !(z === -3 && Math.abs(x) <= 0)) vox.put(cx + x, y0, cz + z, (x + z) % 2 ? PAL.hedge : PAL.hedge2); }
+    const stack = [PAL.red, PAL.teal, PAL.yellow, PAL.purple, PAL.red, PAL.teal];
+    stack.forEach((c, i) => vox.put(cx, y0 + i, cz, c));
+    vox.put(cx - 1, y0 + 3, cz, PAL.yellow); vox.put(cx + 1, y0 + 3, cz, PAL.yellow);
+    vox.put(cx, y0 + 6, cz, PAL.yellow);
+    for (const [fx, fz, fc] of [[-2, -1, PAL.pink], [2, 1, PAL.white], [-1, 2, PAL.pink], [1, -2, PAL.white], [2, -1, PAL.yellow]]) vox.put(cx + fx, y0, cz + fz, fc);
+  }
+
+  // small houses
+  house(-16, 1, 5, 5, 4, { roof: PAL.roofR, roof2: PAL.roofR2, roofDk: 0xb23a2e });
+  house(-11, 10, 5, 5, 4, { roof: PAL.roof, roof2: PAL.roof2, chimney: true });
+
+  // flag on the beach
+  { const fx = 6, fz = 17, fy = hAt(fx, fz); for (let y = 0; y < 8; y++) vox.put(fx, fy + y, fz, PAL.woodDk); for (let x = 1; x <= 3; x++) for (let y = 5; y < 8; y++) vox.put(fx + x, fy + y, fz, x === 2 && y === 6 ? PAL.yellow : PAL.red); }
+
+  // bushes and flowers on the grass
+  for (let i = 0; i < 70; i++) {
+    const x = Math.round((rng() - 0.5) * 36), z = Math.round((rng() - 0.5) * 36), h = hAt(x, z), ti = inG(x, z) ? T[I(x, z)] : 0;
+    if (h < 2 || ti || land.has(x, h, z) || vox.has(x, h, z)) continue;
+    if (rng() < 0.35) { vox.put(x, h, z, PAL.leaf2); vox.put(x + 1, h, z, PAL.leaf); if (rng() < 0.5) vox.put(x, h + 1, z, PAL.leafLt); if (rng() < 0.6) vox.put(x + 1, h + 1, z, rng() < 0.5 ? PAL.pink : PAL.white); }
+    else vox.put(x, h, z, [PAL.pink, PAL.white, PAL.yellow, PAL.leafLt][(rng() * 4) | 0]);
+  }
+
+  // palms
+  [[-15, -6], [-13, -1], [10, 10], [13, -12], [-6, 12], [-18, 7], [16, -6], [1, -12], [-3, 16], [8, 15],
+   [-33, -5], [-31, -3], [30, -21], [32, -20], [-20, 13], [18, 2], [-1, -16]].forEach(([x, z], i) => { if (hAt(x, z) >= 1 && !(inG(x, z) && T[I(x, z)])) palm(x, z, 5 + ((i * 7) % 3), 1); });
+
+  // ---------- build static meshes ----------
+  const landMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  const landMesh = land.mesh(landMat, 0.035, rng); scene.add(landMesh);
+  const glowMat = new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: new THREE.Color(0xffc45a), emissiveIntensity: 0 });
+  const glowMesh = glow.mesh(glowMat, 0, rng); scene.add(glowMesh);
+  const fireMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const fireMesh = fireV.mesh(fireMat, 0, rng); fireMesh.castShadow = false; scene.add(fireMesh);
+
+  // ---------- water tiles coloured by distance to land ----------
+  const dist = new Int16Array(SZ * SZ).fill(99), q = [];
+  for (let x = -G; x <= G; x++) for (let z = -G; z <= G; z++) if (H[I(x, z)] > 0) { dist[I(x, z)] = 0; q.push(x, z); }
+  for (let qi = 0; qi < q.length; qi += 2) {
+    const x = q[qi], z = q[qi + 1], d0 = dist[I(x, z)]; if (d0 > 10) continue;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, nz = z + dz; if (inG(nx, nz) && dist[I(nx, nz)] > d0 + 1) { dist[I(nx, nz)] = d0 + 1; q.push(nx, nz); } }
+  }
+  const water = []; const wcol = (d) => {
+    const r = rng();
+    if (d <= 1) return r < 0.55 ? PAL.foam : PAL.foam2;
+    if (d === 2) return r < 0.25 ? PAL.foam2 : PAL.shallow;
+    if (d === 3) return r < 0.5 ? PAL.shallow : PAL.shallow2;
+    if (d <= 5) return r < 0.5 ? PAL.shallow2 : PAL.mid;
+    if (d <= 8) return r < 0.5 ? PAL.mid : PAL.mid2;
+    return r < 0.55 ? PAL.deep : PAL.deep2;
+  };
+  for (let x = -G; x <= G; x++) for (let z = -G; z <= G; z++) { if (H[I(x, z)] > 0 || T[I(x, z)] === 3) continue; water.push([x, z, wcol(dist[I(x, z)])]); }
+  const waterMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.3, 1), new THREE.MeshLambertMaterial({ color: 0xffffff }), water.length);
+  {
+    const m = new THREE.Matrix4(), c = new THREE.Color();
+    water.forEach(([x, z, col], i) => { m.makeTranslation(x + 0.5, 0.35, z + 0.5); waterMesh.setMatrixAt(i, m); c.setHex(col).offsetHSL(0, 0, (rng() - 0.5) * 0.04); waterMesh.setColorAt(i, c); });
+    waterMesh.receiveShadow = true; waterMesh.instanceColor.needsUpdate = true;
+  }
+  scene.add(waterMesh);
+  const waterBase = Float32Array.from(waterMesh.instanceColor.array);
+  // the open ocean beyond the tiles
+  const ocean = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), new THREE.MeshLambertMaterial({ color: PAL.deep2 }));
+  ocean.rotation.x = -Math.PI / 2; ocean.position.y = 0.3; ocean.receiveShadow = true; scene.add(ocean);
+
+  // ---------- ship model ----------
+  function buildShip(flagCol = PAL.red) {
+    const v = new Vox();
+    for (let x = -6; x <= 6; x++) {
+      const hw = x <= -5 ? 1 : x >= 5 ? (x === 6 ? 0 : 1) : 2;
+      for (let z = -hw; z <= hw; z++) for (let y = 0; y < 3; y++) {
+        if (y === 0 && Math.abs(z) === hw && hw > 0) continue;
+        const shell = Math.abs(z) === hw || x === -6 || y === 0;
+        if (!shell && y < 2) continue;
+        v.put(x, y, z, y === 1 ? PAL.woodDk : (y === 2 ? PAL.woodLt : PAL.plank));
+      }
+      if (hw >= 1) for (let z = -hw + 1; z <= hw - 1; z++) v.put(x, 2, z, (x % 2) ? PAL.wood : PAL.plank);
+    }
+    v.put(7, 3, 0, PAL.woodDk); v.put(6, 3, 0, PAL.woodLt);
+    for (let x = -6; x <= -4; x++) for (let z = -1; z <= 1; z++) for (let y = 3; y < 5; y++) v.put(x, y, z, y === 4 ? PAL.roofDk : (x === -4 && z === 0 && y === 3 ? PAL.glass : PAL.wood));
+    for (let y = 3; y < 15; y++) v.put(0, y, 0, PAL.woodDk);
+    for (let y = 3; y < 11; y++) v.put(4, y, 0, PAL.woodDk);
+    for (let z = -3; z <= 3; z++) for (let y = 6; y < 13; y++) v.put(Math.abs(z) < 2 && y > 7 && y < 12 ? 1 : 0 + (Math.abs(z) < 3 ? 0 : 0), y, z, Math.abs(z) === 3 || y === 6 || y === 12 ? PAL.wall2 : PAL.white);
+    for (let z = -2; z <= 2; z++) for (let y = 6; y < 10; y++) v.put(4, y, z, z === 0 && y === 8 ? flagCol : PAL.white);
+    for (let x = 1; x <= 3; x++) for (let y = 14; y < 16; y++) v.put(x, y, 0, flagCol);
+    v.put(0, 13, 1, PAL.woodDk); v.put(0, 13, -1, PAL.woodDk);
+    for (const x of [-2, 0, 2]) { v.put(x, 1, 3, PAL.black); v.put(x, 1, -3, PAL.black); }
+    const g = new THREE.Group(), m = v.mesh(new THREE.MeshLambertMaterial({ color: 0xffffff }), 0.025, rng);
+    m.position.set(-0.5, 0, -0.5); g.add(m); g.scale.setScalar(0.55); return g;
+  }
+  function buildParrot(body = PAL.red, wing = PAL.green) {
+    const g = new THREE.Group(), bm = (c) => new THREE.MeshLambertMaterial({ color: c });
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 1.1), bm(body)); g.add(b);
+    const hd = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), bm(body)); hd.position.set(0, 0.25, 0.65); g.add(hd);
+    const bk = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.25, 0.3), bm(PAL.yellow)); bk.position.set(0, 0.15, 0.95); g.add(bk);
+    const tl = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.8), bm(PAL.roofB)); tl.position.set(0, -0.05, -0.85); g.add(tl);
+    const wl = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 0.6), bm(wing)); wl.geometry.translate(-0.55, 0, 0); wl.position.set(-0.3, 0.1, 0); g.add(wl);
+    const wr = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 0.6), bm(wing)); wr.geometry.translate(0.55, 0, 0); wr.position.set(0.3, 0.1, 0); g.add(wr);
+    g.userData.wings = [wl, wr]; g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    g.scale.setScalar(0.9); return g;
+  }
+
+  // ---------- ambient movers ----------
+  const ships = [], parrots = [];
+  function rebuildFlyers() {
+    for (const o of ships) scene.remove(o.g); for (const o of parrots) scene.remove(o.g); ships.length = 0; parrots.length = 0;
+    for (let i = 0; i < S.flyers.ship; i++) { const g = buildShip([PAL.red, PAL.roofB, PAL.green][i % 3]); scene.add(g); ships.push({ g, a: i * 2.6 + 0.5, rx: 41 + i * 4, rz: 37 + i * 3, sp: (0.018 + i * 0.006) * (i % 2 ? -1 : 1) }); }
+    const pc = [[PAL.red, PAL.green], [PAL.roofB, PAL.yellow], [PAL.yellow, PAL.roofB], [PAL.green, PAL.red], [PAL.purple, PAL.yellow]];
+    for (let i = 0; i < S.flyers.parrot; i++) { const g = buildParrot(...pc[i % pc.length]); scene.add(g); parrots.push({ g, a: rng() * 6.28, r: 8 + rng() * 14, y: 13 + rng() * 6, sp: (0.25 + rng() * 0.2) * (rng() < 0.5 ? 1 : -1), ph: rng() * 6.28, cx: (rng() - 0.5) * 10, cz: (rng() - 0.5) * 10 }); }
+  }
+  function flap(g, t, speed = 14) { const f = Math.sin(t * speed) * 0.7; g.userData.wings[0].rotation.z = f; g.userData.wings[1].rotation.z = -f; }
+
+  // ---------- rain ----------
+  const rainN = 2200, rp = new Float32Array(rainN * 3);
+  for (let i = 0; i < rainN; i++) { rp[i * 3] = (rng() - 0.5) * 90; rp[i * 3 + 1] = rng() * 40; rp[i * 3 + 2] = (rng() - 0.5) * 90; }
+  const rainGeo = new THREE.BufferGeometry(); rainGeo.setAttribute('position', new THREE.BufferAttribute(rp, 3));
+  const rain = new THREE.Points(rainGeo, new THREE.PointsMaterial({ color: 0xcfe3f7, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.7 }));
+  rain.visible = false; scene.add(rain);
+
+  // ---------- time & weather ----------
+  function localHour() { if (S.timeMode === 'fixed') return S.hour; const off = S.live?.utcOffset ?? -new Date().getTimezoneOffset() * 60; return ((Date.now() / 1000 + off) % 86400 + 86400) % 86400 / 3600; }
+  function solar() {
+    const rise = S.live?.sunrise ?? 7.2, set = S.live?.sunset ?? 17.8, h = S.curH;
+    if (h >= rise && h <= set) { const t = (h - rise) / (set - rise); return { day: true, t, el: Math.sin(Math.PI * t) }; }
+    const len = 24 - (set - rise), since = h > set ? h - set : h + 24 - set, t = since / len; return { day: false, t, el: -Math.sin(Math.PI * t) };
+  }
+  const weather = () => (S.weatherMode === 'live' && S.live ? S.live : S.weather);
+  const hex = (r, g, b) => '#' + [r, g, b].map((v) => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0')).join('');
+  function grade() {
+    const s = solar(), w = weather(), gray = clamp(w.cloud * 0.45 + w.rain * 0.4 + (w.storm ? 0.3 : 0));
+    const el = s.el, dayK = s.day ? smooth(el / 0.35) : 0, warm = s.day ? 1 - smooth(el / 0.3) : 0, night = s.day ? 0 : smooth(-el / 0.25);
+    const az = s.day ? (s.t - 0.5) * Math.PI * 0.9 : (s.t - 0.5) * Math.PI * 0.9;
+    const dir = new THREE.Vector3(Math.sin(az) * 0.9 - 0.35, Math.max(Math.abs(el), 0.25), 0.55 - Math.cos(az) * 0.2).normalize();
+    sun.position.copy(dir).multiplyScalar(120); sun.target.position.set(0, 0, 0);
+    if (s.day) { sun.color.setRGB(1, lerp(0.95, 0.66, warm), lerp(0.85, 0.42, warm)); sun.intensity = lerp(0.7, 1.55, dayK) * (1 - gray * 0.55); }
+    else { sun.color.setRGB(0.55, 0.65, 1); sun.intensity = 0.32; }
+    amb.color.setRGB(lerp(1, 0.45, night), lerp(1, 0.52, night), lerp(1, 0.85, night)); amb.intensity = lerp(0.55, 0.3, night) * (1 - gray * 0.15);
+    hemi.intensity = lerp(0.45, 0.15, night);
+    glowMat.emissiveIntensity = lerp(0, 1.6, clamp(night + warm * 0.4 + gray * 0.3));
+    fireMat.color.setRGB(1, 0.75 + Math.sin(S.t * 12) * 0.12, 0.5);
+    const topD = [60, 150, 236], horD = [182, 222, 250], topN = [12, 20, 48], horN = [34, 44, 86], horW = [255, 168, 112];
+    let top = topD.map((v, i) => lerp(v, topN[i], night)), hor = horD.map((v, i) => lerp(lerp(v, horW[i], warm * 0.8), horN[i], night));
+    top = top.map((v, i) => lerp(v, [120, 128, 146][i], gray * 0.6)); hor = hor.map((v, i) => lerp(v, [170, 178, 192][i], gray * 0.6));
+    paintSky(hex(...top), hex(...hor));
+    ocean.material.color.setHex(PAL.deep2).multiplyScalar(lerp(1, 0.45, night));
+    rain.visible = w.rain > 0.05 || w.snow > 0.05;
+    rain.material.color.setHex(w.snow > w.rain ? 0xffffff : 0xcfe3f7); rain.material.size = w.snow > w.rain ? 3 : 2;
+    return { s, w };
+  }
+
+  // ---------- courier delivery (ships dock at the pier, parrots fly in) ----------
+  const MAP = { airship: 'ship', balloon: 'ship', eagle: 'parrot', ship: 'ship', parrot: 'parrot' };
+  function deliver(widget, o = {}) {
+    const kind = MAP[o.by] || 'ship';
+    const at = [clamp(+(o.at?.[0] ?? 0.5), 0.05, 0.95), clamp(+(o.at?.[1] ?? 0.4), 0.1, 0.9)];
+    const size = ['S', 'M', 'L'].includes(o.size) ? o.size : 'M';
+    const g = kind === 'ship' ? buildShip(PAL.yellow) : buildParrot(PAL.red, PAL.green);
+    if (kind === 'parrot') g.scale.multiplyScalar(size === 'L' ? 1.6 : size === 'S' ? 1 : 1.3);
+    scene.add(g);
+    const c = { id: S.seq++, kind, g, widget: String(widget).slice(0, 40), data: o.data || null, size, tag: o.tag ?? null, at, t: 0, state: 'in', dropped: false };
+    if (kind === 'ship') { c.from = new THREE.Vector3(80, 0.45, 26); c.to = new THREE.Vector3(PIER.x1 + 5, 0.45, PIER.z0 - 3); c.dur = size === 'L' ? 5 : size === 'S' ? 11 : 8; }
+    else { c.from = new THREE.Vector3(-70, 22, -30); c.to = new THREE.Vector3(1, 16, 4); c.dur = size === 'L' ? 3 : size === 'S' ? 8 : 5; }
+    g.position.copy(c.from); S.couriers.push(c);
+    return new Promise((res) => { c.resolve = res; });
+  }
+  function toScreen(v3) { const v = v3.clone().project(cam); return [(v.x * 0.5 + 0.5) * S.W, (-v.y * 0.5 + 0.5) * S.H]; }
+  function stepCouriers() {
+    for (const c of S.couriers) {
+      c.t += S.dt;
+      if (c.state === 'in') {
+        const u = smooth(c.t / c.dur), p = c.from.clone().lerp(c.to, 1 - Math.pow(1 - clamp(c.t / c.dur), 3));
+        c.g.position.copy(p); c.g.lookAt(c.to.x, p.y, c.to.z); if (c.kind === 'ship') c.g.rotateY(-Math.PI / 2);
+        if (u >= 1) { c.state = 'hover'; c.t = 0; }
+      } else if (c.state === 'hover') {
+        if (!c.dropped && c.t > 0.5) {
+          c.dropped = true;
+          emit('drop', { id: c.id, widget: c.widget, data: c.data, size: c.size, tag: c.tag, from: toScreen(c.g.position.clone().add(new THREE.Vector3(0, c.kind === 'ship' ? 5 : 0, 0))), to: [c.at[0] * S.W, c.at[1] * S.H] });
+          c.resolve?.(c.id);
+        }
+        if (c.t > 1.4) { c.state = 'out'; c.t = 0; c.out = c.kind === 'ship' ? new THREE.Vector3(c.to.x + 50, 0.45, c.to.z - 40) : new THREE.Vector3(70, 26, 40); c.base = c.g.position.clone(); }
+      } else {
+        const u = clamp(c.t / (c.kind === 'ship' ? 9 : 5)), p = c.base.clone().lerp(c.out, u * u);
+        c.g.position.copy(p); c.g.lookAt(c.out.x, p.y, c.out.z); if (c.kind === 'ship') c.g.rotateY(-Math.PI / 2);
+        if (u >= 1) c.done = true;
+      }
+      if (c.kind === 'ship') c.g.position.y = 0.45 + Math.sin(S.t * 1.6 + c.id) * 0.12; else flap(c.g, S.t + c.id);
+    }
+    S.couriers = S.couriers.filter((c) => { if (c.done) { scene.remove(c.g); return false; } return true; });
+  }
+
+  // ---------- camera ----------
+  function applyCamera() {
+    const v = S.view, tgt = new THREE.Vector3(1, 3, 2), r = 200;
+    cam.position.set(tgt.x + Math.cos(v.el) * Math.sin(v.az) * r, tgt.y + Math.sin(v.el) * r, tgt.z + Math.cos(v.el) * Math.cos(v.az) * r);
+    cam.up.set(0, 1, 0); cam.lookAt(tgt);
+    const asp = S.W / S.H, f = v.zoom;
+    cam.left = -f * asp; cam.right = f * asp; cam.top = f; cam.bottom = -f; cam.updateProjectionMatrix();
+  }
+  function resize() {
+    const r = canvas.getBoundingClientRect(); S.W = Math.max(1, r.width); S.H = Math.max(1, r.height);
+    renderer.setPixelRatio(1); renderer.setSize(Math.ceil(S.W / PIX), Math.ceil(S.H / PIX), false);
+    canvas.style.width = '100%'; canvas.style.height = '100%'; applyCamera();
+  }
+  const ro = new ResizeObserver(resize); ro.observe(canvas); resize();
+
+  // drag to rotate, wheel to zoom
+  let drag = null;
+  canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, az: S.viewTarget.az, el: S.viewTarget.el }; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', (e) => { if (!drag) return; S.viewTarget.az = drag.az - (e.clientX - drag.x) * 0.006; S.viewTarget.el = clamp(drag.el + (e.clientY - drag.y) * 0.004, 0.2, 1.45); });
+  canvas.addEventListener('pointerup', () => { drag = null; });
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); S.viewTarget.zoom = clamp(S.viewTarget.zoom * (1 + Math.sign(e.deltaY) * 0.08), 12, 60); }, { passive: false });
+
+  // ---------- loop ----------
+  let sparkT = 0;
+  const wc = waterMesh.instanceColor.array;
+  function frame(now) {
+    S.raf = requestAnimationFrame(frame);
+    if (document.hidden) { S.last = now; return; }
+    const dt = Math.min(0.05, (now - (S.last || now)) / 1000); S.last = now; S.dt = dt; S.t += dt;
+    if (S.timeMode === 'fixed' && S.speed) S.hour = (S.hour + dt * S.speed / 3600 + 24) % 24;
+    S.curH = localHour();
+    const { w } = grade();
+
+    if (S.autoRotate) S.viewTarget.az += dt * 0.05;
+    const k = 1 - Math.exp(-dt * 4);
+    S.view.az += (S.viewTarget.az - S.view.az) * k; S.view.el += (S.viewTarget.el - S.view.el) * k; S.view.zoom += (S.viewTarget.zoom - S.view.zoom) * k;
+    applyCamera();
+
+    // water sparkle: a few tiles flash white each tick
+    sparkT += dt;
+    if (sparkT > 0.12) {
+      sparkT = 0; wc.set(waterBase);
+      const n = 260;
+      for (let i = 0; i < n; i++) { const j = (Math.random() * water.length) | 0; const d = dist[I(water[j][0], water[j][1])]; if (d < 3) continue; wc[j * 3] = wc[j * 3 + 1] = wc[j * 3 + 2] = 0.92; }
+      waterMesh.instanceColor.needsUpdate = true;
+    }
+
+    for (const o of ships) { o.a += o.sp * dt; const x = Math.cos(o.a) * o.rx, z = Math.sin(o.a) * o.rz; o.g.position.set(x, 0.45 + Math.sin(S.t * 1.5 + o.a) * 0.12, z); const nx = Math.cos(o.a + Math.sign(o.sp) * 0.05) * o.rx, nz = Math.sin(o.a + Math.sign(o.sp) * 0.05) * o.rz; o.g.lookAt(nx, o.g.position.y, nz); o.g.rotateY(-Math.PI / 2); o.g.rotation.z = Math.sin(S.t * 1.2 + o.a) * 0.04; }
+    for (const o of parrots) { o.a += o.sp * dt; const x = o.cx + Math.cos(o.a) * o.r, z = o.cz + Math.sin(o.a) * o.r, y = o.y + Math.sin(S.t * 0.8 + o.ph) * 1.2; o.g.position.set(x, y, z); const nx = o.cx + Math.cos(o.a + Math.sign(o.sp) * 0.1) * o.r, nz = o.cz + Math.sin(o.a + Math.sign(o.sp) * 0.1) * o.r; o.g.lookAt(nx, y, nz); flap(o.g, S.t + o.ph); }
+
+    if (rain.visible) {
+      const p = rainGeo.attributes.position, fall = w.snow > w.rain ? 6 : 38;
+      for (let i = 0; i < p.count; i++) { let y = p.getY(i) - fall * dt; if (y < 0.5) y = 40; p.setY(i, y); }
+      p.needsUpdate = true;
+    }
+    stepCouriers();
+    renderer.render(scene, cam);
+  }
+
+  // ---------- weather API ----------
+  let wTimer = 0;
+  async function refreshWeather() { clearTimeout(wTimer); wTimer = setTimeout(() => refreshWeather().catch(() => {}), 15 * 60e3); try { S.live = await fetchWeather(S.location.lat, S.location.lon); emit('weather', { ...S.live, location: S.location }); } catch (e) { emit('weather', { error: e.message }); } }
+  function setWeather(wv) {
+    if (wv === 'live') { S.weatherMode = 'live'; refreshWeather(); return; }
+    S.weatherMode = 'manual'; const b = typeof wv === 'string' ? WEATHER_PRESETS[wv] : { ...S.weather, ...wv };
+    if (!b) throw new Error('weather: live | ' + Object.keys(WEATHER_PRESETS).join(' | '));
+    S.weather = { cloud: clamp(+b.cloud || 0), rain: clamp(+b.rain || 0), snow: clamp(+b.snow || 0), storm: !!b.storm, fog: clamp(+b.fog || 0), wind: clamp(+b.wind || 0, 0, 40) };
+    emit('weather', S.weather);
+  }
+
+  const api = {
+    is3D: true, scene, renderer,
+    deliver, on(e, f) { (listeners[e] ||= []).push(f); return () => { listeners[e] = listeners[e].filter((x) => x !== f); }; },
+    setWeather, refreshWeather, getWeather: () => ({ mode: S.weatherMode, ...(weather() || {}), location: S.location }),
+    async setLocation(loc) { S.location = typeof loc === 'string' ? await geocode(loc) : loc; return refreshWeather(); },
+    setTime(h, speed = 0) { if (h == null || h === 'live') { S.timeMode = 'live'; S.speed = 0; } else { S.timeMode = 'fixed'; S.hour = ((+h % 24) + 24) % 24; S.speed = +speed || 0; } },
+    getTime: () => ({ mode: S.timeMode, hour: S.curH, sunrise: S.live?.sunrise ?? 7.2, sunset: S.live?.sunset ?? 17.8 }),
+    setView(name) { const v = VIEWS[name]; if (!v) throw new Error('view: iso | top | side'); S.viewTarget.el = v.el; return name; },
+    setAutoRotate(on) { S.autoRotate = !!on; return S.autoRotate; },
+    setZoom(z) { S.viewTarget.zoom = clamp(+z, 12, 60); },
+    setFlyers(c = {}) { const n = (v) => clamp(+v | 0, 0, 8); if (c.ship != null) S.flyers.ship = n(c.ship); if (c.parrot != null) S.flyers.parrot = n(c.parrot);
+      for (const p of ['far', 'mid', 'near']) if (c[p]) { if (c[p].airship != null || c[p].balloon != null) S.flyers.ship = n((c[p].airship || 0) + (c[p].balloon || 0)); if (c[p].eagle != null) S.flyers.parrot = n(c[p].eagle); }
+      rebuildFlyers(); return { ...S.flyers }; },
+    getFlyers: () => ({ ...S.flyers }),
+    setInput() {}, calibrate() {}, setStrength() {}, setEffects() {}, getInput: () => 'off',
+    getScene: () => ({ name: 'Воксельный остров', is3D: true, voxels: land.m.size, water: water.length }),
+    destroy() { cancelAnimationFrame(S.raf); ro.disconnect(); clearTimeout(wTimer); renderer.dispose(); },
+    _state: S,
+  };
+
+  if (opts.bridge !== false) {
+    window.addEventListener('message', async (e) => {
+      const m = e.data; if (!m || m.type !== 'livebg' || typeof api[m.cmd] !== 'function' || m.cmd.startsWith('_') || m.cmd === 'on' || m.cmd === 'destroy') return;
+      if (opts.bridgeOrigin && e.origin !== opts.bridgeOrigin) return;
+      let reply; try { reply = { ok: true, result: await api[m.cmd](...(m.args || [])) }; } catch (err) { reply = { ok: false, error: err.message }; }
+      e.source?.postMessage?.({ type: 'livebg:reply', id: m.id, ...reply }, e.origin === 'null' ? '*' : e.origin);
+    });
+  }
+
+  rebuildFlyers();
+  setWeather(opts.weather || 'live');
+  S.raf = requestAnimationFrame(frame);
+  return api;
+}
