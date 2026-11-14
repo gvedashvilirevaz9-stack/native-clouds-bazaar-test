@@ -84,14 +84,17 @@ export function createVoxelIsland(canvas, opts = {}) {
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
   scene.add(sun, sun.target);
 
-  // sky gradient (only seen in the side view)
-  const skyCv = document.createElement('canvas'); skyCv.width = 2; skyCv.height = 256;
-  const skyTex = new THREE.CanvasTexture(skyCv); skyTex.colorSpace = THREE.SRGBColorSpace; scene.background = skyTex;
-  let skyKey = '';
-  function paintSky(top, hor) {
-    const k = top + hor; if (k === skyKey) return; skyKey = k;
-    const g = skyCv.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
-    gr.addColorStop(0, top); gr.addColorStop(0.62, hor); gr.addColorStop(1, hor); g.fillStyle = gr; g.fillRect(0, 0, 2, 256); skyTex.needsUpdate = true;
+  // dark navy branded background, darker toward the edges
+  const bgCv = document.createElement('canvas'); bgCv.width = bgCv.height = 160;
+  const bgTex = new THREE.CanvasTexture(bgCv); bgTex.colorSpace = THREE.SRGBColorSpace; scene.background = bgTex;
+  let bgKey = '';
+  function paintBg(night, warm) {
+    const k = (night * 10 | 0) + '|' + (warm * 6 | 0); if (k === bgKey) return; bgKey = k;
+    const g = bgCv.getContext('2d'), gr = g.createRadialGradient(80, 72, 8, 80, 80, 120);
+    const cen = [lerp(24, 13, night) + warm * 12, lerp(40, 20, night) + warm * 4, lerp(78, 46, night)];
+    const edge = [lerp(6, 3, night), lerp(11, 6, night), lerp(26, 15, night)];
+    const hx = (c) => '#' + c.map((v) => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0')).join('');
+    gr.addColorStop(0, hx(cen)); gr.addColorStop(1, hx(edge)); g.fillStyle = gr; g.fillRect(0, 0, 160, 160); bgTex.needsUpdate = true;
   }
 
   // ---------- terrain grid ----------
@@ -296,7 +299,7 @@ export function createVoxelIsland(canvas, opts = {}) {
   { const fx = 6, fz = 17, fy = hAt(fx, fz); for (let y = 0; y < 8; y++) vox.put(fx, fy + y, fz, PAL.woodDk); for (let x = 1; x <= 3; x++) for (let y = 5; y < 8; y++) vox.put(fx + x, fy + y, fz, x === 2 && y === 6 ? PAL.yellow : PAL.red); }
 
   // bushes and flowers on the grass
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 100; i++) {
     const x = Math.round((rng() - 0.5) * 36), z = Math.round((rng() - 0.5) * 36), h = hAt(x, z), ti = inG(x, z) ? T[I(x, z)] : 0;
     if (h < 2 || ti || land.has(x, h, z) || vox.has(x, h, z)) continue;
     if (rng() < 0.35) { vox.put(x, h, z, PAL.leaf2); vox.put(x + 1, h, z, PAL.leaf); if (rng() < 0.5) vox.put(x, h + 1, z, PAL.leafLt); if (rng() < 0.6) vox.put(x + 1, h + 1, z, rng() < 0.5 ? PAL.pink : PAL.white); }
@@ -306,6 +309,12 @@ export function createVoxelIsland(canvas, opts = {}) {
   // palms
   [[-15, -6], [-13, -1], [10, 10], [13, -12], [-6, 12], [-18, 7], [16, -6], [1, -12], [-3, 16], [8, 15],
    [-33, -5], [-31, -3], [30, -21], [32, -20], [-20, 13], [18, 2], [-1, -16]].forEach(([x, z], i) => { if (hAt(x, z) >= 1 && !(inG(x, z) && T[I(x, z)])) palm(x, z, 5 + ((i * 7) % 3), 1); });
+
+  // extra detail: crates, a well, lantern posts, a rowboat
+  [[20, 6], [21, 6], [20, 7], [6, -2], [-8, 3], [12, -2]].forEach(([x, z]) => { const y = hAt(x, z); if (!y || T[I(x, z)] === 3) return; vox.put(x, y, z, PAL.plank); vox.put(x, y + 1, z, PAL.woodDk); if (rng() < 0.55) vox.put(x + 1, y, z, PAL.wood); });
+  { const x = -2, z = 5, y = hAt(x, z); if (y) { for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { vox.put(x + dx, y, z + dz, PAL.stone2); vox.put(x + dx, y + 1, z + dz, (dx + dz) % 2 ? PAL.stone : PAL.stoneDk); } vox.put(x, y + 3, z, PAL.woodDk); vox.put(x + 1, y + 3, z, PAL.woodDk); vox.put(x, y + 4, z, PAL.roofDk); vox.put(x + 1, y + 4, z, PAL.roofDk); glow.put(x, y + 2, z + 1, 0x8fe3ff); } }
+  [[1, 7], [-6, 6], [10, 3], [-10, 4]].forEach(([x, z]) => { const y = hAt(x, z); if (!y || T[I(x, z)] === 3) return; for (let k = 0; k < 3; k++) vox.put(x, y + k, z, PAL.woodDk); glow.put(x, y + 3, z, 0xffc45a); });
+  { const x = 19, z = 15, y = hAt(x, z) || 0; for (let i = -1; i <= 1; i++) { vox.put(x + i, 0, z, PAL.woodDk); vox.put(x + i, 1, z, i === 0 ? PAL.plank : PAL.wood); } vox.put(x - 2, 0, z, PAL.woodDk); vox.put(x + 2, 0, z, PAL.woodDk); vox.put(x, 1, z, PAL.woodDk); }
 
   // ---------- build static meshes ----------
   const landMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
@@ -340,9 +349,26 @@ export function createVoxelIsland(canvas, opts = {}) {
   }
   scene.add(waterMesh);
   const waterBase = Float32Array.from(waterMesh.instanceColor.array);
-  // the open ocean beyond the tiles
-  const ocean = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), new THREE.MeshLambertMaterial({ color: PAL.deep2 }));
-  ocean.rotation.x = -Math.PI / 2; ocean.position.y = 0.3; ocean.receiveShadow = true; scene.add(ocean);
+  // bounded square platform (dark navy) + branded pixel border — no infinite ocean, no far seam
+  const BORDER = 13, SQ = G + BORDER;
+  const base = new THREE.Mesh(new THREE.BoxGeometry(2 * SQ + 2, 3.6, 2 * SQ + 2), new THREE.MeshLambertMaterial({ color: 0x0e1733 }));
+  base.position.set(0.5, 0.2 - 1.8, 0.5); base.receiveShadow = true; scene.add(base);
+  // a slightly lighter inner frame right at the water's edge (contour)
+  const edgeFrame = new THREE.Mesh(new THREE.BoxGeometry(2 * G + 5, 0.5, 2 * G + 5), new THREE.MeshLambertMaterial({ color: 0x14224a }));
+  edgeFrame.position.set(0.5, 0.22, 0.5); scene.add(edgeFrame);
+  // "sunspace.club" in light-blue pixels around all four sides (part of the 3D scene -> rotates in perspective)
+  const FONT = { A: ["01110","10001","10001","11111","10001","10001","10001"], B: ["11110","10001","10001","11110","10001","10001","11110"], C: ["01111","10000","10000","10000","10000","10000","01111"], E: ["11111","10000","10000","11110","10000","10000","11111"], L: ["10000","10000","10000","10000","10000","10000","11111"], N: ["10001","11001","10101","10011","10001","10001","10001"], P: ["11110","10001","10001","11110","10000","10000","10000"], S: ["01111","10000","10000","01110","00001","00001","11110"], U: ["10001","10001","10001","10001","10001","10001","01110"], ".": ["00000","00000","00000","00000","00000","01100","01100"] };
+  const TXT = "SUNSPACE.CLUB", textPix = [];
+  function sideText(ax, az, ux, uz, ox, oz) {
+    const total = TXT.length * 6; let cur = -total / 2 + 0.5;
+    for (const ch of TXT) { const g = FONT[ch] || FONT['.']; for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) if (g[r][c] === '1') { const a = cur + c, v = 6 - r; textPix.push([Math.round(ox + ax * a + ux * v), Math.round(oz + az * a + uz * v)]); } cur += 6; }
+  }
+  const rc = G + 4;
+  sideText(1, 0, 0, 1, 0, rc); sideText(-1, 0, 0, -1, 0, -rc); sideText(0, 1, 1, 0, rc, 0); sideText(0, -1, -1, 0, -rc, 0);
+  const textMat = new THREE.MeshLambertMaterial({ color: 0x74d6ff, emissive: new THREE.Color(0x2f7fb0), emissiveIntensity: 0.6 });
+  const textMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.92, 0.5, 0.92), textMat, Math.max(1, textPix.length));
+  { const m = new THREE.Matrix4(); textPix.forEach(([x, z], i) => { m.makeTranslation(x + 0.5, 0.32, z + 0.5); textMesh.setMatrixAt(i, m); }); textMesh.count = textPix.length; }
+  scene.add(textMesh);
 
   // ---------- ship model ----------
   function buildShip(flagCol = PAL.red) {
@@ -381,6 +407,18 @@ export function createVoxelIsland(canvas, opts = {}) {
     g.scale.setScalar(0.9); return g;
   }
 
+  function buildGull() {
+    const g = new THREE.Group(), w = new THREE.MeshLambertMaterial({ color: 0xf4f4f0 }), gm = new THREE.MeshLambertMaterial({ color: 0x9aa0a8 });
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.55, 1.8), w));
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.55), w); head.position.set(0, 0.18, 1.0); g.add(head);
+    const beak = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 0.35), new THREE.MeshLambertMaterial({ color: 0xf6a742 })); beak.position.set(0, 0.12, 1.35); g.add(beak);
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.16, 0.7), gm); tail.position.set(0, 0, -1.1); g.add(tail);
+    const wl = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.18, 0.9), w); wl.geometry.translate(-1.3, 0, 0); wl.position.set(-0.25, 0.12, 0);
+    const wtl = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.9), gm); wtl.position.set(-2.6, 0, 0); wl.add(wtl); g.add(wl);
+    const wr = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.18, 0.9), w); wr.geometry.translate(1.3, 0, 0); wr.position.set(0.25, 0.12, 0);
+    const wtr = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.9), gm); wtr.position.set(2.6, 0, 0); wr.add(wtr); g.add(wr);
+    g.userData.wings = [wl, wr]; g.scale.setScalar(1.8); return g;
+  }
   // ---------- ambient movers ----------
   const ships = [], parrots = [];
   function rebuildFlyers() {
@@ -390,6 +428,8 @@ export function createVoxelIsland(canvas, opts = {}) {
     for (let i = 0; i < S.flyers.parrot; i++) { const g = buildParrot(...pc[i % pc.length]); scene.add(g); parrots.push({ g, a: rng() * 6.28, r: 8 + rng() * 14, y: 13 + rng() * 6, sp: (0.25 + rng() * 0.2) * (rng() < 0.5 ? 1 : -1), ph: rng() * 6.28, cx: (rng() - 0.5) * 10, cz: (rng() - 0.5) * 10 }); }
   }
   function flap(g, t, speed = 14) { const f = Math.sin(t * speed) * 0.7; g.userData.wings[0].rotation.z = f; g.userData.wings[1].rotation.z = -f; }
+  const gulls = [];
+  for (let i = 0; i < 3; i++) { const g = buildGull(); scene.add(g); gulls.push({ g, a: rng() * 6.28, r: 13 + i * 5, y: 22 + i * 4, sp: (0.055 + rng() * 0.04) * (i % 2 ? -1 : 1), ph: rng() * 6.28 }); }
 
   // ---------- rain ----------
   const rainN = 2200, rp = new Float32Array(rainN * 3);
@@ -422,8 +462,8 @@ export function createVoxelIsland(canvas, opts = {}) {
     const topD = [60, 150, 236], horD = [182, 222, 250], topN = [12, 20, 48], horN = [34, 44, 86], horW = [255, 168, 112];
     let top = topD.map((v, i) => lerp(v, topN[i], night)), hor = horD.map((v, i) => lerp(lerp(v, horW[i], warm * 0.8), horN[i], night));
     top = top.map((v, i) => lerp(v, [120, 128, 146][i], gray * 0.6)); hor = hor.map((v, i) => lerp(v, [170, 178, 192][i], gray * 0.6));
-    paintSky(hex(...top), hex(...hor));
-    ocean.material.color.setHex(PAL.deep2).multiplyScalar(lerp(1, 0.45, night));
+    paintBg(night, warm);
+    textMat.emissiveIntensity = lerp(0.5, 1.5, clamp(night));
     rain.visible = w.rain > 0.05 || w.snow > 0.05;
     rain.material.color.setHex(w.snow > w.rain ? 0xffffff : 0xcfe3f7); rain.material.size = w.snow > w.rain ? 3 : 2;
     return { s, w };
@@ -509,16 +549,17 @@ export function createVoxelIsland(canvas, opts = {}) {
 
     // water sparkle: a few tiles flash white each tick
     sparkT += dt;
-    if (sparkT > 0.12) {
+    if (sparkT > 0.34) {
       sparkT = 0; wc.set(waterBase);
-      const n = 260;
-      for (let i = 0; i < n; i++) { const j = (Math.random() * water.length) | 0; const d = dist[I(water[j][0], water[j][1])]; if (d < 3) continue; wc[j * 3] = wc[j * 3 + 1] = wc[j * 3 + 2] = 0.92; }
+      const n = 130;
+      for (let i = 0; i < n; i++) { const j = (Math.random() * water.length) | 0; const d = dist[I(water[j][0], water[j][1])]; if (d < 3) continue; wc[j * 3] = wc[j * 3 + 1] = wc[j * 3 + 2] = 0.78; }
       waterMesh.instanceColor.needsUpdate = true;
     }
 
     for (const o of ships) { o.a += o.sp * dt; const x = Math.cos(o.a) * o.rx, z = Math.sin(o.a) * o.rz; o.g.position.set(x, 0.45 + Math.sin(S.t * 1.5 + o.a) * 0.12, z); const nx = Math.cos(o.a + Math.sign(o.sp) * 0.05) * o.rx, nz = Math.sin(o.a + Math.sign(o.sp) * 0.05) * o.rz; o.g.lookAt(nx, o.g.position.y, nz); o.g.rotateY(-Math.PI / 2); o.g.rotation.z = Math.sin(S.t * 1.2 + o.a) * 0.04; }
     for (const o of parrots) { o.a += o.sp * dt; const x = o.cx + Math.cos(o.a) * o.r, z = o.cz + Math.sin(o.a) * o.r, y = o.y + Math.sin(S.t * 0.8 + o.ph) * 1.2; o.g.position.set(x, y, z); const nx = o.cx + Math.cos(o.a + Math.sign(o.sp) * 0.1) * o.r, nz = o.cz + Math.sin(o.a + Math.sign(o.sp) * 0.1) * o.r; o.g.lookAt(nx, y, nz); flap(o.g, S.t + o.ph); }
 
+    for (const o of gulls) { o.a += o.sp * dt; const x = Math.cos(o.a) * o.r, z = Math.sin(o.a) * o.r, y = o.y + Math.sin(S.t * 0.3 + o.ph) * 1.6; o.g.position.set(x, y, z); const nx = Math.cos(o.a + Math.sign(o.sp) * 0.12) * o.r, nz = Math.sin(o.a + Math.sign(o.sp) * 0.12) * o.r; o.g.lookAt(nx, y, nz); const f = Math.sin(S.t * 2.4 + o.ph) * 0.5; o.g.userData.wings[0].rotation.z = f; o.g.userData.wings[1].rotation.z = -f; }
     if (rain.visible) {
       const p = rainGeo.attributes.position, fall = w.snow > w.rain ? 6 : 38;
       for (let i = 0; i < p.count; i++) { let y = p.getY(i) - fall * dt; if (y < 0.5) y = 40; p.setY(i, y); }
