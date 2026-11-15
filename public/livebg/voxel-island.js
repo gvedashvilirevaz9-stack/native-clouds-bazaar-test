@@ -406,20 +406,28 @@ export function createVoxelIsland(canvas, opts = {}) {
     g.globalAlpha = 1; }
   const seaTex = new THREE.CanvasTexture(seaCv); seaTex.colorSpace = THREE.SRGBColorSpace; seaTex.magFilter = THREE.NearestFilter;
 
-  // a giant 3D sea plane for the "endless sea" mode: light turquoise, same gradient as the island's water so there is no seam
-  const seaA = new THREE.Color(0x45b4da), seaB = new THREE.Color(0x72d9ee), _tc = new THREE.Color(), seaFarCol = seaB.clone();
-  const gcol = (r) => { const t = clamp((r - 40) / 150, 0, 1); return _tc.copy(seaA).lerp(seaB, t); };
-  const SEA = 6000, SEG = 72, seaGeo = new THREE.PlaneGeometry(SEA, SEA, SEG, SEG);
+  // giant 3D sea plane: dark right next to the island's water, lightening smoothly to turquoise outward, with white foam dots
+  const seaNear = new THREE.Color(0x1f68b4), seaFar = new THREE.Color(0x72d9ee), _tc = new THREE.Color(), seaFarCol = seaFar.clone();
+  const SEA = 6000, SEG = 170, seaGeo = new THREE.PlaneGeometry(SEA, SEA, SEG, SEG);
   { const pos = seaGeo.attributes.position, col = new Float32Array(pos.count * 3);
-    for (let i = 0; i < pos.count; i++) { const c = gcol(Math.hypot(pos.getX(i), pos.getY(i))); col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+    for (let i = 0; i < pos.count; i++) { const r = Math.hypot(pos.getX(i), pos.getY(i)), u = clamp((r - 60) / 190, 0, 1), t = u * u * (3 - 2 * u);
+      _tc.copy(seaNear).lerp(seaFar, t); col[i * 3] = _tc.r; col[i * 3 + 1] = _tc.g; col[i * 3 + 2] = _tc.b; }
     seaGeo.setAttribute('color', new THREE.BufferAttribute(col, 3)); }
   const seaPlane = new THREE.Mesh(seaGeo, new THREE.MeshLambertMaterial({ vertexColors: true }));
   seaPlane.rotation.x = -Math.PI / 2; seaPlane.position.y = 0.44; seaPlane.receiveShadow = false; seaPlane.visible = false; scene.add(seaPlane);
+  // white foam dots scattered across the endless sea (matching the water's speckles)
+  const foamCv = document.createElement('canvas'); foamCv.width = foamCv.height = 128;
+  { const g = foamCv.getContext('2d'); g.clearRect(0, 0, 128, 128);
+    for (let i = 0; i < 82; i++) { const x = rng() * 128 | 0, y = rng() * 128 | 0, s = rng() < 0.75 ? 1 : 2; g.globalAlpha = 0.5 + rng() * 0.45; g.fillStyle = rng() < 0.5 ? '#ffffff' : '#cdeefb'; g.fillRect(x, y, s, s); }
+    g.globalAlpha = 1; }
+  const foamTex = new THREE.CanvasTexture(foamCv); foamTex.wrapS = foamTex.wrapT = THREE.RepeatWrapping; foamTex.magFilter = THREE.NearestFilter; foamTex.minFilter = THREE.NearestFilter; foamTex.colorSpace = THREE.SRGBColorSpace; foamTex.repeat.set(SEA / 130, SEA / 130);
+  const seaFoam = new THREE.Mesh(seaGeo, new THREE.MeshBasicMaterial({ map: foamTex, transparent: true, depthWrite: false }));
+  seaFoam.rotation.x = -Math.PI / 2; seaFoam.position.y = 0.452; seaFoam.visible = false; scene.add(seaFoam);
 
   let mode = 'normal';
   const applyMode = (m) => { mode = m; const nrm = m === 'normal';
     earthMesh.visible = nrm; textMesh.visible = nrm; mistPts.visible = nrm; for (const f of wfFalls) f.visible = nrm;
-    seaPlane.visible = m === 'sea'; scene.background = m === 'flat' ? seaTex : (m === 'sea' ? seaFarCol : bgTex); };
+    seaPlane.visible = m === 'sea'; seaFoam.visible = m === 'sea'; scene.background = m === 'flat' ? seaTex : (m === 'sea' ? seaFarCol : bgTex); };
 
   // ---------- ship model ----------
   function buildShip(flagCol = PAL.red) {
