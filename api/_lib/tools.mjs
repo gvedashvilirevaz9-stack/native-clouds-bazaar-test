@@ -45,6 +45,17 @@ export const TOOLS = {
     inputSchema: O({far: {type: 'object', description: '{eagle, airship, balloon}'}, mid: {type: 'object'}, near: {type: 'object'}}),
     run: (a) => ({command: {type: 'livebg', cmd: 'setFlyers', args: [{...(a.far ? {far: a.far} : {}), ...(a.mid ? {mid: a.mid} : {}), ...(a.near ? {near: a.near} : {})}]}}),
   },
+  background_build_city: {
+    description: 'Live background (voxel island): rebuild the inner city from a list of objects, as a guest — no coding. The island itself, the grass and water, the 5 outer palm-islets, the watchtower with its flag and the signpost flag are LOCKED and always stay. Everything else on the island is cleared and replaced by the items you give. Each item is {t, x, z}: t is the kind, x and z are grid coordinates roughly -28..28 (0,0 is the island centre); off-grass, water or locked spots are skipped automatically. Kinds (t): "turtle" (big green turtle, white cross on its shell), "gorilla" (big dark gorilla), "house", "palm", "tree", "stall" (market stall), "well", "chest" (treasure), "skeleton", "campfire", "barrel", "bush", "flower". turtle and gorilla are large — give them a few cells of clearance. Example to clear the city and place only a turtle in the middle and a gorilla to the side: items=[{"t":"turtle","x":-2,"z":2},{"t":"gorilla","x":18,"z":-2}]. Returns the page command {type:"livebg", cmd:"setCity", args:[spec]} for the open background page.',
+    inputSchema: O({items: {type: 'array', description: 'objects to place, e.g. [{"t":"turtle","x":-2,"z":2},{"t":"gorilla","x":18,"z":-2}]', items: {type: 'object', properties: {t: str('kind: turtle, gorilla, house, palm, tree, stall, well, chest, skeleton, campfire, barrel, bush, flower'), x: {type: 'integer', description: 'grid x, about -28..28'}, z: {type: 'integer', description: 'grid z, about -28..28'}}, required: ['t', 'x', 'z']}}}, ['items']),
+    run: (a) => ({command: {type: 'livebg', cmd: 'setCity', args: [{items: (a.items || []).map(it => ({t: String(it.t), x: Math.round(+it.x), z: Math.round(+it.z)}))}]},
+      channel: 'Send `command` to the open background page (window.postMessage or the portal channel). The page rebuilds the city and remembers it in the browser.'}),
+  },
+  background_reset_city: {
+    description: 'Live background (voxel island): restore the original default city (tavern, forge, market, harbour, houses, totem, well, palms…), undoing any guest rebuild. Returns the page command {type:"livebg", cmd:"resetCity"}.',
+    inputSchema: O({}),
+    run: () => ({command: {type: 'livebg', cmd: 'resetCity', args: []}}),
+  },
   status: {
     description: 'What this Bazaar server can do right now: networks, configured catalogs, Shopify store, agent test wallet and its limits. Call first.',
     inputSchema: O({}),
