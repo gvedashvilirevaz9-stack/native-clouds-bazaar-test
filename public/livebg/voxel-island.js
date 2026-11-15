@@ -214,34 +214,6 @@ export function createVoxelIsland(canvas, opts = {}) {
   }
   function chest(x, z) { const y = hAt(x, z); if (!y) return; vox.put(x, y, z, PAL.woodDk); vox.put(x + 1, y, z, PAL.woodDk); vox.put(x, y + 1, z, PAL.wood); vox.put(x + 1, y + 1, z, PAL.wood); vox.put(x, y + 2, z, PAL.woodDk); vox.put(x + 1, y + 2, z, PAL.woodDk); glow.put(x, y + 2, z, PAL.yellow); glow.put(x + 1, y + 2, z, PAL.yellow); }
   function campfire(x, z) { const y = hAt(x, z); if (!y) return; vox.put(x - 1, y, z, PAL.woodDk); vox.put(x + 1, y, z, PAL.wood); vox.put(x, y, z - 1, PAL.wood); vox.put(x, y, z + 1, PAL.woodDk); fireV.put(x, y, z, PAL.fire); fireV.put(x, y + 1, z, PAL.fire2); }
-  // big green turtle with a white cross on its shell
-  function turtle(x, z) {
-    const y = hAt(x, z); if (!y) return;
-    const SH = 0x3faa4b, SHD = 0x2b7d36, WH = 0xf6fbf4, SK = 0x5bbf63, SKD = 0x3f8f46, EY = 0x16240f;
-    for (const [lx, lz] of [[-6, -4], [6, -4], [-6, 4], [6, 4]]) { vox.put(x + lx, y, z + lz, SKD); vox.put(x + lx, y + 1, z + lz, SK); vox.put(x + lx + Math.sign(lx), y, z + lz, SK); vox.put(x + lx, y, z + lz + Math.sign(lz), SK); }
-    vox.put(x, y, z - 8, SKD); vox.put(x, y + 1, z - 7, SK);
-    for (let hy = 0; hy < 4; hy++) for (let hx = -1; hx <= 1; hx++) vox.put(x + hx, y + 1 + hy, z + 8, SK);
-    vox.put(x, y + 4, z + 9, SK); vox.put(x - 1, y + 4, z + 8, EY); vox.put(x + 1, y + 4, z + 8, EY);
-    const rings = [[9, 7], [9, 7], [8, 6], [7, 5], [6, 4], [4, 3], [2, 1]];
-    rings.forEach(([rx, rz], i) => { const yy = y + 2 + i;
-      for (let dx = -rx; dx <= rx; dx++) for (let dz = -rz; dz <= rz; dz++) { const e = (dx * dx) / (rx * rx + 0.1) + (dz * dz) / (rz * rz + 0.1); if (e > 1.04) continue; const rim = (i === 0 || i === 1) && e > 0.78; vox.put(x + dx, yy, z + dz, rim ? SHD : SH); } });
-    const topY = (dx, dz) => { let ty = -1; rings.forEach(([rx, rz], i) => { if ((dx * dx) / (rx * rx + 0.1) + (dz * dz) / (rz * rz + 0.1) <= 1.04) ty = y + 2 + i; }); return ty; };
-    for (let dx = -9; dx <= 9; dx++) { const ty = topY(dx, 0); if (ty > 0) { vox.put(x + dx, ty, z, WH); vox.put(x + dx, ty, z - 1, WH); } }
-    for (let dz = -7; dz <= 7; dz++) { const ty = topY(0, dz); if (ty > 0) { vox.put(x, ty, z + dz, WH); vox.put(x - 1, ty, z + dz, WH); } }
-  }
-  // big gorilla
-  function gorilla(x, z) {
-    const y = hAt(x, z); if (!y) return;
-    const BK = 0x2a2a30, BK2 = 0x3b3b44, FACE = 0x5a4636, EY = 0xece2d2, CH = 0x4a4a54;
-    for (const lx of [-2, 2]) { for (let ly = 0; ly < 3; ly++) vox.put(x + lx, y + ly, z, BK); vox.put(x + lx, y, z + 1, BK2); }
-    for (let hx = -2; hx <= 2; hx++) for (let hz = -1; hz <= 1; hz++) for (let hy = 3; hy < 8; hy++) { const edge = Math.abs(hx) === 2 || Math.abs(hz) === 1; vox.put(x + hx, y + hy, z + hz, edge ? BK : BK2); }
-    for (let hx = -1; hx <= 1; hx++) for (let hy = 4; hy < 7; hy++) vox.put(x + hx, y + hy, z + 1, CH);
-    for (const ax of [-4, 4]) { for (let ay = 0; ay < 8; ay++) vox.put(x + ax, y + ay, z, BK); vox.put(x + (ax > 0 ? ax - 1 : ax + 1), y + 7, z, BK); vox.put(x + ax, y, z + 1, BK2); }
-    for (let hx = -1; hx <= 1; hx++) for (let hz = -1; hz <= 1; hz++) for (let hy = 8; hy < 11; hy++) vox.put(x + hx, y + hy, z + hz, BK);
-    vox.put(x, y + 11, z, BK2);
-    for (let fx = -1; fx <= 1; fx++) for (let fy = 8; fy < 10; fy++) vox.put(x + fx, y + fy, z + 2, FACE);
-    vox.put(x - 1, y + 9, z + 2, EY); vox.put(x + 1, y + 9, z + 2, EY);
-  }
 
   // ---------- materials + permanent terrain mesh ----------
   const landMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
@@ -307,18 +279,75 @@ export function createVoxelIsland(canvas, opts = {}) {
     }
   }
 
-  // a guest's custom city from a compact spec (safe, validated vocabulary)
+  // A guest's custom build from a compact spec. Two layers of vocabulary:
+  //   1) generic primitives (voxel / box / pyramid / cylinder) — a bot composes ANY shape from these;
+  //   2) named shortcuts (house, palm, tree, …) for convenience.
+  // Hard limits enforced here, so a bot cannot escape the island:
+  //   • horizontal — every cube must land on the island's grass (its contour); off-island cells are skipped;
+  //   • vertical  — nothing rises above HMAX layers, the altitude of the highest-flying bird.
   const LOCKZ = [[LOT.tower[0] + 1, LOT.tower[1] + 1, 8], [-2, 30, 4]];
+  const HMAX = 19; // height ceiling = top seagull's flight altitude
+  const PRIM = new Set(['voxel', 'cube', 'box', 'block', 'pyramid', 'ziggurat', 'cyl', 'cylinder', 'column']);
+  function parseCol(c) {
+    if (c == null) return undefined;
+    if (typeof c === 'number') return c & 0xffffff;
+    if (typeof c === 'string') {
+      if (PAL[c] != null) return PAL[c];
+      const h = c.replace('#', '');
+      if (/^[0-9a-fA-F]{6}$/.test(h)) return parseInt(h, 16);
+      if (/^[0-9a-fA-F]{3}$/.test(h)) return parseInt(h[0] + h[0] + h[1] + h[1] + h[2] + h[2], 16);
+    }
+    return undefined;
+  }
   function buildSpecCity(spec) {
-    const col = (c) => (typeof c === 'string' && PAL[c] != null ? PAL[c] : (typeof c === 'number' ? c : undefined));
+    const col = parseCol;
     const near = (x, z) => LOCKZ.some(([lx, lz, lr]) => Math.hypot(x - lx, z - lz) < lr);
+    // place one cube at column (x,z), ly layers above that column's grass top; self-clips to island + ceiling
+    const put1 = (x, z, ly, c) => {
+      x = Math.round(x); z = Math.round(z); ly = Math.round(ly || 0);
+      if (!inG(x, z)) return; const g = hAt(x, z); if (g < 2) return; // contour: grass only
+      if (near(x, z)) return;                                         // keep locked landmarks clear
+      const yy = g + ly; if (yy < g || yy > HMAX) return;             // ceiling = top bird
+      const cc = parseCol(c); if (cc == null) return;
+      vox.put(x, yy, z, cc);
+    };
     for (const it of (spec.items || [])) {
       if (!it || it.t == null) continue;
       const x = Math.round(+it.x), z = Math.round(+it.z);
-      const big = it.t === 'turtle' || it.t === 'gorilla';
-      if (!Number.isFinite(x) || !Number.isFinite(z) || !inG(x, z) || hAt(x, z) < 2 || near(x, z) || (!big && inG(x, z) && T[I(x, z)])) continue;
+      if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
+      const y0 = Math.max(0, Math.round(+it.y || 0));
+      if (!PRIM.has(it.t)) { // named shortcut: its anchor must sit on clear grass (not a path tile)
+        if (!inG(x, z) || hAt(x, z) < 2 || near(x, z) || T[I(x, z)]) continue;
+      }
       const y = hAt(x, z);
       switch (it.t) {
+        // ---------- generic primitives: build anything ----------
+        case 'voxel': case 'cube': put1(x, z, y0, it.c); break;
+        case 'box': case 'block': {
+          const w = clamp(+it.w || 1, 1, 60) | 0, d = clamp(+it.d || 1, 1, 60) | 0, h = clamp(+it.h || 1, 1, HMAX) | 0, hollow = !!it.hollow;
+          for (let dx = 0; dx < w; dx++) for (let dz = 0; dz < d; dz++) for (let ly = 0; ly < h; ly++) {
+            if (hollow && dx > 0 && dx < w - 1 && dz > 0 && dz < d - 1 && ly > 0 && ly < h - 1) continue;
+            put1(x + dx, z + dz, y0 + ly, it.c);
+          }
+        } break;
+        case 'pyramid': case 'ziggurat': {
+          const size = clamp(+it.size || +it.w || 7, 1, 60) | 0, step = clamp(+it.step || 1, 1, 6) | 0, solid = it.solid !== false, half = (size - 1) / 2;
+          for (let k = 0; ; k++) {
+            const ins = k * step, lo = Math.ceil(-half + ins), hi = Math.floor(half - ins); if (hi < lo) break;
+            for (let dx = lo; dx <= hi; dx++) for (let dz = lo; dz <= hi; dz++) {
+              if (!solid && dx > lo && dx < hi && dz > lo && dz < hi) continue;
+              put1(x + dx, z + dz, y0 + k, it.c);
+            }
+          }
+        } break;
+        case 'cyl': case 'cylinder': case 'column': {
+          const rad = clamp(+it.r || +it.radius || 2, 1, 30), h = clamp(+it.h || 4, 1, HMAX) | 0, hollow = !!it.hollow, rr = Math.ceil(rad);
+          for (let dx = -rr; dx <= rr; dx++) for (let dz = -rr; dz <= rr; dz++) {
+            const e = Math.hypot(dx, dz); if (e > rad + 0.3) continue; if (hollow && e < rad - 0.9) continue;
+            for (let ly = 0; ly < h; ly++) put1(x + dx, z + dz, y0 + ly, it.c);
+          }
+        } break;
+        // ---------- named shortcuts ----------
         case 'house': house(x, z, clamp(+it.w || 5, 3, 10) | 0, clamp(+it.d || 5, 3, 9) | 0, clamp(+it.h || 4, 3, 7) | 0, { wall: col(it.wall), wall2: col(it.wall2), roof: col(it.roof), roof2: col(it.roof2), roofDk: col(it.roofDk), chimney: !!it.chimney }); break;
         case 'palm': palm(x, z, clamp(+it.h || 5, 3, 9) | 0); break;
         case 'tree': { vox.put(x, y, z, PAL.trunk2); vox.put(x, y + 1, z, PAL.trunk); vox.put(x, y + 2, z, PAL.leaf); for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) vox.put(x + a, y + 2, z + b, PAL.leaf2); vox.put(x, y + 3, z, PAL.leafLt); } break;
@@ -326,8 +355,6 @@ export function createVoxelIsland(canvas, opts = {}) {
         case 'well': { for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { vox.put(x + dx, y, z + dz, PAL.stone2); vox.put(x + dx, y + 1, z + dz, (dx + dz) % 2 ? PAL.stone : PAL.stoneDk); } vox.put(x, y + 3, z, PAL.woodDk); vox.put(x + 1, y + 3, z, PAL.woodDk); vox.put(x, y + 4, z, PAL.roofDk); vox.put(x + 1, y + 4, z, PAL.roofDk); } break;
         case 'chest': chest(x, z); break;
         case 'campfire': campfire(x, z); break;
-        case 'turtle': turtle(x, z); break;
-        case 'gorilla': gorilla(x, z); break;
         case 'skeleton': skeleton(x, z); break;
         case 'barrel': { vox.put(x, y, z, PAL.plank); vox.put(x, y + 1, z, PAL.woodDk); vox.put(x, y + 2, z, PAL.plank); } break;
         case 'bush': { vox.put(x, y, z, PAL.leaf2); if (rng() < 0.6) vox.put(x, y + 1, z, PAL.leafLt); } break;
