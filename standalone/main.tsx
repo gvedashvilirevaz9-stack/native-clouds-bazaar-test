@@ -77,6 +77,17 @@ function App(){
    return {id,placed:where};
  }
  async function execute(id:string,args:any={}){
+   // Live background channel: an agent/bot drives the voxel island with no iframe ref.
+   //   livebg.build {items:[…]} → rebuild the island from blocks (see docs/voxel-island-builder.md)
+   //   livebg.reset            → restore the default island
+   //   livebg.cmd  {cmd,args}  → any island api call (setMode, deliver, setFlyers…)
+   if(id==='livebg.build'||id==='livebg.reset'||id==='livebg.cmd'){
+     const cmd=id==='livebg.reset'?'resetCity':id==='livebg.cmd'?String(args.cmd||'setCity'):'setCity';
+     const cargs=id==='livebg.reset'?[]:id==='livebg.cmd'?(args.args||[]):[{items:Array.isArray(args.items)?args.items:(args.spec?.items||[])}];
+     try{const ch=new BroadcastChannel('livebg');ch.postMessage({type:'livebg',cmd,args:cargs,id:Date.now()});setTimeout(()=>ch.close(),600);}catch(e){}
+     try{if(cmd==='setCity')localStorage.setItem('lw.city.v1',JSON.stringify(cargs[0]));else if(cmd==='resetCity')localStorage.removeItem('lw.city.v1');}catch(e){}
+     return {ok:true,cmd,via:'livebg channel'};
+   }
    if(INTAKE_COMMANDS.includes(id))return executeIntake(id,args);
    if(TOOL_COMMANDS.includes(id))return executeTools(id,args);
    if(BILLING_COMMANDS.includes(id))return executeBilling(id,args);
@@ -145,6 +156,9 @@ function App(){
  const [bazaarOpen,setBazaarOpen]=useState(()=>location.hash==='#bazaar');
  const [wall,setWall]=useState<''|'nature'|'voxel'>(()=>{try{return (localStorage.getItem('nc.wall') as any)||''}catch{return ''}});
  const pickWall=(w:'nature'|'voxel')=>setWall(prev=>{const n=prev===w?'':w;try{localStorage.setItem('nc.wall',n)}catch{}return n as any});
+ // Relay any {type:'livebg'} command posted on the portal window into the same-origin channel the
+ // wallpaper listens on — so an existing portal channel reaches the live background too.
+ useEffect(()=>{let ch:any;try{ch=new BroadcastChannel('livebg')}catch{};const f=(e:MessageEvent)=>{const m:any=e.data;if(m&&m.type==='livebg'&&m.cmd&&ch)try{ch.postMessage(m)}catch{}};window.addEventListener('message',f);return()=>{window.removeEventListener('message',f);try{ch&&ch.close()}catch{}}},[]);
  useEffect(()=>{const f=()=>{setBazaarOpen(true);setShopOpen(false);nativeRooms.close()},g=()=>setBazaarOpen(false),h=()=>setBazaarOpen(false);window.addEventListener('bazaar:open',f);window.addEventListener('bazaar:close',g);window.addEventListener('shop:open',h);return()=>{window.removeEventListener('bazaar:open',f);window.removeEventListener('bazaar:close',g);window.removeEventListener('shop:open',h)}},[]);
  useEffect(()=>{if(location.hash==='#shop')nativeRooms.close()},[]);
  useEffect(()=>{const f=()=>{setShopOpen(true);nativeRooms.close()},g=()=>setShopOpen(false);window.addEventListener('shop:open',f);window.addEventListener('shop:close',g);return()=>{window.removeEventListener('shop:open',f);window.removeEventListener('shop:close',g)}},[]);

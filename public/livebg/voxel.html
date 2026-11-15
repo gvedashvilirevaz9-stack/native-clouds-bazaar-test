@@ -78,7 +78,22 @@ $('quick').onclick=e=>{const b=e.target.closest('button');if(!b)return;b.dataset
 let inst=false; $('speed').onclick=e=>{if(e.target.dataset.v!=='instant')return; inst=bg.setInstant(); e.target.setAttribute('aria-pressed',String(inst));};
 const CK='lw.city.v1';
 try{const saved=localStorage.getItem(CK); if(saved){const r=bg.setCity(saved); if(r&&r.ok)$('cityJson').value=saved;}}catch(e){}
-bg.on('city',c=>{ try{ if(c.custom)localStorage.setItem(CK,JSON.stringify(bg.getCity())); else localStorage.removeItem(CK);}catch(e){} });
+bg.on('city',c=>{ try{ if(c.custom)localStorage.setItem(CK,JSON.stringify(bg.getCity())); else localStorage.removeItem(CK);}catch(e){}
+  try{ const n=$('cityNote'); if(n) n.textContent=c.custom?('✓ построено объектов: '+c.items):'Базовый остров'; }catch(e){} });
+
+// ---- live command channel: any portal/bot drives this background without needing the iframe ref ----
+// Same-origin transports, both carrying {type:'livebg', cmd, args}:
+//   • BroadcastChannel('livebg')  — bg.setCity / resetCity / deliver / setFlyers / setMode …
+//   • localStorage 'lw.city.v1'   — write a spec string → island rebuilds (remove → default)
+// (window.postMessage is already handled by the engine bridge.)
+let _lastCity=null;
+try{
+  const run=(m)=>{ if(!m||m.type!=='livebg'||typeof bg[m.cmd]!=='function'||m.cmd[0]==='_'||m.cmd==='on'||m.cmd==='destroy')return undefined;
+    try{return bg[m.cmd](...(m.args||[]))}catch(e){return {ok:false,error:e.message}} };
+  try{ const ch=new BroadcastChannel('livebg'); ch.onmessage=e=>{ const r=run(e.data); if(e.data&&e.data.id!=null){try{ch.postMessage({type:'livebg:reply',id:e.data.id,result:r})}catch(_){}} }; }catch(_){}
+  window.addEventListener('storage',ev=>{ if(ev.key!==CK)return; const v=ev.newValue; if(v===_lastCity)return; _lastCity=v;
+    try{ v? bg.setCity(v) : bg.resetCity(); }catch(e){} });
+}catch(e){}
 $('cityApply').onclick=()=>{const v=$('cityJson').value.trim(); if(!v){$('cityNote').textContent='Вставь JSON со спекой';return;} const r=bg.setCity(v); $('cityNote').textContent=r.ok?('✓ построено объектов: '+r.items):('Ошибка: '+r.error);};
 $('cityReset').onclick=()=>{bg.resetCity(); $('cityJson').value=''; $('cityNote').textContent='Вернул базовый город';};
 $('hide').onclick=()=>$('panel').classList.add('min'); $('show').onclick=()=>$('panel').classList.remove('min');
