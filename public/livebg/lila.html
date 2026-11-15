@@ -228,7 +228,15 @@ function renderCard(c){ const hue=PLAN_HUE[c.plan-1];
   </div>`; }
 
 // ---- request / start ----
-function openRequest(){ $('reqScrim').classList.add('on'); setTimeout(()=>$('reqInput').focus(),60); }
+function openRequest(refine){
+  const m=$('reqModal');
+  m.querySelector('h2').textContent = refine ? 'Переформулируй свой запрос точнее' : 'Сформулируй свой запрос';
+  m.querySelector('p').textContent = refine
+    ? 'Шестёрка ещё не пришла — душа не готова войти. Уточни своё намерение и брось снова.'
+    : 'Главный вопрос, с которым ты входишь в Лилу. Он останется с тобой всю партию — клетки будут зеркалом для него.';
+  $('reqInput').value = refine ? (request==='(свободная игра)'?'':request) : '';
+  $('reqScrim').classList.add('on'); setTimeout(()=>$('reqInput').focus(),60);
+}
 function openThrow(){ $('scrim').classList.add('on'); resetThrow(); }
 function resetThrow(){ stopSpeak(); $('scrim').classList.remove('carding'); $('drumPanel').classList.remove('lift'); $('cardStage').classList.remove('show'); $('cardStage').innerHTML=''; $('noteBar').classList.remove('on');
   $('rollno').classList.remove('show'); $('bowlWrap').style.display='flex';
@@ -252,17 +260,27 @@ function doRoll(){ busy=true; const r=1+Math.floor(Math.random()*6);
 
 // ---- movement: dice steps, then auto arrow/snake ----
 function resolveMove(r){
-  if(!started){ if(r===6){ started=true; cur=0; walk(0,1,170,()=>afterLand(1)); }
-    else { toast('Выпало '+r+'. Нужна 6, чтобы родиться — переосмысли запрос и брось снова.'); busy=false; $('charge').textContent='ещё бросок…'; } return; }
+  if(!started){ if(r===6){ started=true; cur=0; toast('✦ Выпала 6 — душа входит в игру.'); setTimeout(()=>walk(0,1,200,()=>afterLand(1)), 900); }
+    else { toast('Выпало '+r+'. Шестёрка не пришла.'); $('scrim').classList.remove('on'); setTimeout(()=>{ busy=false; openRequest(true); }, 1100); } return; }
   let land=cur+r;
   if(land>72){ toast('Перелёт за 72 — ход сгорает, остаёшься на клетке '+cur+'.'); busy=false; $('charge').textContent='ещё бросок…'; return; }
   walk(cur,land,160,()=>afterLand(land));
 }
 function afterLand(land){ cur=land; placeAt(cur); hud(); const c=byId(land); const tgt=c.arrow_to||c.snake_to||null;
-  if(tgt){ const up=!!c.arrow_to; toast(up?'↑ Золотая стрела возносит тебя вверх!':'↓ Змея утягивает вниз — урок не пройден.');
-    const sl=up?[520,660,790]:[320,250,190]; sl.forEach((f,i)=>setTimeout(()=>tone(f,'sine',.5,.05),i*120));
-    setTimeout(()=>{ placeAt(tgt); setTimeout(()=>{ cur=tgt; hud(); reveal(tgt); },700); }, 480);
-  } else reveal(land);
+  if(tgt){ const up=!!c.arrow_to;
+    toast('Клетка '+land+' · '+c.name);                                   // 1) куда встал
+    setTimeout(()=>{ toast(up?'↑ Золотая стрела возносит тебя вверх!':'↓ Змея утягивает вниз — урок не пройден.');
+      const sl=up?[520,660,790]:[320,250,190]; sl.forEach((f,i)=>setTimeout(()=>tone(f,'sine',.5,.05),i*120));
+      setTimeout(()=>{ placeAt(tgt);                                        // 3) перелёт по стреле/змее
+        setTimeout(()=>{ cur=tgt; hud(); const t=byId(tgt); toast('Клетка '+tgt+' · '+t.name);
+          setTimeout(()=>reveal(tgt), 1200);                                // 4) пауза → барабан → карта
+        }, 900);
+      }, 1200);                                                             // 2) прочитать про стрелу/змею
+    }, 1200);
+  } else {
+    toast('Клетка '+land+' · '+c.name);                                     // прочитать, где встал
+    setTimeout(()=>reveal(land), 1400);                                     // пауза → барабан крутится → карта
+  }
 }
 function walk(from,to,step,done){ let p=from; const dir=to>=from?1:-1;
   const tick=()=>{ if(p===to){ done&&done(); return; } p+=dir; placeAt(p); tone(560+p*3,'sine',.1,.035); setTimeout(tick,step); }; tick(); }
