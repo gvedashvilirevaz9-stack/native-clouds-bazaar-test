@@ -325,26 +325,10 @@ export function createVoxelIsland(canvas, opts = {}) {
   }
   scene.add(waterMesh);
   const waterBase = Float32Array.from(waterMesh.instanceColor.array);
-  // ---------- floating slab: a water-blue rim (with the brand text) over a brown earth cone ----------
+  // ---------- floating slab: a water-blue rim over a brown earth cone ----------
   const EARTH = { dirt: 0x9c6a35, dirtDk: 0x7a4e26, rock: 0x6b4a30, rockDk: 0x503724 };
   const RIM = { c1: PAL.deep, c2: PAL.mid2, c3: PAL.deep2 };
   const RIMH = 9, DEEP = 34;
-  const FONT = { A: ["01110","10001","10001","11111","10001","10001","10001"], B: ["11110","10001","10001","11110","10001","10001","11110"], C: ["01111","10000","10000","10000","10000","10000","01111"], E: ["11111","10000","10000","11110","10000","10000","11111"], L: ["10000","10000","10000","10000","10000","10000","11111"], N: ["10001","11001","10101","10011","10001","10001","10001"], P: ["11110","10001","10001","11110","10000","10000","10000"], S: ["01111","10000","10000","01110","00001","00001","11110"], U: ["10001","10001","10001","10001","10001","10001","01110"], ".": ["00000","00000","00000","00000","00000","01100","01100"] };
-  const TXT = "SUNSPACE.CLUB", GW = 5, GH = 7, SP = 6, totalW = TXT.length * SP;
-  const textKeys = new Set(), textList = [];
-  function stamp(axis, dir, wall) {
-    let cur = -totalW / 2 + 0.5;
-    for (const ch of TXT) { const g = FONT[ch] || FONT['.'];
-      for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) if (g[r][c] === '1') {
-        const a = cur + c, y = -(r + 2); let x, z;
-        if (axis === 'x') { x = Math.round(dir * a); z = wall; } else { z = Math.round(dir * a); x = wall; }
-        const k = x + '|' + y + '|' + z; if (!textKeys.has(k)) { textKeys.add(k); textList.push([x, y, z]); }
-      }
-      cur += SP;
-    }
-  }
-  stamp('x', 1, G); stamp('x', -1, -G); stamp('z', -1, G); stamp('z', 1, -G);
-
   const earthV = new Vox();
   for (let i = 0; i <= DEEP; i++) {
     const yL = -(i + 1), cap = i >= DEEP - 1;
@@ -353,7 +337,6 @@ export function createVoxelIsland(canvas, opts = {}) {
       const m = Math.max(Math.abs(x), Math.abs(z));
       if (i < RIMH) { if (m !== G) continue; } else if (!cap && m <= r - 3) continue;
       if (i < RIMH) {
-        if (textKeys.has(x + '|' + yL + '|' + z)) continue;       // leave the text voxels blank
         const nz = (vnoise(x * 0.3 + i, z * 0.3) + 1) * 0.5;
         earthV.put(x, yL, z, nz < 0.4 ? RIM.c2 : (nz < 0.75 ? RIM.c1 : RIM.c3));
       } else {
@@ -367,10 +350,31 @@ export function createVoxelIsland(canvas, opts = {}) {
   }
   const earthMesh = earthV.mesh(new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x120a04, emissiveIntensity: 0.5 }), 0.05, rng);
   earthMesh.castShadow = false; scene.add(earthMesh);
-  // light-blue brand text glowing on the blue rim
-  const textV = new Vox(); for (const [x, y, z] of textList) textV.put(x, y, z, 0x9fe6ff);
-  const textMesh = textV.mesh(new THREE.MeshLambertMaterial({ color: 0x9fe6ff, emissive: 0x4aa8dc, emissiveIntensity: 0.95 }), 0, rng);
-  textMesh.castShadow = false; scene.add(textMesh);
+
+  // editable island name on the rim, drawn with a smooth display font (shared by all 4 sides)
+  const labelCv = document.createElement('canvas'); labelCv.width = 2048; labelCv.height = 180;
+  const labelTex = new THREE.CanvasTexture(labelCv); labelTex.colorSpace = THREE.SRGBColorSpace; labelTex.anisotropy = 8;
+  let labelText = 'sunspace.club';
+  function drawLabel(txt) {
+    labelText = String(txt == null ? labelText : txt).trim().slice(0, 30) || 'sunspace.club';
+    const g = labelCv.getContext('2d'); g.clearRect(0, 0, 2048, 180);
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    const T = labelText.toUpperCase(); let size = 128;
+    const setF = () => g.font = `italic 700 ${size}px "Trebuchet MS", "Gill Sans", "Segoe UI", Avenir, system-ui, sans-serif`;
+    setF(); while (g.measureText(T).width > 1960 && size > 28) { size -= 6; setF(); }
+    g.shadowColor = 'rgba(120,224,255,0.95)'; g.shadowBlur = 30;
+    const grd = g.createLinearGradient(0, 36, 0, 150); grd.addColorStop(0, '#f2fbff'); grd.addColorStop(1, '#88d2f4');
+    g.fillStyle = grd; g.fillText(T, 1024, 96);
+    g.shadowBlur = 0; g.lineWidth = 2.4; g.strokeStyle = 'rgba(255,255,255,0.4)'; g.strokeText(T, 1024, 96);
+    labelTex.needsUpdate = true;
+  }
+  drawLabel(labelText);
+  const labelMat = new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+  const labelGeo = new THREE.PlaneGeometry(2 * G + 1, 10.5);
+  const labelPlanes = [];
+  for (const [px, pz, ry] of [[0, G + 1.06, 0], [0, -(G + 1.06), Math.PI], [G + 1.06, 0, Math.PI / 2], [-(G + 1.06), 0, -Math.PI / 2]]) {
+    const pl = new THREE.Mesh(labelGeo, labelMat); pl.position.set(px, -4.3, pz); pl.rotation.y = ry; pl.renderOrder = 3; scene.add(pl); labelPlanes.push(pl);
+  }
 
   // ---------- edge waterfalls: discrete streams pouring off the rim, fading as they fall ----------
   const wfCv = document.createElement('canvas'); wfCv.width = 32; wfCv.height = 64;
@@ -441,8 +445,13 @@ export function createVoxelIsland(canvas, opts = {}) {
   let specksOn = true, blinkOn = true, needSpark = true;
   const staticSpark = []; { let g = 0; while (staticSpark.length < 130 && g < 5000) { g++; const j = (rng() * water.length) | 0; if (dist[I(water[j][0], water[j][1])] >= 3) staticSpark.push(j); } }
   const applyMode = (m) => { mode = m; const nrm = m === 'normal';
-    earthMesh.visible = nrm; textMesh.visible = nrm; mistPts.visible = nrm; for (const f of wfFalls) f.visible = nrm;
-    seaPlane.visible = m === 'sea'; seaFoam.visible = m === 'sea' && specksOn; scene.background = m === 'flat' ? seaTex : (m === 'sea' ? seaFarCol : bgTex); };
+    earthMesh.visible = nrm; mistPts.visible = nrm; for (const pl of labelPlanes) pl.visible = nrm; for (const f of wfFalls) f.visible = nrm;
+    seaPlane.visible = m === 'sea'; seaFoam.visible = m === 'sea' && specksOn; scene.background = m === 'flat' ? (bgImgTex || seaTex) : (m === 'sea' ? seaFarCol : bgTex); };
+  let bgImgTex = null;
+  function setBackgroundImage(url) {
+    if (!url) { if (bgImgTex) { bgImgTex.dispose?.(); bgImgTex = null; } if (mode === 'flat') scene.background = seaTex; return; }
+    new THREE.TextureLoader().setCrossOrigin('anonymous').load(url, (tex) => { tex.colorSpace = THREE.SRGBColorSpace; if (bgImgTex) bgImgTex.dispose?.(); bgImgTex = tex; if (mode === 'flat') scene.background = tex; });
+  }
 
   // ---------- ship model ----------
   function buildShip(flagCol = PAL.red) {
@@ -727,6 +736,11 @@ export function createVoxelIsland(canvas, opts = {}) {
     setInfinite(on) { applyMode((on == null ? mode !== 'flat' : !!on) ? 'flat' : 'normal'); return mode === 'flat'; },
     setInfiniteSea(on) { applyMode((on == null ? mode !== 'sea' : !!on) ? 'sea' : 'normal'); return mode === 'sea'; },
     setInstant(on) { instantMode = on == null ? !instantMode : !!on; return instantMode; },
+    setMode(name) { applyMode(name === 'background' || name === 'flat' ? 'flat' : name === 'sea' ? 'sea' : 'normal'); return mode; },
+    getMode: () => mode,
+    setLabel(t) { drawLabel(t); return labelText; },
+    getLabel: () => labelText,
+    setBackgroundImage(url) { setBackgroundImage(url); return !!url; },
     setSpecks(on) { specksOn = on == null ? !specksOn : !!on; needSpark = true; seaFoam.visible = mode === 'sea' && specksOn; return specksOn; },
     setBlink(on) { blinkOn = on == null ? !blinkOn : !!on; needSpark = true; return blinkOn; },
     getScene: () => ({ name: 'Воксельный остров', is3D: true, voxels: land.m.size, water: water.length }),

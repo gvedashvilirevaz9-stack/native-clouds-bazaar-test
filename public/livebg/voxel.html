@@ -22,7 +22,9 @@
   <div class="row" style="justify-content:space-between;margin:0"><h1>Воксельный остров</h1><button class="btn" id="hide">→</button></div>
   <div class="sub">Тащи мышью — вращать, колесо — зум</div>
   <div class="sec"><b>Вид</b><div class="seg" id="view"><button data-v="iso">Изометрия</button><button data-v="top">Сверху</button><button data-v="side">Сбоку</button><button data-v="rot">Вращать</button></div>
-    <div class="row"><div class="seg" id="mode"><button data-v="flat">∞ Доска</button><button data-v="sea">∞ Бесконечное море</button></div></div></div>
+    <div class="row"><div class="seg" id="mode"><button data-v="island" aria-pressed="true">🪐 Остров</button><button data-v="background">🖼 Фон</button><button data-v="sea">🌊 Море</button></div></div>
+    <div class="row"><input type="text" id="islandName" placeholder="Название острова"><button class="btn" id="nameGo">OK</button></div>
+    <div class="row"><input type="text" id="bgUrl" placeholder="Фон — ссылка на картинку"><button class="btn" id="bgGo">OK</button></div></div>
   <div class="sec"><b>Блики на воде</b><div class="seg" id="spark"><button data-v="toggle" aria-pressed="true">Блики</button><button data-v="blink" aria-pressed="true">Моргание</button></div></div>
   <div class="sec"><b>Погода</b><div class="seg" id="weather">
     <button data-v="live">Живая</button><button data-v="clear">Ясно</button><button data-v="partly">Облачно</button>
@@ -57,9 +59,13 @@ setInterval(()=>{const t=bg.getTime();if(tMode!=='fixed')$('hour').value=t.hour;
 let by='airship'; seg('by','airship');
 let rot=false; seg('view','iso');
 $('view').onclick=e=>{const v=e.target.dataset.v;if(!v)return;if(v==='rot'){rot=!rot;bg.setAutoRotate(rot);e.target.setAttribute('aria-pressed',String(rot));return;}bg.setView(v);$('view').querySelectorAll('button').forEach(b=>{if(b.dataset.v!=='rot')b.setAttribute('aria-pressed',String(b.dataset.v===v));});}; $('by').onclick=e=>{const v=e.target.dataset.v;if(v){by=v;seg('by',v);}};
-let inf=false,sea=false; $('mode').onclick=e=>{const v=e.target.dataset.v; if(v==='flat'){inf=bg.setInfinite();sea=false;} else if(v==='sea'){sea=bg.setInfiniteSea();inf=false;} else return;
-  $('mode').querySelector('[data-v=flat]').setAttribute('aria-pressed',String(inf));
-  $('mode').querySelector('[data-v=sea]').setAttribute('aria-pressed',String(sea));};
+const setModeBtn=v=>$('mode').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
+$('mode').onclick=e=>{const v=e.target.dataset.v;if(!v)return; bg.setMode(v); setModeBtn(v);};
+$('islandName').placeholder='Название (сейчас: '+bg.getLabel()+')';
+$('nameGo').onclick=()=>{const t=$('islandName').value.trim();if(t){bg.setLabel(t);bg.setMode('island');setModeBtn('island');$('islandName').placeholder='Название (сейчас: '+bg.getLabel()+')';$('islandName').value='';}};
+$('islandName').addEventListener('keydown',e=>{if(e.key==='Enter')$('nameGo').click();});
+$('bgGo').onclick=()=>{const u=$('bgUrl').value.trim();bg.setBackgroundImage(u);bg.setMode('background');setModeBtn('background');};
+$('bgUrl').addEventListener('keydown',e=>{if(e.key==='Enter')$('bgGo').click();});
 let spk=true,blk=true; $('spark').onclick=e=>{const v=e.target.dataset.v;
   if(v==='toggle') spk=bg.setSpecks(); else if(v==='blink') blk=bg.setBlink(); else return;
   $('spark').querySelector('[data-v=toggle]').setAttribute('aria-pressed',String(spk));
