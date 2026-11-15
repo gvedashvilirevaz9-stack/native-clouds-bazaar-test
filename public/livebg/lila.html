@@ -24,7 +24,7 @@
   /* HUD + play */
   #hud{position:fixed;left:18px;top:16px;z-index:20;background:var(--glass);backdrop-filter:blur(12px);border:1px solid rgba(232,197,106,.3);border-radius:14px;padding:9px 14px;font-size:13px;letter-spacing:.02em;box-shadow:0 8px 30px rgba(0,0,0,.4)}
   #hud b{color:var(--gold)}
-  #play{position:fixed;left:50%;top:6vh;transform:translateX(-50%);z-index:20;cursor:pointer;
+  #play{position:fixed;left:50%;top:2.4vh;transform:translateX(-50%);z-index:20;cursor:pointer;
     background:linear-gradient(180deg,rgba(40,30,16,.85),rgba(18,13,6,.9));border:1px solid var(--gold2);color:var(--gold);
     padding:13px 30px;border-radius:40px;font-size:17px;letter-spacing:.06em;box-shadow:0 0 0 1px rgba(232,197,106,.25),0 10px 40px rgba(0,0,0,.5);transition:transform .2s,box-shadow .2s}
   #play:hover{transform:translateX(-50%) translateY(-2px);box-shadow:0 0 24px rgba(232,197,106,.4),0 14px 46px rgba(0,0,0,.6)}
@@ -43,6 +43,7 @@
   #bowlWrap{position:absolute;left:50%;bottom:6.5vh;transform:translateX(-50%);width:min(330px,26vw);aspect-ratio:16/9;background:url('lila/bowl.webp') center bottom/contain no-repeat;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;filter:drop-shadow(0 14px 26px rgba(0,0,0,.55))}
   #bowlWrap::before{content:'';position:absolute;left:50%;bottom:4%;transform:translateX(-50%);width:62%;height:24%;border-radius:50%;background:radial-gradient(ellipse,rgba(120,210,255,.5),transparent 70%);filter:blur(6px);z-index:-1}
   #scrim.choosing #bowlWrap{opacity:0;pointer-events:none;transition:opacity .3s}
+  #scrim.carding::after{content:'';position:fixed;inset:0;background:rgba(2,3,10,.58);z-index:40;pointer-events:none}
   #dice{display:flex;gap:5px;margin-top:-28%;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
   .die{width:clamp(26px,3.4vw,42px);aspect-ratio:1;border-radius:22%;background:linear-gradient(150deg,#f7e7ad,#c89b3e);border:1px solid #7c5a1e;position:relative;box-shadow:inset 0 2px 4px rgba(255,255,255,.5),inset 0 -3px 6px rgba(90,60,10,.5)}
   .die i{position:absolute;width:19%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 35%,#3a2a08,#120c02);transform:translate(-50%,-50%)}
@@ -58,16 +59,20 @@
   .cback{width:100%;aspect-ratio:909/1424;border-radius:6px;flex:0 0 auto;
     background:repeating-linear-gradient(45deg,#2a1c40,#2a1c40 6px,#34234f 6px,#34234f 12px);border:1px solid var(--gold2);box-shadow:inset 0 0 0 2px rgba(232,197,106,.25)}
   /* a rendered card */
-  .card{position:relative;aspect-ratio:909/1424;background:url('lila/card-frame.webp') center/100% 100% no-repeat}
-  .card .art{position:absolute;left:8%;top:8.1%;width:84%;height:51.9%;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center}
-  .card .art .no{font-size:48%;color:rgba(255,255,255,.92);text-shadow:0 2px 10px rgba(0,0,0,.6);font-weight:bold}
-  .card .nm{position:absolute;left:12%;top:62%;width:76%;height:9%;display:flex;align-items:center;justify-content:center;text-align:center;color:#3a2a10;font-size:34%;line-height:1.05;font-weight:bold}
-  .card .pr{position:absolute;left:13%;top:72%;width:74%;height:24%;overflow:hidden;text-align:center;color:#4a371a;font-size:26%;line-height:1.25}
+  .card{position:relative;aspect-ratio:909/1424;height:100%;background:url('lila/card-frame.webp') center/100% 100% no-repeat;container-type:size}
+  .card .art{position:absolute;left:7.4%;top:7.4%;width:85.2%;height:53.6%;border-radius:1.6cqw;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#1a1226}
+  .card .art .pic{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .card .art .no{position:relative;font-size:7cqw;color:rgba(255,255,255,.9);text-shadow:0 2px 10px rgba(0,0,0,.6);font-weight:bold}
+  /* rubber text container: scales with the card, padded off the ornament */
+  .card .txt{position:absolute;left:13%;top:62.5%;width:74%;height:32%;padding:2.6cqh 3.4cqw;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1.5cqh;text-align:center;overflow:hidden}
+  .card .txt .nm{font-size:5.4cqw;font-weight:bold;color:#36270f;line-height:1.08}
+  .card .txt .pr{font-size:4.3cqw;color:#463314;line-height:1.26}
   /* card stage reveal */
-  #cardStage{position:absolute;left:50%;top:47%;transform:translate(-50%,-50%) scale(.2);opacity:0;width:15.5%;z-index:4;transition:transform .5s cubic-bezier(.3,1.3,.4,1),opacity .4s;cursor:pointer}
-  #cardStage.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-  #cardStage.show:hover{transform:translate(-50%,-50%) scale(2);z-index:20}
-  #cardStage .hint{position:absolute;left:0;right:0;bottom:-24px;text-align:center;color:var(--gold);font-size:11px;letter-spacing:.04em;animation:pulse 1.4s ease-in-out infinite}
+  /* drawn card opens near full-screen, above the bottom dock */
+  #cardStage{position:fixed;left:50%;top:2.2vh;transform:translateX(-50%) scale(.25);transform-origin:top center;opacity:0;height:min(87vh,calc(100vh - 10vh));width:auto;aspect-ratio:909/1424;z-index:45;transition:transform .55s cubic-bezier(.28,1.2,.4,1),opacity .4s;cursor:pointer;pointer-events:none}
+  #cardStage.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
+  #cardStage .hint{position:absolute;left:0;right:0;bottom:-3vh;text-align:center;color:var(--gold);font-size:13px;letter-spacing:.04em;animation:pulse 1.4s ease-in-out infinite}
+  #cardStage .spk{position:absolute;right:6%;top:3%;width:7%;aspect-ratio:1;border-radius:50%;border:1px solid rgba(232,197,106,.6);background:rgba(20,14,8,.7);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:3cqw;cursor:pointer;z-index:3}
   @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
   /* top plaque after accept */
   #plaque{position:fixed;left:50%;top:14px;transform:translateX(-50%) translateY(-120%);z-index:31;transition:transform .5s cubic-bezier(.4,0,.2,1);
@@ -84,7 +89,9 @@
   .choice .tag{position:absolute;left:8%;top:8.1%;width:84%;height:51.9%;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6%}
   .choice .tag .ic{font-size:min(5vw,52px)}
   .choice .tag .k{font-size:min(1.5vw,15px);letter-spacing:.08em;text-transform:uppercase;color:#ffe9b0;text-shadow:0 1px 6px rgba(0,0,0,.7)}
-  .choice .lbl{position:absolute;left:13%;top:63%;width:74%;height:33%;overflow:hidden;text-align:center;color:#3f2d12;font-size:min(1.45vw,15px);line-height:1.25;display:flex;align-items:center;justify-content:center}
+  .choice .lbl{position:absolute;left:13%;top:63%;width:74%;height:33%;overflow:hidden;text-align:center;color:#3f2d12;font-size:min(1.7vw,17px);line-height:1.28;display:flex;align-items:center;justify-content:center;padding:0 2%}
+  .choice .spk{position:absolute;right:8%;top:10%;width:13%;aspect-ratio:1;border-radius:50%;border:1px solid rgba(232,197,106,.6);background:rgba(20,14,8,.62);color:#ffe9b0;display:flex;align-items:center;justify-content:center;font-size:min(2.1vw,20px);cursor:pointer;z-index:4;transition:transform .15s,background .15s}
+  .choice .spk:hover{transform:scale(1.12);background:rgba(40,28,12,.85)}
   /* toast */
   #toast{position:fixed;left:50%;bottom:17vh;transform:translateX(-50%) translateY(20px);z-index:40;opacity:0;pointer-events:none;
     background:linear-gradient(180deg,rgba(26,20,10,.92),rgba(12,9,4,.95));border:1px solid rgba(232,197,106,.5);color:#f5ead0;
@@ -108,9 +115,9 @@
     <p class="mtitle" id="minstr">Зажми чашу с камнями — отпусти — и прими судьбу</p>
     <div id="drumWrap">
       <div id="reel"><div id="strip"></div></div>
-      <div id="cardStage"></div>
     </div>
   </div>
+  <div id="cardStage"></div>
   <div id="bowlWrap" title="Зажми и отпусти">
     <div id="dice"></div>
     <div id="rollno"></div>
@@ -153,21 +160,33 @@ const DICE=[];
 // ---- audio (мягкие сигналы) ----
 let AC; function tone(f,t,dur,g){ try{AC=AC||new (window.AudioContext||window.webkitAudioContext)(); const o=AC.createOscillator(),a=AC.createGain(); o.type=t||'sine'; o.frequency.value=f; a.gain.value=0; o.connect(a); a.connect(AC.destination); const n=AC.currentTime; a.gain.linearRampToValueAtTime(g||.06,n+.02); a.gain.exponentialRampToValueAtTime(.0001,n+(dur||.3)); o.start(n); o.stop(n+(dur||.3)); }catch(e){} }
 
-// ---- card render ----
+// ---- text-to-speech (вшито в карту, вручную по кнопке) ----
+let VOICES=[]; function loadVoices(){ try{VOICES=speechSynthesis.getVoices()||[]}catch(e){} }
+try{ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }catch(e){}
+function ruVoice(){ return VOICES.find(v=>/^ru/i.test(v.lang))||VOICES.find(v=>/russian/i.test(v.name))||null; }
+function speak(t){ try{ if(!t)return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang='ru-RU'; const v=ruVoice(); if(v)u.voice=v; u.rate=1; u.pitch=1; speechSynthesis.speak(u);}catch(e){} }
+function stopSpeak(){ try{speechSynthesis.cancel()}catch(e){} }
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// клики по динамику — отдельно, не выбирают карту
+document.addEventListener('click',e=>{ const b=e.target.closest('.spk'); if(b){ e.stopPropagation(); e.preventDefault(); speak(b.dataset.say||''); } },true);
+
+// ---- card render (картинка подставляется из lila/cards/<id>.jpg, если есть) ----
 function renderCard(c){ const hue=PLAN_HUE[c.plan-1];
   return `<div class="card">
-    <div class="art" style="background:radial-gradient(circle at 50% 42%,hsl(${hue} 70% 55%),hsl(${hue} 60% 30%) 60%,hsl(${hue} 70% 14%) 100%)">
+    <button class="spk" title="Озвучить" data-say="${esc(c.name+'. '+c.prompt)}">🔊</button>
+    <div class="art" style="background:radial-gradient(circle at 50% 42%,hsl(${hue} 70% 52%),hsl(${hue} 60% 28%) 60%,hsl(${hue} 70% 12%) 100%)">
+      <img class="pic" src="lila/cards/${c.id}.jpg" alt="" onerror="this.remove()">
       <div class="no">№${c.id}</div></div>
-    <div class="nm">${c.name}</div>
-    <div class="pr">${c.prompt}</div></div>`; }
+    <div class="txt"><div class="nm">${c.name}</div><div class="pr">${c.prompt}</div></div>
+  </div>`; }
 
 // ---- throw flow ----
 let charging=false, chargeT=0;
 function openModal(){ $('scrim').classList.add('on'); resetThrow(); }
-function resetThrow(){ $('scrim').classList.remove('choosing'); $('drumPanel').classList.remove('lift'); $('cardStage').classList.remove('show'); $('cardStage').innerHTML='';
+function resetThrow(){ stopSpeak(); $('scrim').classList.remove('choosing'); $('scrim').classList.remove('carding'); $('drumPanel').classList.remove('lift'); $('cardStage').classList.remove('show'); $('cardStage').innerHTML='';
   $('rollno').classList.remove('show'); $('charge').textContent=started?'зажми чашу…':'нужна 6, чтобы воплотиться — зажми чашу…';
   $('minstr').textContent='Зажми чашу с камнями — отпусти — и прими судьбу'; }
-function closeAll(){ $('scrim').classList.remove('on'); $('plaque').classList.remove('on'); $('fan').classList.remove('on'); }
+function closeAll(){ stopSpeak(); $('cardStage').classList.remove('show'); $('scrim').classList.remove('carding'); $('scrim').classList.remove('carding'); $('scrim').classList.remove('on'); $('plaque').classList.remove('on'); $('fan').classList.remove('on'); }
 
 $('play').onclick=openModal; $('close').onclick=closeAll;
 $('scrim').onclick=e=>{ if(e.target===$('scrim')) closeAll(); };
@@ -198,8 +217,8 @@ function spinTo(S){
   strip.style.transition='transform 1.55s cubic-bezier(.1,.62,.08,1)';
   strip.style.transform=`translateY(${-(N-2)*itemH}px)`;
   setTimeout(()=>{ strip.innerHTML='';
-    const cs=$('cardStage'); cs.innerHTML=renderCard(byId(S))+'<div class="hint">наведи — увеличить · нажми — принять</div>';
-    cs.classList.add('show'); tone(660,'sine',.5,.07);
+    const cs=$('cardStage'); cs.innerHTML=renderCard(byId(S))+'<div class="hint">🔊 послушать · нажми карту — принять вызов</div>';
+    cs.classList.add('show'); $('scrim').classList.add('carding'); tone(660,'sine',.5,.07);
     cs.onclick=()=>acceptCard(S);
   }, 1600);
 }
@@ -207,13 +226,14 @@ function spinTo(S){
 // ---- accept → plaque + 3 choices ----
 const ICON={ego:'🜨',stagnation:'∞',awareness:'✦'}, KLABEL={ego:'Эго',stagnation:'Застой',awareness:'Осознание'};
 function acceptCard(S){ const c=byId(S); cur=S; hud();
+  stopSpeak(); $('cardStage').classList.remove('show'); $('scrim').classList.remove('carding');
   if(c.type==='win'){ winGame(); return; }
   $('drumPanel').classList.add('lift'); $('scrim').classList.add('choosing');
   $('pqN').textContent=c.id+'. '+c.name; $('pqP').textContent=c.prompt; $('plaque').classList.add('on');
   const fan=$('fan'); fan.innerHTML='';
   const CBG={ego:'radial-gradient(circle at 50% 38%,#c0453f,#611616 62%,#2c0a0a)',stagnation:'radial-gradient(circle at 50% 38%,#7b828f,#333843 62%,#1a1d24)',awareness:'radial-gradient(circle at 50% 38%,#f0d079,#9c7320 60%,#3f2d0a)'};
   c.choices.forEach(ch=>{ const el=document.createElement('div'); el.className='choice';
-    el.innerHTML=`<div class="tag" style="background:${CBG[ch.id]}"><div class="ic">${ICON[ch.id]}</div><div class="k">${KLABEL[ch.id]}</div></div><div class="lbl">${ch.label}</div>`;
+    el.innerHTML=`<button class="spk" title="Озвучить" data-say="${esc(ch.label)}">🔊</button><div class="tag" style="background:${CBG[ch.id]}"><div class="ic">${ICON[ch.id]}</div><div class="k">${KLABEL[ch.id]}</div></div><div class="lbl">${ch.label}</div>`;
     el.onclick=()=>chooseFate(ch); fan.appendChild(el); });
   setTimeout(()=>fan.classList.add('on'),80); tone(440,'sine',.3,.05);
 }
