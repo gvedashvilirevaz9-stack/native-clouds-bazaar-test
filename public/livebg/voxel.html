@@ -82,6 +82,7 @@ bg.on('city',c=>{ try{ if(c.custom)localStorage.setItem(CK,JSON.stringify(bg.get
 $('cityApply').onclick=()=>{const v=$('cityJson').value.trim(); if(!v){$('cityNote').textContent='Вставь JSON со спекой';return;} const r=bg.setCity(v); $('cityNote').textContent=r.ok?('✓ построено объектов: '+r.items):('Ошибка: '+r.error);};
 $('cityReset').onclick=()=>{bg.resetCity(); $('cityJson').value=''; $('cityNote').textContent='Вернул базовый город';};
 $('hide').onclick=()=>$('panel').classList.add('min'); $('show').onclick=()=>$('panel').classList.remove('min');
+if(new URLSearchParams(location.search).has('embed'))$('panel').classList.add('min');
 
 // ---- clickable marker cubes: left-click runs, right-click configures (ribbon + All catalog by category) ----
 const MK='lw.markers.v1';
