@@ -425,7 +425,7 @@ export function createVoxelIsland(canvas, opts = {}) {
   seaFoam.rotation.x = -Math.PI / 2; seaFoam.position.y = 0.452; seaFoam.visible = false; scene.add(seaFoam);
 
   // ---------- clickable yellow marker cubes (island palms + flags) with configurable actions ----------
-  const markerGeo = new THREE.BoxGeometry(1.7, 1.7, 1.7);
+  const markerGeo = new THREE.BoxGeometry(2.1, 2.1, 2.1);
   const markerSpots = [];
   for (const [ix, iz] of ISLETS.map((a) => [a[0], a[1]])) { const y = hAt(ix, iz); if (y) markerSpots.push([ix + 0.5, y + 7.5, iz + 0.5, 'palm']); }
   { const y = hAt(-22, -18); markerSpots.push([-17.5, (y || 4) + 15.5, -15.5, 'flag']); }
@@ -615,19 +615,28 @@ export function createVoxelIsland(canvas, opts = {}) {
 
   // drag to rotate, wheel to zoom
   let drag = null; const raycaster = new THREE.Raycaster();
-  canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, az: S.viewTarget.az, el: S.viewTarget.el, moved: 0 }; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, az: S.viewTarget.az, el: S.viewTarget.el, moved: 0, hit: hitMarker(e.clientX, e.clientY) }; canvas.setPointerCapture(e.pointerId); });
   canvas.addEventListener('pointermove', (e) => { if (!drag) return; drag.moved += Math.abs(e.movementX) + Math.abs(e.movementY); S.viewTarget.az = drag.az - (e.clientX - drag.x) * 0.006; S.viewTarget.el = clamp(drag.el + (e.clientY - drag.y) * 0.004, 0.2, 1.45); });
-  canvas.addEventListener('pointerup', (e) => {
-    const d = drag; drag = null; if (!d || d.moved > 6) return;                     // a click, not a drag → test the marker cubes
+  const hitMarker = (cx, cy) => {
     const rect = canvas.getBoundingClientRect();
-    raycaster.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), cam);
-    const hits = raycaster.intersectObjects(markers.map((m) => m.mesh), false);
-    if (hits[0]) { const mk = markers.find((m) => m.mesh === hits[0].object); emit('marker', { id: mk.id, kind: mk.kind, screen: [e.clientX, e.clientY], world: [mk.pos.x, mk.pos.y, mk.pos.z] }); }
+    raycaster.setFromCamera(new THREE.Vector2(((cx - rect.left) / rect.width) * 2 - 1, -((cy - rect.top) / rect.height) * 2 + 1), cam);
+    const h = raycaster.intersectObjects(markers.map((m) => m.mesh), false)[0];
+    return h ? markers.find((m) => m.mesh === h.object) : null;
+  };
+  canvas.addEventListener('pointerup', (e) => {                                     // left click = run
+    const d = drag; drag = null; if (!d || d.moved > 6 || e.button !== 0) return;
+    const mk = d.hit || hitMarker(e.clientX, e.clientY);                            // use the cube grabbed at press time
+    if (mk) emit('marker', { id: mk.id, kind: mk.kind, screen: [e.clientX, e.clientY], world: [mk.pos.x, mk.pos.y, mk.pos.z], button: 'left' });
+  });
+  canvas.addEventListener('contextmenu', (e) => {                                   // right click = configure
+    e.preventDefault();
+    const mk = (drag && drag.hit) || hitMarker(e.clientX, e.clientY);
+    if (mk) emit('marker', { id: mk.id, kind: mk.kind, screen: [e.clientX, e.clientY], world: [mk.pos.x, mk.pos.y, mk.pos.z], button: 'right' });
   });
   // hover over a marker cube → announce which one so the page can show its tooltip
   let hoverId = null;
   canvas.addEventListener('pointermove', (e) => {
-    if (drag) { if (hoverId) { hoverId = null; canvas.style.cursor = ''; emit('markerHover', { id: null }); } return; }
+    if (drag) return;                                                               // leave hover/scale untouched while pressing or dragging
     const rect = canvas.getBoundingClientRect();
     raycaster.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), cam);
     const hit = raycaster.intersectObjects(markers.map((m) => m.mesh), false)[0];
@@ -699,6 +708,7 @@ export function createVoxelIsland(canvas, opts = {}) {
   const api = {
     is3D: true, scene, renderer, camera: cam,
     getMarkers: () => markers.map((m) => ({ id: m.id, kind: m.kind, world: [m.pos.x, m.pos.y, m.pos.z] })),
+    _hitAt: (cx, cy) => { const mk = hitMarker(cx, cy); return mk ? mk.id : null; },
     deliver, on(e, f) { (listeners[e] ||= []).push(f); return () => { listeners[e] = listeners[e].filter((x) => x !== f); }; },
     setWeather, refreshWeather, getWeather: () => ({ mode: S.weatherMode, ...(weather() || {}), location: S.location }),
     async setLocation(loc) { S.location = typeof loc === 'string' ? await geocode(loc) : loc; return refreshWeather(); },
