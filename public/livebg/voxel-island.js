@@ -63,7 +63,7 @@ export function createVoxelIsland(canvas, opts = {}) {
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   canvas.style.imageRendering = 'pixelated';
   const scene = new THREE.Scene();
-  const cam = new THREE.OrthographicCamera(-30, 30, 20, -20, 0.1, 1200);
+  const cam = new THREE.OrthographicCamera(-30, 30, 20, -20, 0.1, 16000);
   const S = {
     t: 0, dt: 0, raf: 0, last: 0, W: 1, H: 1,
     view: { az: Math.PI / 4, el: 0.72, zoom: 36 }, viewTarget: { az: Math.PI / 4, el: 0.72, zoom: 36 }, autoRotate: false,
@@ -585,7 +585,7 @@ export function createVoxelIsland(canvas, opts = {}) {
 
   // ---------- camera ----------
   function applyCamera() {
-    const v = S.view, tgt = new THREE.Vector3(1, 3, 2), r = 200;
+    const v = S.view, tgt = new THREE.Vector3(1, 3, 2), r = 4500;
     cam.position.set(tgt.x + Math.cos(v.el) * Math.sin(v.az) * r, tgt.y + Math.sin(v.el) * r, tgt.z + Math.cos(v.el) * Math.cos(v.az) * r);
     cam.up.set(0, 1, 0); cam.lookAt(tgt);
     const asp = S.W / S.H, f = v.zoom;
