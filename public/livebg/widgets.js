@@ -40,6 +40,9 @@ const CSS = `
 .lw-stats{display:flex;gap:calc(16px*var(--s));margin-top:calc(8px*var(--s));font-size:calc(12px*var(--s))}
 .lw-stats span{display:flex;flex-direction:column;opacity:.9}.lw-stats b{font-size:calc(14px*var(--s));font-weight:600}
 .lw-foot{font-size:calc(11px*var(--s));opacity:.7;margin-top:calc(8px*var(--s))}
+.lw-resize{position:absolute;right:-3px;bottom:-3px;width:18px;height:18px;cursor:nwse-resize;opacity:0;transition:opacity .2s;touch-action:none;
+  border-right:3px solid rgba(255,255,255,.85);border-bottom:3px solid rgba(255,255,255,.85);border-bottom-right-radius:9px;filter:drop-shadow(0 1px 3px rgba(8,18,36,.6))}
+.lw:hover .lw-resize,.lw.sizing .lw-resize{opacity:.9}
 `;
 
 const WX = { 0: ['☀️', 'ясно'], 1: ['🌤️', 'почти ясно'], 2: ['⛅', 'переменная облачность'], 3: ['☁️', 'пасмурно'], 45: ['🌫️', 'туман'], 48: ['🌫️', 'туман'],
@@ -118,11 +121,14 @@ export function attachWidgets(bg, root = document.body) {
   function create(rec, from) {
     const kind = KINDS[rec.kind]; if (!kind) return null;
     const el = document.createElement('div'); el.className = 'lw'; el.dataset.kind = rec.kind;
-    el.style.setProperty('--s', WIDGET_SCALE[rec.size] || 1);
+    if (rec.scale == null) rec.scale = WIDGET_SCALE[rec.size] || 1;
+    el.style.setProperty('--s', rec.scale);
     el.style.left = rec.x * innerWidth + 'px'; el.style.top = rec.y * innerHeight + 'px';
     const body = document.createElement('div'); const stop = kind(body, rec.data || {});
     const bar = document.createElement('div'); bar.className = 'lw-bar'; bar.innerHTML = '<span class="lw-grip">⠿</span><button class="lw-x" title="Убрать">×</button>';
-    el.append(bar, body); layer.append(el);
+    const grip = document.createElement('div'); grip.className = 'lw-resize'; grip.title = 'Потяни, чтобы изменить размер';
+    el.append(bar, body, grip); layer.append(el);
+    resize(el, rec, grip);
     const id = rec.id || seq++; rec.id = id; items.set(id, { el, rec, stop, born: Date.now() });
     if (rec.row && rec.col != null) slots.set(rec.row + ':' + rec.col, id);
     bar.querySelector('.lw-x').onclick = (e) => { e.stopPropagation(); remove(id); };
@@ -141,7 +147,7 @@ export function attachWidgets(bg, root = document.body) {
   }
   function drag(el, rec) {
     el.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('.lw-x') || e.button !== 0) return;
+      if (e.target.closest('.lw-x') || e.target.closest('.lw-resize') || e.button !== 0) return;
       const sx = e.clientX, sy = e.clientY, x0 = parseFloat(el.style.left), y0 = parseFloat(el.style.top);
       el.setPointerCapture(e.pointerId); el.classList.add('drag');
       const mv = (ev) => { el.style.left = x0 + ev.clientX - sx + 'px'; el.style.top = y0 + ev.clientY - sy + 'px'; };
@@ -153,6 +159,18 @@ export function attachWidgets(bg, root = document.body) {
       el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up);
     });
   }
+  function resize(el, rec, handle) {
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const d0 = Math.max(20, Math.hypot(e.clientX - cx, e.clientY - cy)), s0 = rec.scale || 1;
+      handle.setPointerCapture(e.pointerId); el.classList.add('sizing');
+      const mv = (ev) => { const d = Math.hypot(ev.clientX - cx, ev.clientY - cy); rec.scale = clamp(s0 * d / d0, 0.35, 8); el.style.setProperty('--s', rec.scale); };
+      const up = () => { el.classList.remove('sizing'); handle.removeEventListener('pointermove', mv); handle.removeEventListener('pointerup', up); persist(); };
+      handle.addEventListener('pointermove', mv); handle.addEventListener('pointerup', up);
+    });
+  }
   function remove(id) { const it = items.get(id); if (!it) return; it.stop?.(); it.el.remove(); items.delete(id); if (it.rec.row) free(it.rec.row, it.rec.col, id); persist(); }
   function free(row, col, id) { const k = row + ':' + col; if (slots.get(k) === id) slots.delete(k); }
   function moveTo(id, row, col) {
@@ -161,7 +179,7 @@ export function attachWidgets(bg, root = document.body) {
     it.el.animate([{ left: it.el.style.left, top: it.el.style.top }, { left: COLS[col] * innerWidth + 'px', top: ROWS[row] * innerHeight + 'px' }], { duration: 600, easing: 'ease-in-out' });
     it.el.style.left = COLS[col] * innerWidth + 'px'; it.el.style.top = ROWS[row] * innerHeight + 'px';
   }
-  function persist() { save([...items.values()].map(({ rec }) => ({ kind: rec.kind, data: rec.data || null, size: rec.size, x: rec.x, y: rec.y, row: rec.row || null, col: rec.col ?? null }))); }
+  function persist() { save([...items.values()].map(({ rec }) => ({ kind: rec.kind, data: rec.data || null, size: rec.size, scale: rec.scale, x: rec.x, y: rec.y, row: rec.row || null, col: rec.col ?? null }))); }
 
   // restore widgets the person kept from last time (no courier needed)
   for (const r of load()) create({ ...r });

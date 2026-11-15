@@ -425,9 +425,12 @@ export function createVoxelIsland(canvas, opts = {}) {
   seaFoam.rotation.x = -Math.PI / 2; seaFoam.position.y = 0.452; seaFoam.visible = false; scene.add(seaFoam);
 
   let mode = 'normal';
+  // white water highlights: can blink, stay static, or be off
+  let specksOn = true, blinkOn = true, needSpark = true;
+  const staticSpark = []; { let g = 0; while (staticSpark.length < 130 && g < 5000) { g++; const j = (rng() * water.length) | 0; if (dist[I(water[j][0], water[j][1])] >= 3) staticSpark.push(j); } }
   const applyMode = (m) => { mode = m; const nrm = m === 'normal';
     earthMesh.visible = nrm; textMesh.visible = nrm; mistPts.visible = nrm; for (const f of wfFalls) f.visible = nrm;
-    seaPlane.visible = m === 'sea'; seaFoam.visible = m === 'sea'; scene.background = m === 'flat' ? seaTex : (m === 'sea' ? seaFarCol : bgTex); };
+    seaPlane.visible = m === 'sea'; seaFoam.visible = m === 'sea' && specksOn; scene.background = m === 'flat' ? seaTex : (m === 'sea' ? seaFarCol : bgTex); };
 
   // ---------- ship model ----------
   function buildShip(flagCol = PAL.red) {
@@ -621,12 +624,17 @@ export function createVoxelIsland(canvas, opts = {}) {
     S.view.az += (S.viewTarget.az - S.view.az) * k; S.view.el += (S.viewTarget.el - S.view.el) * k; S.view.zoom += (S.viewTarget.zoom - S.view.zoom) * k;
     applyCamera();
 
-    // water sparkle: a few tiles flash white each tick
+    // water sparkle: white highlights that can blink, stay static, or be off
     sparkT += dt;
-    if (sparkT > 0.34) {
-      sparkT = 0; wc.set(waterBase);
-      const n = 130;
-      for (let i = 0; i < n; i++) { const j = (Math.random() * water.length) | 0; const d = dist[I(water[j][0], water[j][1])]; if (d < 3) continue; wc[j * 3] = wc[j * 3 + 1] = wc[j * 3 + 2] = 0.78; }
+    if (specksOn && blinkOn) {
+      if (sparkT > 0.34) {
+        sparkT = 0; wc.set(waterBase);
+        for (let i = 0; i < 130; i++) { const j = (Math.random() * water.length) | 0; if (dist[I(water[j][0], water[j][1])] < 3) continue; wc[j * 3] = wc[j * 3 + 1] = wc[j * 3 + 2] = 0.78; }
+        waterMesh.instanceColor.needsUpdate = true; needSpark = true;
+      }
+    } else if (needSpark) {
+      needSpark = false; wc.set(waterBase);
+      if (specksOn) for (const j of staticSpark) { wc[j * 3] = wc[j * 3 + 1] = wc[j * 3 + 2] = 0.78; }
       waterMesh.instanceColor.needsUpdate = true;
     }
 
@@ -674,6 +682,8 @@ export function createVoxelIsland(canvas, opts = {}) {
     setInput() {}, calibrate() {}, setStrength() {}, setEffects() {}, getInput: () => 'off',
     setInfinite(on) { applyMode((on == null ? mode !== 'flat' : !!on) ? 'flat' : 'normal'); return mode === 'flat'; },
     setInfiniteSea(on) { applyMode((on == null ? mode !== 'sea' : !!on) ? 'sea' : 'normal'); return mode === 'sea'; },
+    setSpecks(on) { specksOn = on == null ? !specksOn : !!on; needSpark = true; seaFoam.visible = mode === 'sea' && specksOn; return specksOn; },
+    setBlink(on) { blinkOn = on == null ? !blinkOn : !!on; needSpark = true; return blinkOn; },
     getScene: () => ({ name: 'Воксельный остров', is3D: true, voxels: land.m.size, water: water.length }),
     destroy() { cancelAnimationFrame(S.raf); ro.disconnect(); clearTimeout(wTimer); renderer.dispose(); },
     _state: S,
