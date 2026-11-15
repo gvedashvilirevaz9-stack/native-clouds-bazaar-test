@@ -43,6 +43,17 @@ const CSS = `
 .lw-resize{position:absolute;right:-3px;bottom:-3px;width:18px;height:18px;cursor:nwse-resize;opacity:0;transition:opacity .2s;touch-action:none;
   border-right:3px solid rgba(255,255,255,.85);border-bottom:3px solid rgba(255,255,255,.85);border-bottom-right-radius:9px;filter:drop-shadow(0 1px 3px rgba(8,18,36,.6))}
 .lw:hover .lw-resize,.lw.sizing .lw-resize{opacity:.9}
+.lw-media{position:relative;width:calc(300px*var(--s));height:calc(169px*var(--s));border-radius:calc(10px*var(--s));overflow:hidden;background:#000;margin-top:calc(4px*var(--s))}
+.lw-media iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.lw-frame{width:calc(340px*var(--s));height:calc(230px*var(--s));border-radius:calc(10px*var(--s));overflow:hidden;background:rgba(255,255,255,.12);margin-top:calc(4px*var(--s))}
+.lw-frame iframe{width:100%;height:100%;border:0}
+.lw-fav{display:flex;gap:calc(5px*var(--s));margin-top:calc(6px*var(--s));flex-wrap:wrap}
+.lw-fav button{border:none;border-radius:calc(7px*var(--s));padding:calc(3px*var(--s)) calc(8px*var(--s));font-size:calc(11px*var(--s));cursor:pointer;background:rgba(255,255,255,.22);color:#fff}
+.lw-fav button:hover{background:rgba(255,255,255,.42)}
+.lw-in{width:100%;box-sizing:border-box;margin-top:calc(6px*var(--s));border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;border-radius:calc(8px*var(--s));padding:calc(4px*var(--s)) calc(8px*var(--s));font-size:calc(12px*var(--s))}
+.lw-in::placeholder{color:rgba(255,255,255,.6)}
+.lw-notes{width:calc(240px*var(--s));height:calc(150px*var(--s));box-sizing:border-box;margin-top:calc(4px*var(--s));border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;border-radius:calc(8px*var(--s));padding:calc(8px*var(--s));font-size:calc(14px*var(--s));resize:none;font-family:inherit}
+.lw-notes::placeholder{color:rgba(255,255,255,.55)}
 `;
 
 const WX = { 0: ['☀️', 'ясно'], 1: ['🌤️', 'почти ясно'], 2: ['⛅', 'переменная облачность'], 3: ['☁️', 'пасмурно'], 45: ['🌫️', 'туман'], 48: ['🌫️', 'туман'],
@@ -115,6 +126,55 @@ export function attachWidgets(bg, root = document.body) {
         } catch { desc.textContent = 'погода недоступна'; }
       };
       upd(); const iv = setInterval(upd, 15 * 60e3); return () => clearInterval(iv);
+    },
+    // internal YouTube player; an agent injects a video via data.v (id or url) or data.q (query)
+    media(el, data = {}) {
+      const idOf = (s) => { if (!s) return ''; const m = String(s).match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/); return m ? m[1] : (/^[\w-]{11}$/.test(s) ? s : ''); };
+      const FK = 'lw.fav.yt'; const favs = (() => { try { return JSON.parse(localStorage.getItem(FK) || '[]'); } catch { return []; } })();
+      el.innerHTML = `<div class="lw-kick">YOUTUBE</div><div class="lw-media"></div><input class="lw-in" placeholder="Ссылка/ID или попроси агента"><div class="lw-fav"></div>`;
+      const box = el.querySelector('.lw-media'), input = el.querySelector('.lw-in'), fav = el.querySelector('.lw-fav');
+      const renderFav = () => { fav.innerHTML = ''; favs.slice(0, 6).forEach((v) => { const b = document.createElement('button'); b.textContent = '★ ' + v.slice(0, 6); b.onclick = () => play(v, false); fav.append(b); }); };
+      const play = (v, save) => { if (!v) { box.innerHTML = `<div style="color:#fff;opacity:.75;display:flex;align-items:center;justify-content:center;height:100%;padding:8px;text-align:center;font-size:calc(12px*var(--s))">Вставь ссылку или попроси агента открыть видео</div>`; return; }
+        box.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${v}?rel=0&autoplay=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+        if (save && !favs.includes(v)) { favs.unshift(v); localStorage.setItem(FK, JSON.stringify(favs.slice(0, 6))); renderFav(); } };
+      input.onchange = () => { const v = idOf(input.value.trim()); if (v) { play(v, true); input.value = ''; } };
+      renderFav();
+      const vid = idOf(data.v || data.url);
+      if (vid) play(vid, false);
+      else if (data.q) box.innerHTML = `<div style="color:#fff;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;height:100%;padding:8px;text-align:center;font-size:calc(12px*var(--s))">Поиск: ${String(data.q).slice(0, 48)}<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(data.q)}" target="_blank" rel="noopener" style="color:#8fd0ff">найти на YouTube ↗</a></div>`;
+      else play('', false);
+      return () => {};
+    },
+    // a portal room / any page embedded in a window
+    frame(el, data = {}) {
+      el.innerHTML = `<div class="lw-kick">${String(data.title || 'Комната').toUpperCase()}</div><div class="lw-frame"></div>`;
+      const box = el.querySelector('.lw-frame');
+      box.innerHTML = data.url ? `<iframe src="${data.url}" allow="clipboard-read; clipboard-write; autoplay"></iframe>` : `<div style="color:#fff;opacity:.7;display:flex;align-items:center;justify-content:center;height:100%">нет адреса</div>`;
+      return () => {};
+    },
+    // simple sticky notes (persisted)
+    notes(el, data = {}) {
+      const key = 'lw.notes.' + (data.id || 'default');
+      el.innerHTML = `<div class="lw-kick">ЗАМЕТКИ</div><textarea class="lw-notes" placeholder="Пиши заметку…"></textarea>`;
+      const ta = el.querySelector('.lw-notes'); try { ta.value = localStorage.getItem(key) || ''; } catch {}
+      ta.oninput = () => { try { localStorage.setItem(key, ta.value); } catch {} };
+      return () => {};
+    },
+    // countdown / stopwatch
+    timer(el, data = {}) {
+      el.innerHTML = `<div class="lw-kick">ТАЙМЕР</div><div class="lw-big" data-t>00:00</div><div class="lw-fav"><button data-a="s">▶</button><button data-a="p">⏸</button><button data-a="r">⟳</button></div>`;
+      let sec = +(data.sec || 0), run = data.sec ? true : false; const out = el.querySelector('[data-t]');
+      const draw = () => out.textContent = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+      draw(); const iv = setInterval(() => { if (run) { sec++; draw(); } }, 1000);
+      el.querySelector('.lw-fav').onclick = (e) => { const a = e.target.dataset.a; if (a === 's') run = true; if (a === 'p') run = false; if (a === 'r') { run = false; sec = 0; draw(); } };
+      return () => clearInterval(iv);
+    },
+    // tiny calculator
+    calc(el) {
+      el.innerHTML = `<div class="lw-kick">КАЛЬКУЛЯТОР</div><input class="lw-in" placeholder="2+2*10"><div class="lw-big" data-r>0</div>`;
+      const i = el.querySelector('.lw-in'), r = el.querySelector('[data-r]');
+      i.oninput = () => { const e = i.value.replace(/[^-+*/().\d\s]/g, ''); try { r.textContent = String(Function('"use strict";return(' + (e || '0') + ')')()); } catch { r.textContent = '…'; } };
+      return () => {};
     },
   };
 

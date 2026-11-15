@@ -66,37 +66,56 @@ let spk=true,blk=true; $('spark').onclick=e=>{const v=e.target.dataset.v;
 $('quick').onclick=e=>{const b=e.target.closest('button');if(!b)return;b.dataset.w?bg.deliver(b.dataset.w,{by,size:'M'}):bg.deliver('agent',{by,size:'M',data:{q:b.dataset.q}});};
 $('hide').onclick=()=>$('panel').classList.add('min'); $('show').onclick=()=>$('panel').classList.remove('min');
 
-// ---- clickable marker cubes: left-click runs, right-click configures (ribbon + All catalog) ----
+// ---- clickable marker cubes: left-click runs, right-click configures (ribbon + All catalog by category) ----
 const MK='lw.markers.v1';
 const mkCfg=(()=>{try{return JSON.parse(localStorage.getItem(MK)||'{}')}catch{return{}}})();
 const saveMk=()=>{try{localStorage.setItem(MK,JSON.stringify(mkCfg))}catch{}};
+// CATALOG — extensible. type: widget(info) | media(youtube) | room(iframe) | link | tool | mcp | custom.
+// Codex can add rows here: {id, cat, label, type, ...payload}.
 const CATALOG=[
- {id:'clock',label:'Часы',kind:'clock'},
- {id:'weather',label:'Погода',kind:'weather'},
- {id:'btc',label:'Биткоин',kind:'agent',q:'курс биткоина'},
- {id:'eth',label:'Эфириум',kind:'agent',q:'курс эфириума'},
- {id:'sol',label:'Solana',kind:'agent',q:'курс solana'},
- {id:'ton',label:'TON',kind:'agent',q:'курс toncoin'},
- {id:'usdgel',label:'USD/GEL',kind:'agent',q:'курс доллара к лари'},
- {id:'eur',label:'Евро',kind:'agent',q:'курс евро к доллару'},
- {id:'gold',label:'Золото',kind:'agent',q:'цена золота за унцию'},
- {id:'oil',label:'Нефть',kind:'agent',q:'цена нефти Brent'},
- {id:'sp500',label:'S&P 500',kind:'agent',q:'индекс S&P 500'},
- {id:'nasdaq',label:'Nasdaq',kind:'agent',q:'индекс Nasdaq'},
- {id:'news',label:'Новости',kind:'agent',q:'главные новости сегодня'},
- {id:'custom',label:'Своё…',kind:'custom'},
+ {id:'clock',cat:'Инфо',label:'Часы',type:'widget',kind:'clock'},
+ {id:'weather',cat:'Инфо',label:'Погода',type:'widget',kind:'weather'},
+ {id:'btc',cat:'Инфо',label:'Биткоин',type:'widget',kind:'agent',q:'курс биткоина'},
+ {id:'eth',cat:'Инфо',label:'Эфириум',type:'widget',kind:'agent',q:'курс эфириума'},
+ {id:'usdgel',cat:'Инфо',label:'USD/GEL',type:'widget',kind:'agent',q:'курс доллара к лари'},
+ {id:'gold',cat:'Инфо',label:'Золото',type:'widget',kind:'agent',q:'цена золота'},
+ {id:'news',cat:'Инфо',label:'Новости',type:'widget',kind:'agent',q:'главные новости сегодня'},
+ {id:'yt',cat:'Медиа',label:'YouTube',type:'media',v:'jfKfPfyJRdk'},
+ {id:'yt_music',cat:'Медиа',label:'Музыка',type:'media',v:'5qap5aO4i9A'},
+ {id:'yt_open',cat:'Медиа',label:'YouTube (пусто)',type:'media'},
+ {id:'home',cat:'Комнаты',label:'My Home',type:'room',url:'/home',embed:true},
+ {id:'cinema',cat:'Комнаты',label:'Кино',type:'room',url:'/cinema',embed:true},
+ {id:'market',cat:'Комнаты',label:'Маркет',type:'room',url:'/market',embed:true},
+ {id:'site',cat:'Ссылки',label:'Sunspace',type:'link',url:'https://sunspace.club'},
+ {id:'yt_ext',cat:'Ссылки',label:'YouTube ↗',type:'link',url:'https://youtube.com'},
+ {id:'notes',cat:'Инструменты',label:'Заметки',type:'tool',tool:'notes'},
+ {id:'calc',cat:'Инструменты',label:'Калькулятор',type:'tool',tool:'calc'},
+ {id:'timer',cat:'Инструменты',label:'Таймер',type:'tool',tool:'timer'},
+ {id:'mcp_catalog',cat:'MCP',label:'Каталог',type:'mcp',mcp:'catalog_search',q:'каталог товаров'},
+ {id:'mcp_local',cat:'MCP',label:'Локальный маркет',type:'mcp',mcp:'local_marketplace_search',q:'локальный маркет'},
+ {id:'custom',cat:'Своё',label:'Своё…',type:'custom'},
 ];
-const DEFAULTS={m1:'btc',m2:'eth',m3:'weather',m4:'clock',m5:'usdgel',m6:'gold',m7:'news'};
-const fromCat=(cid,by='airship')=>{const c=CATALOG.find(x=>x.id===cid);if(!c||c.kind==='custom')return null;return {label:c.label,kind:c.kind,q:c.q,by,cat:c.id};};
-for(const mk of bg.getMarkers()){ if(!mkCfg[mk.id]&&DEFAULTS[mk.id]){const d=fromCat(DEFAULTS[mk.id]); if(d)mkCfg[mk.id]=d;} }
+const CATS=[...new Set(CATALOG.map(c=>c.cat))];
+const cmd=id=>CATALOG.find(c=>c.id===id);
+const toCfg=(c,by='airship')=>({cat:c.id,label:c.label,type:c.type,kind:c.kind,q:c.q,url:c.url,v:c.v,tool:c.tool,mcp:c.mcp,embed:c.embed,by});
+const DEFAULTS={m1:'btc',m2:'eth',m3:'weather',m4:'clock',m5:'usdgel',m6:'yt',m7:'news'};
+for(const mk of bg.getMarkers()){ if(!mkCfg[mk.id]&&DEFAULTS[mk.id]){const c=cmd(DEFAULTS[mk.id]); if(c)mkCfg[mk.id]=toCfg(c);} }
 saveMk();
-const runCfg=cfg=>{ if(!cfg)return; cfg.kind==='agent'?bg.deliver('agent',{by:cfg.by||'airship',size:'M',data:{q:cfg.q}}):bg.deliver(cfg.kind,{by:cfg.by||'airship',size:'M'}); };
+const execCmd=cfg=>{ if(!cfg)return; const by=cfg.by||'airship';
+  switch(cfg.type){
+    case 'link': window.open(cfg.url,'_blank','noopener'); break;
+    case 'media': bg.deliver('media',{by,size:'M',data:{v:cfg.v,q:cfg.q,url:cfg.url,title:cfg.label}}); break;
+    case 'room': (cfg.embed!==false)?bg.deliver('frame',{by,size:'L',data:{url:cfg.url,title:cfg.label}}):window.open(cfg.url,'_blank','noopener'); break;
+    case 'tool': bg.deliver(cfg.tool,{by,size:'M',data:cfg.data||{}}); break;
+    case 'mcp': try{window.postMessage({type:'livebg-mcp',cmd:cfg.mcp,args:cfg.args||{q:cfg.q}},'*')}catch{}; bg.deliver('agent',{by,size:'M',data:{q:cfg.q||cfg.label}}); break;
+    default: cfg.kind==='agent'?bg.deliver('agent',{by,size:'M',data:{q:cfg.q}}):bg.deliver(cfg.kind||'clock',{by,size:'M'});
+  } };
 const mkStyle=document.createElement('style'); mkStyle.textContent=`
 .mktip{position:fixed;z-index:30;pointer-events:none;padding:8px 12px;border-radius:12px;font:13px Inter,system-ui,sans-serif;color:#fff;
   background:rgba(20,30,48,.5);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.35);
   box-shadow:0 8px 28px rgba(8,18,36,.35);transform:translate(-50%,-130%);white-space:nowrap}
-.mkpop{position:fixed;z-index:31;width:290px;padding:13px;border-radius:16px;font:13px Inter,system-ui,sans-serif;color:#0f172a;
-  background:rgba(255,255,255,.74);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.7);
+.mkpop{position:fixed;z-index:31;width:300px;padding:13px;border-radius:16px;font:13px Inter,system-ui,sans-serif;color:#0f172a;
+  background:rgba(255,255,255,.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.7);
   box-shadow:0 14px 44px rgba(15,23,42,.28);transform:translateX(-50%)}
 .mkhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}.mkhead b{font-size:13px}
 .mkallb{border:1px solid rgba(15,23,42,.14);background:rgba(15,23,42,.06);border-radius:8px;padding:4px 11px;font:inherit;font-weight:600;cursor:pointer;color:#0f172a}
@@ -113,10 +132,11 @@ const mkStyle=document.createElement('style'); mkStyle.textContent=`
 .mkseg button[aria-pressed=true]{background:#0f172a;color:#fff}
 .mkfoot{display:flex;justify-content:space-between;align-items:center}.mkcur{font-size:12px;opacity:.72}
 .mkx{border:none;background:rgba(15,23,42,.1);border-radius:8px;width:30px;height:28px;cursor:pointer;font-size:13px;color:#0f172a}
-.mkall{position:fixed;z-index:32;width:234px;max-height:320px;padding:12px;border-radius:16px;font:13px Inter,system-ui,sans-serif;color:#0f172a;
-  background:rgba(255,255,255,.84);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.75);
+.mkall{position:fixed;z-index:32;width:250px;max-height:340px;padding:12px;border-radius:16px;font:13px Inter,system-ui,sans-serif;color:#0f172a;
+  background:rgba(255,255,255,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.75);
   box-shadow:0 16px 48px rgba(15,23,42,.3);transform:translateX(-50%);display:flex;flex-direction:column}
-.mklist{overflow-y:auto;display:flex;flex-direction:column;gap:3px;margin-top:6px}
+.mklist{overflow-y:auto;display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.mkcat{font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.55;margin:8px 2px 2px}
 .mklist button{text-align:left;border:1px solid rgba(15,23,42,.08);background:rgba(255,255,255,.5);border-radius:8px;padding:7px 10px;font:inherit;cursor:pointer;color:#0f172a}
 .mklist button:hover{background:#0f172a;color:#fff}`;
 document.head.append(mkStyle);
@@ -136,34 +156,34 @@ bg.on('marker',m=>{ if(tip){tip.remove();tip=null;}
   if(m.button==='right'){ openMenu(m); return; }
   closeMenus();
   const cfg=mkCfg[m.id];
-  if(cfg&&(cfg.kind==='clock'||cfg.kind==='weather'||(cfg.kind==='agent'&&cfg.q))) runCfg(cfg);
+  if(cfg&&(cfg.type||cfg.kind)) execCmd(cfg);
   else showHint(m,'Пусто — правый клик мышки, выбери функцию'); });
 function openMenu(m){
   closeMenus();
   const cfg=mkCfg[m.id]||{by:'airship'}; let cby=cfg.by||'airship';
   pop=document.createElement('div'); pop.className='mkpop';
-  pop.style.left=Math.max(152,Math.min(m.screen[0],innerWidth-152))+'px';
+  pop.style.left=Math.max(155,Math.min(m.screen[0],innerWidth-155))+'px';
   pop.innerHTML=`<div class="mkhead"><b>Кубик #${m.id.replace('m','')} · ${m.kind==='palm'?'пальма':'флаг'}</b><button class="mkallb">Все</button></div>
     <div class="mkribbon"><button class="mkarr" data-d="-1">◀</button><div class="mktrack"></div><button class="mkarr" data-d="1">▶</button></div>
-    <input class="mkq" placeholder="Свой запрос…" style="display:none">
+    <input class="mkq" placeholder="Свой запрос агенту…" style="display:none">
     <div class="mkseg mkby"><button data-b="airship">Корабль</button><button data-b="eagle">Попугай</button></div>
     <div class="mkfoot"><span class="mkcur"></span><button class="mkx">✕</button></div>`;
   document.body.append(pop);
   { const r=pop.getBoundingClientRect(); let top=m.screen[1]-r.height-14; if(top<8)top=m.screen[1]+18; pop.style.top=Math.max(8,Math.min(top,innerHeight-r.height-8))+'px'; }
   const track=pop.querySelector('.mktrack'), qIn=pop.querySelector('.mkq');
-  const curCat=()=>{ const c=mkCfg[m.id]; return c?(c.cat||(c.kind==='agent'?'custom':c.kind)):null; };
+  const curCat=()=>{ const c=mkCfg[m.id]; return c?c.cat:null; };
   const updFoot=()=>{ const c=mkCfg[m.id]; pop.querySelector('.mkcur').textContent=c?('▶ '+c.label):'пусто'; };
   const paintBy=()=>pop.querySelectorAll('.mkby button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.b===cby)));
   const renderChips=()=>{ track.innerHTML=''; CATALOG.forEach(c=>{ const btn=document.createElement('button'); btn.className='mkchip'+(curCat()===c.id?' on':''); btn.textContent=c.label; btn.onclick=()=>pick(c); track.append(btn); });
     const on=track.querySelector('.mkchip.on'); if(on) on.scrollIntoView({inline:'center',block:'nearest'}); };
-  function pick(c){ if(c.kind==='custom'){ qIn.style.display='block'; qIn.focus(); return; }
-    mkCfg[m.id]={label:c.label,kind:c.kind,q:c.q,by:cby,cat:c.id}; saveMk(); renderChips(); updFoot(); }
-  qIn.onchange=()=>{ const q=qIn.value.trim(); if(q){ mkCfg[m.id]={label:q,kind:'agent',q,by:cby}; saveMk(); renderChips(); updFoot(); } };
+  function pick(c){ if(c.type==='custom'){ qIn.style.display='block'; qIn.focus(); return; }
+    mkCfg[m.id]=toCfg(c,cby); saveMk(); renderChips(); updFoot(); }
+  qIn.onchange=()=>{ const q=qIn.value.trim(); if(q){ mkCfg[m.id]={type:'widget',kind:'agent',q,label:q,by:cby}; saveMk(); renderChips(); updFoot(); } };
   pop.querySelector('.mkby').onclick=e=>{ const x=e.target.closest('button'); if(!x)return; cby=x.dataset.b; if(mkCfg[m.id]){mkCfg[m.id].by=cby;saveMk();} paintBy(); };
   pop.querySelectorAll('.mkarr').forEach(ar=>ar.onclick=()=>track.scrollBy({left:(+ar.dataset.d)*150,behavior:'smooth'}));
   pop.querySelector('.mkallb').onclick=()=>openAll(m,()=>{renderChips();updFoot();});
   pop.querySelector('.mkx').onclick=closeMenus;
-  const c0=mkCfg[m.id]; if(c0&&c0.kind==='agent'&&!c0.cat){ qIn.style.display='block'; qIn.value=c0.q||''; }
+  const c0=mkCfg[m.id]; if(c0&&!c0.cat&&c0.kind==='agent'){ qIn.style.display='block'; qIn.value=c0.q||''; }
   renderChips(); updFoot(); paintBy();
 }
 function openAll(m,after){
@@ -172,8 +192,9 @@ function openAll(m,after){
   allEl.style.left=pop?pop.style.left:(innerWidth/2+'px'); allEl.style.top=pop?pop.style.top:'110px';
   allEl.innerHTML=`<div class="mkhead"><b>Все команды</b><button class="mkx">✕</button></div><div class="mklist"></div>`;
   const list=allEl.querySelector('.mklist');
-  CATALOG.filter(c=>c.kind!=='custom').forEach(c=>{ const bt=document.createElement('button'); bt.textContent=c.label;
-    bt.onclick=()=>{ mkCfg[m.id]={label:c.label,kind:c.kind,q:c.q,by:(mkCfg[m.id]&&mkCfg[m.id].by)||'airship',cat:c.id}; saveMk(); allEl.remove();allEl=null; after&&after(); }; list.append(bt); });
+  CATS.forEach(cat=>{ const h=document.createElement('div'); h.className='mkcat'; h.textContent=cat; list.append(h);
+    CATALOG.filter(c=>c.cat===cat&&c.type!=='custom').forEach(c=>{ const bt=document.createElement('button'); bt.textContent=c.label;
+      bt.onclick=()=>{ mkCfg[m.id]=toCfg(c,(mkCfg[m.id]&&mkCfg[m.id].by)||'airship'); saveMk(); allEl.remove();allEl=null; after&&after(); }; list.append(bt); }); });
   allEl.querySelector('.mkx').onclick=()=>{allEl.remove();allEl=null;};
   document.body.append(allEl);
 }
