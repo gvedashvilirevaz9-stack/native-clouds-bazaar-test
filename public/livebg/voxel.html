@@ -65,4 +65,64 @@ let spk=true,blk=true; $('spark').onclick=e=>{const v=e.target.dataset.v;
   $('spark').querySelector('[data-v=blink]').setAttribute('aria-pressed',String(blk));};
 $('quick').onclick=e=>{const b=e.target.closest('button');if(!b)return;b.dataset.w?bg.deliver(b.dataset.w,{by,size:'M'}):bg.deliver('agent',{by,size:'M',data:{q:b.dataset.q}});};
 $('hide').onclick=()=>$('panel').classList.add('min'); $('show').onclick=()=>$('panel').classList.remove('min');
+
+// ---- clickable marker cubes: frosted tooltip on hover + customization popup on click ----
+const MK='lw.markers.v1';
+const mkCfg=(()=>{try{return JSON.parse(localStorage.getItem(MK)||'{}')}catch{return{}}})();
+const saveMk=()=>{try{localStorage.setItem(MK,JSON.stringify(mkCfg))}catch{}};
+const mkStyle=document.createElement('style'); mkStyle.textContent=`
+.mktip{position:fixed;z-index:30;pointer-events:none;padding:8px 12px;border-radius:12px;font:13px Inter,system-ui,sans-serif;color:#fff;
+  background:rgba(20,30,48,.5);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.35);
+  box-shadow:0 8px 28px rgba(8,18,36,.35);transform:translate(-50%,-130%);white-space:nowrap}
+.mkpop{position:fixed;z-index:31;width:252px;padding:14px;border-radius:16px;font:13px Inter,system-ui,sans-serif;color:#0f172a;
+  background:rgba(255,255,255,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.7);
+  box-shadow:0 14px 44px rgba(15,23,42,.28);transform:translateX(-50%)}
+.mkpop h4{margin:0 0 8px;font-size:13px}
+.mkpop .seg{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.mkpop .seg button{border:1px solid rgba(15,23,42,.1);background:rgba(255,255,255,.6);border-radius:9px;padding:5px 9px;font:inherit;cursor:pointer;color:#0f172a}
+.mkpop .seg button[aria-pressed=true]{background:#0f172a;color:#fff}
+.mkpop input{width:100%;box-sizing:border-box;border:1px solid rgba(15,23,42,.14);border-radius:9px;padding:6px 9px;font:inherit;margin-bottom:8px}
+.mkpop .act{display:flex;gap:6px}
+.mkpop .act button{flex:1;border:none;border-radius:9px;padding:7px;font:inherit;cursor:pointer}
+.mkpop .run{background:#0f172a;color:#fff}.mkpop .close{flex:0 0 36px;background:rgba(15,23,42,.1)}`;
+document.head.append(mkStyle);
+let tip=null;
+bg.on('markerHover',h=>{
+  if(!h.id){ if(tip){tip.remove();tip=null;} return; }
+  const c=mkCfg[h.id];
+  if(!tip){ tip=document.createElement('div'); tip.className='mktip'; document.body.append(tip); }
+  tip.innerHTML=c?`<b>${c.label}</b>`:'Не настроено — кликни, чтобы задать';
+  tip.style.left=h.screen[0]+'px'; tip.style.top=(h.screen[1]-14)+'px';
+});
+let pop=null;
+bg.on('marker',m=>{
+  if(tip){tip.remove();tip=null;} if(pop) pop.remove();
+  const c=mkCfg[m.id]||{};
+  pop=document.createElement('div'); pop.className='mkpop';
+  pop.style.left=Math.max(132,Math.min(m.screen[0],innerWidth-132))+'px';
+  pop.innerHTML=`<h4>Кубик ${m.id.replace('m','#')} · ${m.kind==='palm'?'пальма':'флаг'}</h4>
+    <div class="seg" id="mkp"><button data-p="clock">Часы</button><button data-p="weather">Погода</button><button data-p="btc">Биткоин</button><button data-p="custom">Своё</button></div>
+    <input id="mkq" placeholder="Свой запрос (для «Своё»)" value="${(c.kind==='agent'&&c.label!=='Курс биткоина')?(c.q||'').replace(/"/g,'&quot;'):''}">
+    <div class="seg" id="mkby"><button data-b="airship">Корабль</button><button data-b="eagle">Попугай</button></div>
+    <div class="act"><button class="run" id="mkrun">Запустить</button><button id="mksave">Сохранить</button><button class="close" id="mkx">✕</button></div>`;
+  document.body.append(pop);
+  { const r=pop.getBoundingClientRect(); let top=m.screen[1]-r.height-14; if(top<8) top=m.screen[1]+18; pop.style.top=Math.max(8,Math.min(top,innerHeight-r.height-8))+'px'; }
+  let preset=c.kind==='clock'?'clock':c.kind==='weather'?'weather':(c.kind==='agent'&&c.label==='Курс биткоина')?'btc':c.kind==='agent'?'custom':null;
+  let cby=c.by||'airship';
+  const paint=()=>{ pop.querySelectorAll('#mkp button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.p===preset)));
+    pop.querySelectorAll('#mkby button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.b===cby))); };
+  paint();
+  pop.querySelector('#mkp').onclick=e=>{const b=e.target.closest('button');if(b){preset=b.dataset.p;paint();}};
+  pop.querySelector('#mkby').onclick=e=>{const b=e.target.closest('button');if(b){cby=b.dataset.b;paint();}};
+  const build=()=>{ const q=pop.querySelector('#mkq').value.trim();
+    if(preset==='custom') return q?{label:q,kind:'agent',q,by:cby}:null;
+    if(preset==='btc') return {label:'Курс биткоина',kind:'agent',q:'курс биткоина',by:cby};
+    if(preset==='clock') return {label:'Часы',kind:'clock',by:cby};
+    if(preset==='weather') return {label:'Погода',kind:'weather',by:cby};
+    return null; };
+  const run=cfg=>{ cfg.kind==='agent'?bg.deliver('agent',{by:cfg.by,size:'M',data:{q:cfg.q}}):bg.deliver(cfg.kind,{by:cfg.by,size:'M'}); };
+  pop.querySelector('#mksave').onclick=()=>{ const cfg=build(); if(cfg){mkCfg[m.id]=cfg;saveMk();} pop.remove();pop=null; };
+  pop.querySelector('#mkrun').onclick=()=>{ const cfg=build(); if(cfg){mkCfg[m.id]=cfg;saveMk();run(cfg);} pop.remove();pop=null; };
+  pop.querySelector('#mkx').onclick=()=>{ pop.remove();pop=null; };
+});
 </script></body></html>

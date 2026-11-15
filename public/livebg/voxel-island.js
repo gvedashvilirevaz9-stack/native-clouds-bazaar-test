@@ -424,6 +424,18 @@ export function createVoxelIsland(canvas, opts = {}) {
   const seaFoam = new THREE.Mesh(seaGeo, new THREE.MeshBasicMaterial({ map: foamTex, transparent: true, depthWrite: false }));
   seaFoam.rotation.x = -Math.PI / 2; seaFoam.position.y = 0.452; seaFoam.visible = false; scene.add(seaFoam);
 
+  // ---------- clickable yellow marker cubes (island palms + flags) with configurable actions ----------
+  const markerGeo = new THREE.BoxGeometry(1.7, 1.7, 1.7);
+  const markerSpots = [];
+  for (const [ix, iz] of ISLETS.map((a) => [a[0], a[1]])) { const y = hAt(ix, iz); if (y) markerSpots.push([ix + 0.5, y + 7.5, iz + 0.5, 'palm']); }
+  { const y = hAt(-22, -18); markerSpots.push([-17.5, (y || 4) + 15.5, -15.5, 'flag']); }
+  { const y = hAt(-2, 30); if (y) markerSpots.push([0.5, y + 6.5, 30.5, 'flag']); }
+  const markers = markerSpots.map(([x, y, z, kind], i) => {
+    const mesh = new THREE.Mesh(markerGeo, new THREE.MeshLambertMaterial({ color: 0xffd21e, emissive: 0xffc400, emissiveIntensity: 1 }));
+    mesh.position.set(x, y, z); mesh.castShadow = false; scene.add(mesh);
+    return { id: 'm' + (i + 1), kind, mesh, pos: mesh.position.clone() };
+  });
+
   let mode = 'normal';
   // white water highlights: can blink, stay static, or be off
   let specksOn = true, blinkOn = true, needSpark = true;
@@ -602,10 +614,28 @@ export function createVoxelIsland(canvas, opts = {}) {
   const ro = new ResizeObserver(resize); ro.observe(canvas); resize();
 
   // drag to rotate, wheel to zoom
-  let drag = null;
-  canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, az: S.viewTarget.az, el: S.viewTarget.el }; canvas.setPointerCapture(e.pointerId); });
-  canvas.addEventListener('pointermove', (e) => { if (!drag) return; S.viewTarget.az = drag.az - (e.clientX - drag.x) * 0.006; S.viewTarget.el = clamp(drag.el + (e.clientY - drag.y) * 0.004, 0.2, 1.45); });
-  canvas.addEventListener('pointerup', () => { drag = null; });
+  let drag = null; const raycaster = new THREE.Raycaster();
+  canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, az: S.viewTarget.az, el: S.viewTarget.el, moved: 0 }; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', (e) => { if (!drag) return; drag.moved += Math.abs(e.movementX) + Math.abs(e.movementY); S.viewTarget.az = drag.az - (e.clientX - drag.x) * 0.006; S.viewTarget.el = clamp(drag.el + (e.clientY - drag.y) * 0.004, 0.2, 1.45); });
+  canvas.addEventListener('pointerup', (e) => {
+    const d = drag; drag = null; if (!d || d.moved > 6) return;                     // a click, not a drag → test the marker cubes
+    const rect = canvas.getBoundingClientRect();
+    raycaster.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), cam);
+    const hits = raycaster.intersectObjects(markers.map((m) => m.mesh), false);
+    if (hits[0]) { const mk = markers.find((m) => m.mesh === hits[0].object); emit('marker', { id: mk.id, kind: mk.kind, screen: [e.clientX, e.clientY], world: [mk.pos.x, mk.pos.y, mk.pos.z] }); }
+  });
+  // hover over a marker cube → announce which one so the page can show its tooltip
+  let hoverId = null;
+  canvas.addEventListener('pointermove', (e) => {
+    if (drag) { if (hoverId) { hoverId = null; canvas.style.cursor = ''; emit('markerHover', { id: null }); } return; }
+    const rect = canvas.getBoundingClientRect();
+    raycaster.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), cam);
+    const hit = raycaster.intersectObjects(markers.map((m) => m.mesh), false)[0];
+    const mk = hit ? markers.find((m) => m.mesh === hit.object) : null, id = mk ? mk.id : null, prev = hoverId;
+    for (const m of markers) m.mesh.scale.setScalar(m.id === id ? 1.3 : 1);
+    if (id !== prev) { hoverId = id; canvas.style.cursor = id ? 'pointer' : ''; }
+    if (id) emit('markerHover', { id, kind: mk.kind, screen: [e.clientX, e.clientY] }); else if (prev) emit('markerHover', { id: null });
+  });
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); S.viewTarget.zoom = clamp(S.viewTarget.zoom * (1 + Math.sign(e.deltaY) * 0.08), 12, 60); }, { passive: false });
 
   // ---------- loop ----------
@@ -648,6 +678,7 @@ export function createVoxelIsland(canvas, opts = {}) {
       p.needsUpdate = true;
     }
     wfMap.offset.y = (wfMap.offset.y + dt * 1.15) % 1;
+    { const mp = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(S.t * 5)); for (const mk of markers) { mk.mesh.material.emissiveIntensity = mp; mk.mesh.rotation.y += dt * 1.2; } }
     for (let i = 0; i < MIST; i++) { mistPos[i * 3 + 1] -= (7 + (i % 3)) * dt; if (mistPos[i * 3 + 1] < -20) mistSpawn(i); }
     mistGeo.attributes.position.needsUpdate = true;
     stepCouriers();
@@ -666,7 +697,8 @@ export function createVoxelIsland(canvas, opts = {}) {
   }
 
   const api = {
-    is3D: true, scene, renderer,
+    is3D: true, scene, renderer, camera: cam,
+    getMarkers: () => markers.map((m) => ({ id: m.id, kind: m.kind, world: [m.pos.x, m.pos.y, m.pos.z] })),
     deliver, on(e, f) { (listeners[e] ||= []).push(f); return () => { listeners[e] = listeners[e].filter((x) => x !== f); }; },
     setWeather, refreshWeather, getWeather: () => ({ mode: S.weatherMode, ...(weather() || {}), location: S.location }),
     async setLocation(loc) { S.location = typeof loc === 'string' ? await geocode(loc) : loc; return refreshWeather(); },
