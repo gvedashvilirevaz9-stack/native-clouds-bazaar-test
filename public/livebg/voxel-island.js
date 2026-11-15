@@ -173,10 +173,10 @@ export function createVoxelIsland(canvas, opts = {}) {
     }
   }
 
-  // ---------- props ----------
-  const vox = land, glow = new Vox(), fireV = new Vox();
+  // ---------- props & city ----------
+  // terrain `land` is the permanent base; the whole structure layer (locked + editable) is rebuildable via buildCity()
+  let vox = new Vox(), glow = new Vox(), fireV = new Vox();
 
-  // compact single palm (small crown so it never blankets the top view)
   function palm(x, z, ht = 6) {
     const y0 = hAt(x, z); if (!y0) return; let px = x; const dz = rng() < 0.5 ? 1 : -1;
     for (let i = 0; i < ht; i++) { if (i === ht - 1) px += 0; vox.put(px, y0 + i, z, i % 2 ? PAL.trunk : PAL.trunk2); }
@@ -185,7 +185,6 @@ export function createVoxelIsland(canvas, opts = {}) {
     for (const [ax, az] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) vox.put(px + ax, ty, z + az, PAL.leaf2);
     vox.put(px + 1, ty - 1, z + dz, PAL.coconut);
   }
-
   function house(x0, z0, w, d, wh, o = {}) {
     const y0 = hAt(x0, z0), wall = o.wall || PAL.wall, wall2 = o.wall2 || PAL.wall2, r1 = o.roof || PAL.roof, r2 = o.roof2 || PAL.roof2, rd = o.roofDk || PAL.roofDk;
     for (let x = 0; x < w; x++) for (let z = 0; z < d; z++) for (let y = 0; y < wh; y++) {
@@ -207,98 +206,121 @@ export function createVoxelIsland(canvas, opts = {}) {
     if (o.chimney) { const cx = x0 + w - 2, cz = z0 + 1; for (let y = y0 + wh; y < y0 + wh + Math.ceil(d / 2) + 2; y++) vox.put(cx, y, cz, y % 2 ? PAL.stone : PAL.stone2); }
     return { y0, top: y0 + wh + Math.ceil(d / 2) };
   }
-
-  // tavern (big, golden) with round emblem + barrels
-  const tav = house(LOT.tavern[0], LOT.tavern[1], 9, 7, 5, { wall: PAL.wood, wall2: PAL.woodLt, roof: PAL.roof, roof2: PAL.roof2, chimney: true });
-  { const ex = LOT.tavern[0] + 4, ez = LOT.tavern[1] + 7; for (let a = 0; a < 16; a++) { const ang = a / 16 * Math.PI * 2; vox.put(ex + Math.round(Math.cos(ang) * 1.6), tav.y0 + 3 + Math.round(Math.sin(ang) * 1.6), ez, PAL.roofB); } vox.put(ex, tav.y0 + 3, ez, PAL.white); vox.put(ex + 1, tav.y0 + 3, ez, PAL.yellow); vox.put(ex - 1, tav.y0 + 3, ez, PAL.yellow); vox.put(ex, tav.y0 + 4, ez, PAL.yellow); vox.put(ex, tav.y0 + 2, ez, PAL.yellow); glow.put(ex, tav.y0 + 1, ez, 0xffc86b); }
-  for (const [bx, bz] of [[LOT.tavern[0] + 10, LOT.tavern[1] + 2], [LOT.tavern[0] + 10, LOT.tavern[1] + 4]]) { const by = hAt(bx, bz); if (by) { vox.put(bx, by, bz, PAL.plank); vox.put(bx, by + 1, bz, PAL.woodDk); vox.put(bx, by + 2, bz, PAL.plank); } }
-
-  // watchtower on the hill
-  { const x0 = LOT.tower[0] + 1, z0 = LOT.tower[1] + 1, y0 = hAt(x0, z0);
-    for (const [cx, cz] of [[0, 0], [4, 0], [0, 4], [4, 4]]) for (let y = 0; y < 7; y++) vox.put(x0 + cx, y0 + y, z0 + cz, PAL.woodDk);
-    for (let x = 0; x < 5; x++) for (let z = 0; z < 5; z++) vox.put(x0 + x, y0 + 6, z0 + z, (x + z) % 2 ? PAL.plank : PAL.wood);
-    for (let i = 0; i < 5; i++) { vox.put(x0 + i, y0 + 3, z0, PAL.woodDk); vox.put(x0 + i, y0 + 3, z0 + 4, PAL.woodDk); vox.put(x0, y0 + 3, z0 + i, PAL.woodDk); vox.put(x0 + 4, y0 + 3, z0 + i, PAL.woodDk); vox.put(x0 + i, y0 + 7, z0, PAL.wood); vox.put(x0 + i, y0 + 7, z0 + 4, PAL.wood); }
-    for (let k = 0; k < 4; k++) for (let x = -1 + k; x <= 5 - k; x++) for (let z = -1 + k; z <= 5 - k; z++) { const sh = x === -1 + k || x === 5 - k || z === -1 + k || z === 5 - k; if (sh || k === 3) vox.put(x0 + x, y0 + 9 + k, z0 + z, k === 0 ? PAL.roofDk : ((x + z) % 2 ? PAL.roof : PAL.roof2)); }
-    for (let y = 0; y < 3; y++) vox.put(x0 + 2, y0 + 13 + y, z0 + 2, PAL.woodDk);
-    for (let x = 1; x <= 3; x++) for (let y = 0; y < 2; y++) vox.put(x0 + 2 + x, y0 + 14 + y, z0 + 2, y === 1 && x === 2 ? PAL.yellow : PAL.red);
-    glow.put(x0 + 2, y0 + 7, z0 + 2, 0xffd36b); }
-
-  // forge (stone, fire, chimney, anvil)
-  { const x0 = LOT.forge[0], z0 = LOT.forge[1], y0 = hAt(x0, z0), w = 6, d = 5;
-    for (let x = 0; x < w; x++) for (let z = 0; z < d; z++) for (let y = 0; y < 4; y++) { const edge = x === 0 || x === w - 1 || z === 0; if (!edge) continue; vox.put(x0 + x, y0 + y, z0 + z, (x + y + z) % 3 ? PAL.stone : PAL.stone2); }
-    for (let x = -1; x <= w; x++) for (let z = -1; z <= d; z++) vox.put(x0 + x, y0 + 4, z0 + z, (x + z) % 2 ? PAL.roofR : PAL.roofR2);
-    for (let x = 0; x < w; x++) for (let z = 0; z < d - 1; z++) vox.put(x0 + x, y0 + 5, z0 + z, (x + z) % 2 ? PAL.roofR2 : PAL.roofR);
-    for (let y = 0; y < 10; y++) { vox.put(x0 + 1, y0 + y, z0 + 1, y % 2 ? PAL.stoneDk : PAL.stone2); vox.put(x0 + 2, y0 + y, z0 + 1, PAL.stone2); }
-    fireV.put(x0 + 3, y0, z0 + 2, PAL.fire); fireV.put(x0 + 4, y0, z0 + 2, PAL.fire2); fireV.put(x0 + 3, y0 + 1, z0 + 2, PAL.fire2); fireV.put(x0 + 4, y0, z0 + 3, PAL.ember);
-    vox.put(x0 + 3, y0, z0 + 6, PAL.stoneDk); vox.put(x0 + 3, y0 + 1, z0 + 6, PAL.black); vox.put(x0 + 4, y0 + 1, z0 + 6, PAL.black); }
-
-  // market stalls (spaced along the street)
-  [[5, -17, PAL.red], [12, -17, PAL.green], [19, -17, PAL.purple]].forEach(([x0, z0, col], si) => {
-    const y0 = hAt(x0, z0); if (!y0) return;
-    for (const [cx, cz] of [[0, 0], [3, 0], [0, 2], [3, 2]]) for (let y = 0; y < 3; y++) vox.put(x0 + cx, y0 + y, z0 + cz, PAL.woodDk);
-    for (let x = -1; x <= 4; x++) for (let z = -1; z <= 3; z++) vox.put(x0 + x, y0 + 3 + (z > 1 ? 0 : 1), z0 + z, x % 2 ? col : PAL.white);
-    for (let x = 0; x < 4; x++) { vox.put(x0 + x, y0 + 1, z0 + 1, PAL.plank); vox.put(x0 + x, y0 + 2, z0 + 1, [[PAL.red, PAL.yellow, PAL.green], [PAL.yellow, PAL.pink, PAL.teal], [PAL.purple, PAL.red, PAL.yellow]][si][x % 3]); }
-  });
-
-  // harbour house + pier with posts & lanterns
-  house(LOT.harbour[0], LOT.harbour[1], 6, 5, 4, { roof: PAL.roofB, roof2: PAL.roofB2, roofDk: 0x2c66b0 });
-  for (let x = PIER.x0 - 2; x <= PIER.x1; x++) for (let z = PIER.z0; z <= PIER.z1; z++) { if (hAt(x, z) > 1) continue; vox.put(x, 0, z, (x + z) % 2 ? PAL.plank : PAL.wood); }
-  for (let x = PIER.x0; x <= PIER.x1; x += 3) for (const z of [PIER.z0 - 1, PIER.z1 + 1]) { vox.put(x, -1, z, PAL.woodDk); vox.put(x, 0, z, PAL.woodDk); vox.put(x, 1, z, PAL.woodDk); }
-  for (const z of [PIER.z0 - 1, PIER.z1 + 1]) { vox.put(PIER.x1, 2, z, PAL.woodDk); glow.put(PIER.x1, 3, z, 0xffd36b); }
-
-  // totem garden (hedge ring + flowers)
-  { const cx = LOT.totem[0], cz = LOT.totem[1], y0 = hAt(cx, cz); if (y0) {
-    for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) { const ring = Math.max(Math.abs(x), Math.abs(z)) === 3; if (ring && !(z === -3 && Math.abs(x) <= 0)) vox.put(cx + x, y0, cz + z, (x + z) % 2 ? PAL.hedge : PAL.hedge2); }
-    [PAL.red, PAL.teal, PAL.yellow, PAL.purple, PAL.red, PAL.teal].forEach((c, i) => vox.put(cx, y0 + i, cz, c));
-    vox.put(cx - 1, y0 + 3, cz, PAL.yellow); vox.put(cx + 1, y0 + 3, cz, PAL.yellow); vox.put(cx, y0 + 6, cz, PAL.yellow);
-    for (const [fx, fz, fc] of [[-2, -1, PAL.pink], [2, 1, PAL.white], [-1, 2, PAL.pink], [1, -2, PAL.white]]) vox.put(cx + fx, y0, cz + fz, fc); } }
-
-  // houses (each on its own lot)
-  house(LOT.houseA[0], LOT.houseA[1], 5, 5, 4, { roof: PAL.roofR, roof2: PAL.roofR2, roofDk: 0xb23a2e });
-  house(LOT.houseB[0], LOT.houseB[1], 5, 5, 4, { roof: PAL.roof, roof2: PAL.roof2, chimney: true });
-  house(LOT.houseC[0], LOT.houseC[1], 6, 5, 4, { roof: PAL.roofB, roof2: PAL.roofB2, roofDk: 0x2c66b0 });
-
-  // well in the plaza
-  { const x = LOT.well[0], z = LOT.well[1], y = hAt(x, z); if (y) { for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { vox.put(x + dx, y, z + dz, PAL.stone2); vox.put(x + dx, y + 1, z + dz, (dx + dz) % 2 ? PAL.stone : PAL.stoneDk); } vox.put(x, y + 3, z, PAL.woodDk); vox.put(x + 1, y + 3, z, PAL.woodDk); vox.put(x, y + 4, z, PAL.roofDk); vox.put(x + 1, y + 4, z, PAL.roofDk); glow.put(x, y + 2, z + 1, 0x8fe3ff); } }
-
-  // ---- detail objects (the "штучные" pieces) ----
-  // pirate skeleton resting by a chest
   function skeleton(x, z) { const y = hAt(x, z); if (!y) return; const B = 0xe9e7dc, B2 = 0xcfcdc2, DK = 0x3a3a40;
-    vox.put(x, y, z, B2); vox.put(x, y + 1, z, B); vox.put(x, y + 2, z, B); // spine
-    vox.put(x - 1, y + 1, z, B2); vox.put(x + 1, y + 1, z, B2); // arms out
-    vox.put(x - 1, y, z - 1, B2); vox.put(x + 1, y, z - 1, B2); // legs
-    vox.put(x, y + 1, z - 1, DK); // belt/gap
+    vox.put(x, y, z, B2); vox.put(x, y + 1, z, B); vox.put(x, y + 2, z, B);
+    vox.put(x - 1, y + 1, z, B2); vox.put(x + 1, y + 1, z, B2);
+    vox.put(x - 1, y, z - 1, B2); vox.put(x + 1, y, z - 1, B2);
+    vox.put(x, y + 1, z - 1, DK);
   }
   function chest(x, z) { const y = hAt(x, z); if (!y) return; vox.put(x, y, z, PAL.woodDk); vox.put(x + 1, y, z, PAL.woodDk); vox.put(x, y + 1, z, PAL.wood); vox.put(x + 1, y + 1, z, PAL.wood); vox.put(x, y + 2, z, PAL.woodDk); vox.put(x + 1, y + 2, z, PAL.woodDk); glow.put(x, y + 2, z, PAL.yellow); glow.put(x + 1, y + 2, z, PAL.yellow); }
   function campfire(x, z) { const y = hAt(x, z); if (!y) return; vox.put(x - 1, y, z, PAL.woodDk); vox.put(x + 1, y, z, PAL.wood); vox.put(x, y, z - 1, PAL.wood); vox.put(x, y, z + 1, PAL.woodDk); fireV.put(x, y, z, PAL.fire); fireV.put(x, y + 1, z, PAL.fire2); }
-  skeleton(-20, 26); chest(-18, 26); chest(LOT.tavern[0] + 10, LOT.tavern[1] + 6); campfire(6, 3);
-  // a couple of crates & a rowboat on the sand
-  for (const [cx, cz] of [[22, 10], [23, 10], [-24, -2]]) { const y = hAt(cx, cz); if (y && T[I(cx, cz)] !== 3) { vox.put(cx, y, cz, PAL.plank); vox.put(cx, y + 1, cz, PAL.woodDk); } }
-  { const x = 24, z = 18, y = hAt(x, z); if (y) { for (let i = -1; i <= 1; i++) { vox.put(x + i, y, z, PAL.woodDk); vox.put(x + i, y + 1, z, i === 0 ? PAL.plank : PAL.wood); } vox.put(x - 2, y, z, PAL.woodDk); vox.put(x + 2, y, z, PAL.woodDk); } }
-  // signpost + flag near the plaza
-  { const x = -2, z = 30, y = hAt(x, z); if (y) { for (let k = 0; k < 8; k++) vox.put(x, y + k, z, PAL.woodDk); for (let a = 1; a <= 3; a++) for (let b = 5; b < 8; b++) vox.put(x + a, y + b, z, a === 2 && b === 6 ? PAL.yellow : PAL.red); } }
 
-  // ---- palms: individual, spaced, mostly by the beach + a small grove + islets ----
-  const PALMS = [[-32, 6], [-30, -10], [30, 2], [33, 12], [-14, 30], [10, 30], [28, -12], [-30, 22], [6, -28], [26, 22],
-    [-24, 16], [-22, 14], [-26, 13], [12, 24], [-16, -2]];
-  PALMS.forEach(([x, z], i) => { if (hAt(x, z) >= 1 && !(inG(x, z) && T[I(x, z)])) palm(x, z, 5 + (i % 3)); });
-  for (const [ix, iz] of ISLETS.map((a) => [a[0], a[1]])) { if (hAt(ix, iz) >= 1) palm(ix, iz, 5); if (hAt(ix + 1, iz + 1) >= 1 && rng() < 0.6) palm(ix + 1, iz + 1, 4); }
-
-  // ---- sparse bushes & flowers only on open grass (keep breathing room) ----
-  for (let i = 0; i < 55; i++) {
-    const x = Math.round((rng() - 0.5) * 52), z = Math.round((rng() - 0.5) * 52), h = hAt(x, z), ti = inG(x, z) ? T[I(x, z)] : 0;
-    if (h < 2 || ti || land.has(x, h, z) || vox.has(x, h, z)) continue;
-    if (rng() < 0.3) { vox.put(x, h, z, PAL.leaf2); if (rng() < 0.5) vox.put(x, h + 1, z, PAL.leafLt); }
-    else vox.put(x, h, z, [PAL.pink, PAL.white, PAL.yellow][(rng() * 3) | 0]);
-  }
-
-  // ---------- build static meshes ----------
+  // ---------- materials + permanent terrain mesh ----------
   const landMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
   const landMesh = land.mesh(landMat, 0.035, rng); scene.add(landMesh);
   const glowMat = new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: new THREE.Color(0xffc45a), emissiveIntensity: 0 });
-  const glowMesh = glow.mesh(glowMat, 0, rng); scene.add(glowMesh);
   const fireMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const fireMesh = fireV.mesh(fireMat, 0, rng); fireMesh.castShadow = false; scene.add(fireMesh);
+
+  // LOCKED structures — always rebuilt, never editable: outer islet palms, watchtower + flag, signpost flag
+  function buildLocked() {
+    for (const [ix, iz] of ISLETS.map((a) => [a[0], a[1]])) { if (hAt(ix, iz) >= 1) palm(ix, iz, 5); if (hAt(ix + 1, iz + 1) >= 1 && rng() < 0.6) palm(ix + 1, iz + 1, 4); }
+    { const x0 = LOT.tower[0] + 1, z0 = LOT.tower[1] + 1, y0 = hAt(x0, z0);
+      for (const [cx, cz] of [[0, 0], [4, 0], [0, 4], [4, 4]]) for (let y = 0; y < 7; y++) vox.put(x0 + cx, y0 + y, z0 + cz, PAL.woodDk);
+      for (let x = 0; x < 5; x++) for (let z = 0; z < 5; z++) vox.put(x0 + x, y0 + 6, z0 + z, (x + z) % 2 ? PAL.plank : PAL.wood);
+      for (let i = 0; i < 5; i++) { vox.put(x0 + i, y0 + 3, z0, PAL.woodDk); vox.put(x0 + i, y0 + 3, z0 + 4, PAL.woodDk); vox.put(x0, y0 + 3, z0 + i, PAL.woodDk); vox.put(x0 + 4, y0 + 3, z0 + i, PAL.woodDk); vox.put(x0 + i, y0 + 7, z0, PAL.wood); vox.put(x0 + i, y0 + 7, z0 + 4, PAL.wood); }
+      for (let k = 0; k < 4; k++) for (let x = -1 + k; x <= 5 - k; x++) for (let z = -1 + k; z <= 5 - k; z++) { const sh = x === -1 + k || x === 5 - k || z === -1 + k || z === 5 - k; if (sh || k === 3) vox.put(x0 + x, y0 + 9 + k, z0 + z, k === 0 ? PAL.roofDk : ((x + z) % 2 ? PAL.roof : PAL.roof2)); }
+      for (let y = 0; y < 3; y++) vox.put(x0 + 2, y0 + 13 + y, z0 + 2, PAL.woodDk);
+      for (let x = 1; x <= 3; x++) for (let y = 0; y < 2; y++) vox.put(x0 + 2 + x, y0 + 14 + y, z0 + 2, y === 1 && x === 2 ? PAL.yellow : PAL.red);
+      glow.put(x0 + 2, y0 + 7, z0 + 2, 0xffd36b); }
+    { const x = -2, z = 30, y = hAt(x, z); if (y) { for (let k = 0; k < 8; k++) vox.put(x, y + k, z, PAL.woodDk); for (let a = 1; a <= 3; a++) for (let b = 5; b < 8; b++) vox.put(x + a, y + b, z, a === 2 && b === 6 ? PAL.yellow : PAL.red); } }
+  }
+
+  // DEFAULT editable city (the preset a guest may rebuild)
+  function buildDefaultCity() {
+    const tav = house(LOT.tavern[0], LOT.tavern[1], 9, 7, 5, { wall: PAL.wood, wall2: PAL.woodLt, roof: PAL.roof, roof2: PAL.roof2, chimney: true });
+    { const ex = LOT.tavern[0] + 4, ez = LOT.tavern[1] + 7; for (let a = 0; a < 16; a++) { const ang = a / 16 * Math.PI * 2; vox.put(ex + Math.round(Math.cos(ang) * 1.6), tav.y0 + 3 + Math.round(Math.sin(ang) * 1.6), ez, PAL.roofB); } vox.put(ex, tav.y0 + 3, ez, PAL.white); vox.put(ex + 1, tav.y0 + 3, ez, PAL.yellow); vox.put(ex - 1, tav.y0 + 3, ez, PAL.yellow); vox.put(ex, tav.y0 + 4, ez, PAL.yellow); vox.put(ex, tav.y0 + 2, ez, PAL.yellow); glow.put(ex, tav.y0 + 1, ez, 0xffc86b); }
+    for (const [bx, bz] of [[LOT.tavern[0] + 10, LOT.tavern[1] + 2], [LOT.tavern[0] + 10, LOT.tavern[1] + 4]]) { const by = hAt(bx, bz); if (by) { vox.put(bx, by, bz, PAL.plank); vox.put(bx, by + 1, bz, PAL.woodDk); vox.put(bx, by + 2, bz, PAL.plank); } }
+    { const x0 = LOT.forge[0], z0 = LOT.forge[1], y0 = hAt(x0, z0), w = 6, d = 5;
+      for (let x = 0; x < w; x++) for (let z = 0; z < d; z++) for (let y = 0; y < 4; y++) { const edge = x === 0 || x === w - 1 || z === 0; if (!edge) continue; vox.put(x0 + x, y0 + y, z0 + z, (x + y + z) % 3 ? PAL.stone : PAL.stone2); }
+      for (let x = -1; x <= w; x++) for (let z = -1; z <= d; z++) vox.put(x0 + x, y0 + 4, z0 + z, (x + z) % 2 ? PAL.roofR : PAL.roofR2);
+      for (let x = 0; x < w; x++) for (let z = 0; z < d - 1; z++) vox.put(x0 + x, y0 + 5, z0 + z, (x + z) % 2 ? PAL.roofR2 : PAL.roofR);
+      for (let y = 0; y < 10; y++) { vox.put(x0 + 1, y0 + y, z0 + 1, y % 2 ? PAL.stoneDk : PAL.stone2); vox.put(x0 + 2, y0 + y, z0 + 1, PAL.stone2); }
+      fireV.put(x0 + 3, y0, z0 + 2, PAL.fire); fireV.put(x0 + 4, y0, z0 + 2, PAL.fire2); fireV.put(x0 + 3, y0 + 1, z0 + 2, PAL.fire2); fireV.put(x0 + 4, y0, z0 + 3, PAL.ember);
+      vox.put(x0 + 3, y0, z0 + 6, PAL.stoneDk); vox.put(x0 + 3, y0 + 1, z0 + 6, PAL.black); vox.put(x0 + 4, y0 + 1, z0 + 6, PAL.black); }
+    [[5, -17, PAL.red], [12, -17, PAL.green], [19, -17, PAL.purple]].forEach(([x0, z0, col], si) => {
+      const y0 = hAt(x0, z0); if (!y0) return;
+      for (const [cx, cz] of [[0, 0], [3, 0], [0, 2], [3, 2]]) for (let y = 0; y < 3; y++) vox.put(x0 + cx, y0 + y, z0 + cz, PAL.woodDk);
+      for (let x = -1; x <= 4; x++) for (let z = -1; z <= 3; z++) vox.put(x0 + x, y0 + 3 + (z > 1 ? 0 : 1), z0 + z, x % 2 ? col : PAL.white);
+      for (let x = 0; x < 4; x++) { vox.put(x0 + x, y0 + 1, z0 + 1, PAL.plank); vox.put(x0 + x, y0 + 2, z0 + 1, [[PAL.red, PAL.yellow, PAL.green], [PAL.yellow, PAL.pink, PAL.teal], [PAL.purple, PAL.red, PAL.yellow]][si][x % 3]); }
+    });
+    house(LOT.harbour[0], LOT.harbour[1], 6, 5, 4, { roof: PAL.roofB, roof2: PAL.roofB2, roofDk: 0x2c66b0 });
+    for (let x = PIER.x0 - 2; x <= PIER.x1; x++) for (let z = PIER.z0; z <= PIER.z1; z++) { if (hAt(x, z) > 1) continue; vox.put(x, 0, z, (x + z) % 2 ? PAL.plank : PAL.wood); }
+    for (let x = PIER.x0; x <= PIER.x1; x += 3) for (const z of [PIER.z0 - 1, PIER.z1 + 1]) { vox.put(x, -1, z, PAL.woodDk); vox.put(x, 0, z, PAL.woodDk); vox.put(x, 1, z, PAL.woodDk); }
+    for (const z of [PIER.z0 - 1, PIER.z1 + 1]) { vox.put(PIER.x1, 2, z, PAL.woodDk); glow.put(PIER.x1, 3, z, 0xffd36b); }
+    { const cx = LOT.totem[0], cz = LOT.totem[1], y0 = hAt(cx, cz); if (y0) {
+      for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) { const ring = Math.max(Math.abs(x), Math.abs(z)) === 3; if (ring && !(z === -3 && Math.abs(x) <= 0)) vox.put(cx + x, y0, cz + z, (x + z) % 2 ? PAL.hedge : PAL.hedge2); }
+      [PAL.red, PAL.teal, PAL.yellow, PAL.purple, PAL.red, PAL.teal].forEach((c, i) => vox.put(cx, y0 + i, cz, c));
+      vox.put(cx - 1, y0 + 3, cz, PAL.yellow); vox.put(cx + 1, y0 + 3, cz, PAL.yellow); vox.put(cx, y0 + 6, cz, PAL.yellow);
+      for (const [fx, fz, fc] of [[-2, -1, PAL.pink], [2, 1, PAL.white], [-1, 2, PAL.pink], [1, -2, PAL.white]]) vox.put(cx + fx, y0, cz + fz, fc); } }
+    house(LOT.houseA[0], LOT.houseA[1], 5, 5, 4, { roof: PAL.roofR, roof2: PAL.roofR2, roofDk: 0xb23a2e });
+    house(LOT.houseB[0], LOT.houseB[1], 5, 5, 4, { roof: PAL.roof, roof2: PAL.roof2, chimney: true });
+    house(LOT.houseC[0], LOT.houseC[1], 6, 5, 4, { roof: PAL.roofB, roof2: PAL.roofB2, roofDk: 0x2c66b0 });
+    { const x = LOT.well[0], z = LOT.well[1], y = hAt(x, z); if (y) { for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { vox.put(x + dx, y, z + dz, PAL.stone2); vox.put(x + dx, y + 1, z + dz, (dx + dz) % 2 ? PAL.stone : PAL.stoneDk); } vox.put(x, y + 3, z, PAL.woodDk); vox.put(x + 1, y + 3, z, PAL.woodDk); vox.put(x, y + 4, z, PAL.roofDk); vox.put(x + 1, y + 4, z, PAL.roofDk); glow.put(x, y + 2, z + 1, 0x8fe3ff); } }
+    skeleton(-20, 26); chest(-18, 26); chest(LOT.tavern[0] + 10, LOT.tavern[1] + 6); campfire(6, 3);
+    for (const [cx, cz] of [[22, 10], [23, 10], [-24, -2]]) { const y = hAt(cx, cz); if (y && T[I(cx, cz)] !== 3) { vox.put(cx, y, cz, PAL.plank); vox.put(cx, y + 1, cz, PAL.woodDk); } }
+    { const x = 24, z = 18, y = hAt(x, z); if (y) { for (let i = -1; i <= 1; i++) { vox.put(x + i, y, z, PAL.woodDk); vox.put(x + i, y + 1, z, i === 0 ? PAL.plank : PAL.wood); } vox.put(x - 2, y, z, PAL.woodDk); vox.put(x + 2, y, z, PAL.woodDk); } }
+    const PALMS = [[-32, 6], [-30, -10], [30, 2], [33, 12], [-14, 30], [10, 30], [28, -12], [-30, 22], [6, -28], [26, 22], [-24, 16], [-22, 14], [-26, 13], [12, 24], [-16, -2]];
+    PALMS.forEach(([x, z], i) => { if (hAt(x, z) >= 1 && !(inG(x, z) && T[I(x, z)])) palm(x, z, 5 + (i % 3)); });
+    for (let i = 0; i < 55; i++) {
+      const x = Math.round((rng() - 0.5) * 52), z = Math.round((rng() - 0.5) * 52), h = hAt(x, z), ti = inG(x, z) ? T[I(x, z)] : 0;
+      if (h < 2 || ti || land.has(x, h, z) || vox.has(x, h, z)) continue;
+      if (rng() < 0.3) { vox.put(x, h, z, PAL.leaf2); if (rng() < 0.5) vox.put(x, h + 1, z, PAL.leafLt); }
+      else vox.put(x, h, z, [PAL.pink, PAL.white, PAL.yellow][(rng() * 3) | 0]);
+    }
+  }
+
+  // a guest's custom city from a compact spec (safe, validated vocabulary)
+  const LOCKZ = [[LOT.tower[0] + 1, LOT.tower[1] + 1, 8], [-2, 30, 4]];
+  function buildSpecCity(spec) {
+    const col = (c) => (typeof c === 'string' && PAL[c] != null ? PAL[c] : (typeof c === 'number' ? c : undefined));
+    const near = (x, z) => LOCKZ.some(([lx, lz, lr]) => Math.hypot(x - lx, z - lz) < lr);
+    for (const it of (spec.items || [])) {
+      if (!it || it.t == null) continue;
+      const x = Math.round(+it.x), z = Math.round(+it.z);
+      if (!Number.isFinite(x) || !Number.isFinite(z) || !inG(x, z) || hAt(x, z) < 2 || (inG(x, z) && T[I(x, z)]) || near(x, z)) continue;
+      const y = hAt(x, z);
+      switch (it.t) {
+        case 'house': house(x, z, clamp(+it.w || 5, 3, 10) | 0, clamp(+it.d || 5, 3, 9) | 0, clamp(+it.h || 4, 3, 7) | 0, { wall: col(it.wall), wall2: col(it.wall2), roof: col(it.roof), roof2: col(it.roof2), roofDk: col(it.roofDk), chimney: !!it.chimney }); break;
+        case 'palm': palm(x, z, clamp(+it.h || 5, 3, 9) | 0); break;
+        case 'tree': { vox.put(x, y, z, PAL.trunk2); vox.put(x, y + 1, z, PAL.trunk); vox.put(x, y + 2, z, PAL.leaf); for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) vox.put(x + a, y + 2, z + b, PAL.leaf2); vox.put(x, y + 3, z, PAL.leafLt); } break;
+        case 'stall': case 'tent': { const cc = col(it.color) || PAL.red; for (const [cx, cz] of [[0, 0], [3, 0], [0, 2], [3, 2]]) for (let yy = 0; yy < 3; yy++) vox.put(x + cx, y + yy, z + cz, PAL.woodDk); for (let ax = -1; ax <= 4; ax++) for (let az = -1; az <= 3; az++) vox.put(x + ax, y + 3 + (az > 1 ? 0 : 1), z + az, ax % 2 ? cc : PAL.white); } break;
+        case 'well': { for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { vox.put(x + dx, y, z + dz, PAL.stone2); vox.put(x + dx, y + 1, z + dz, (dx + dz) % 2 ? PAL.stone : PAL.stoneDk); } vox.put(x, y + 3, z, PAL.woodDk); vox.put(x + 1, y + 3, z, PAL.woodDk); vox.put(x, y + 4, z, PAL.roofDk); vox.put(x + 1, y + 4, z, PAL.roofDk); } break;
+        case 'chest': chest(x, z); break;
+        case 'campfire': campfire(x, z); break;
+        case 'skeleton': skeleton(x, z); break;
+        case 'barrel': { vox.put(x, y, z, PAL.plank); vox.put(x, y + 1, z, PAL.woodDk); vox.put(x, y + 2, z, PAL.plank); } break;
+        case 'bush': { vox.put(x, y, z, PAL.leaf2); if (rng() < 0.6) vox.put(x, y + 1, z, PAL.leafLt); } break;
+        case 'flower': vox.put(x, y, z, col(it.color) || [PAL.pink, PAL.white, PAL.yellow][(rng() * 3) | 0]); break;
+        default: break;
+      }
+    }
+  }
+
+  // build / rebuild the whole structure layer (locked always + editable default-or-spec)
+  let cityMeshes = [], curCity = null;
+  function buildCity(spec) {
+    for (const mm of cityMeshes) { scene.remove(mm); mm.geometry.dispose(); mm.dispose?.(); } cityMeshes.length = 0;
+    vox = new Vox(); glow = new Vox(); fireV = new Vox();
+    buildLocked();
+    const custom = spec && Array.isArray(spec.items) && spec.items.length;
+    if (custom) buildSpecCity(spec); else buildDefaultCity();
+    const cm = vox.mesh(landMat, 0.035, rng); scene.add(cm); cityMeshes.push(cm);
+    const gm = glow.mesh(glowMat, 0, rng); scene.add(gm); cityMeshes.push(gm);
+    const fm = fireV.mesh(fireMat, 0, rng); fm.castShadow = false; scene.add(fm); cityMeshes.push(fm);
+    curCity = custom ? spec : null;
+    emit('city', { custom: !!curCity, items: curCity ? curCity.items.length : 0 });
+  }
+  buildCity(null);
 
   // ---------- water tiles coloured by distance to land ----------
   const dist = new Int16Array(SZ * SZ).fill(99), q = [];
@@ -737,6 +759,9 @@ export function createVoxelIsland(canvas, opts = {}) {
     setInfiniteSea(on) { applyMode((on == null ? mode !== 'sea' : !!on) ? 'sea' : 'normal'); return mode === 'sea'; },
     setInstant(on) { instantMode = on == null ? !instantMode : !!on; return instantMode; },
     setMode(name) { applyMode(name === 'background' || name === 'flat' ? 'flat' : name === 'sea' ? 'sea' : 'normal'); return mode; },
+    setCity(spec) { try { buildCity(typeof spec === 'string' ? JSON.parse(spec) : spec); return { ok: true, items: curCity ? curCity.items.length : 0, custom: !!curCity }; } catch (e) { return { ok: false, error: e.message }; } },
+    getCity: () => (curCity ? curCity : { items: [], custom: false }),
+    resetCity() { buildCity(null); return { ok: true, custom: false }; },
     getMode: () => mode,
     setLabel(t) { drawLabel(t); return labelText; },
     getLabel: () => labelText,
