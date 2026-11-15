@@ -24,24 +24,26 @@
   /* HUD + play */
   #hud{position:fixed;left:18px;top:16px;z-index:20;background:var(--glass);backdrop-filter:blur(12px);border:1px solid rgba(232,197,106,.3);border-radius:14px;padding:9px 14px;font-size:13px;letter-spacing:.02em;box-shadow:0 8px 30px rgba(0,0,0,.4)}
   #hud b{color:var(--gold)}
-  #play{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:20;cursor:pointer;
+  #play{position:fixed;left:50%;bottom:17vh;transform:translateX(-50%);z-index:20;cursor:pointer;
     background:linear-gradient(180deg,rgba(40,30,16,.85),rgba(18,13,6,.9));border:1px solid var(--gold2);color:var(--gold);
     padding:13px 30px;border-radius:40px;font-size:17px;letter-spacing:.06em;box-shadow:0 0 0 1px rgba(232,197,106,.25),0 10px 40px rgba(0,0,0,.5);transition:transform .2s,box-shadow .2s}
   #play:hover{transform:translateX(-50%) translateY(-2px);box-shadow:0 0 24px rgba(232,197,106,.4),0 14px 46px rgba(0,0,0,.6)}
   /* modal: dark frosted casino glass */
-  #scrim{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(2,3,8,.35);backdrop-filter:blur(2px)}
-  #scrim.on{display:flex}
-  #modal{position:relative;width:min(1180px,94vw);max-height:92vh;border-radius:26px;padding:22px clamp(16px,3vw,40px) 26px;
-    background:linear-gradient(160deg,rgba(14,18,32,.62),rgba(7,9,18,.72));backdrop-filter:blur(26px) saturate(1.25);-webkit-backdrop-filter:blur(26px) saturate(1.25);
+  #scrim{position:fixed;inset:0;z-index:30;display:none;background:radial-gradient(130% 90% at 50% 40%,transparent 60%,rgba(2,3,10,.4))}
+  #scrim.on{display:block}
+  /* top screen: big wide drum in frosted casino glass */
+  #drumPanel{position:absolute;top:3vh;left:50%;transform:translateX(-50%);width:min(900px,74vw);border-radius:24px;padding:10px clamp(12px,2vw,26px) 4px;
+    background:linear-gradient(160deg,rgba(14,18,32,.6),rgba(7,9,18,.72));backdrop-filter:blur(26px) saturate(1.25);-webkit-backdrop-filter:blur(26px) saturate(1.25);
     border:1px solid rgba(232,197,106,.32);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 0 60px rgba(120,90,40,.12),0 30px 90px rgba(0,0,0,.6);
     transition:transform .5s cubic-bezier(.5,0,.2,1),opacity .4s}
-  #modal.lift{transform:translateY(-38vh) scale(.82);opacity:.0;pointer-events:none}
+  #drumPanel.lift{transform:translateX(-50%) translateY(-26vh) scale(.85);opacity:0;pointer-events:none}
   #close{position:absolute;right:16px;top:12px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(232,197,106,.4);background:rgba(20,14,8,.7);color:var(--gold);font-size:17px;cursor:pointer;z-index:4}
   .mtitle{text-align:center;color:var(--gold);letter-spacing:.14em;font-size:13px;text-transform:uppercase;opacity:.8;margin:0 0 10px}
-  #stage{display:grid;grid-template-columns:1fr 1.15fr;gap:clamp(12px,2vw,30px);align-items:center}
-  /* bowl + dice */
-  #bowlWrap{position:relative;aspect-ratio:16/9;background:url('lila/bowl.webp') center/contain no-repeat;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none}
-  #dice{display:flex;gap:7px;margin-top:-20%;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+  /* bottom screen: bowl standing on the board's blue lotus */
+  #bowlWrap{position:absolute;left:50%;bottom:6.5vh;transform:translateX(-50%);width:min(330px,26vw);aspect-ratio:16/9;background:url('lila/bowl.webp') center bottom/contain no-repeat;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;filter:drop-shadow(0 14px 26px rgba(0,0,0,.55))}
+  #bowlWrap::before{content:'';position:absolute;left:50%;bottom:4%;transform:translateX(-50%);width:62%;height:24%;border-radius:50%;background:radial-gradient(ellipse,rgba(120,210,255,.5),transparent 70%);filter:blur(6px);z-index:-1}
+  #scrim.choosing #bowlWrap{opacity:0;pointer-events:none;transition:opacity .3s}
+  #dice{display:flex;gap:5px;margin-top:-28%;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
   .die{width:clamp(26px,3.4vw,42px);aspect-ratio:1;border-radius:22%;background:linear-gradient(150deg,#f7e7ad,#c89b3e);border:1px solid #7c5a1e;position:relative;box-shadow:inset 0 2px 4px rgba(255,255,255,.5),inset 0 -3px 6px rgba(90,60,10,.5)}
   .die i{position:absolute;width:19%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 35%,#3a2a08,#120c02);transform:translate(-50%,-50%)}
   .die.shake{animation:shk .28s linear infinite}
@@ -50,10 +52,10 @@
   #rollno{position:absolute;top:8%;left:50%;transform:translateX(-50%) scale(.4);opacity:0;font-size:clamp(34px,5vw,58px);color:#fff;text-shadow:0 0 18px rgba(255,210,120,.9);transition:transform .4s cubic-bezier(.3,1.6,.5,1),opacity .4s}
   #rollno.show{opacity:1;transform:translateX(-50%) scale(1)}
   /* drum + card */
-  #drumWrap{position:relative;aspect-ratio:16/9;background:url('lila/drum.webp') center/contain no-repeat;display:flex;align-items:center;justify-content:center;overflow:hidden}
-  #slot{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);width:17%;aspect-ratio:909/1424;z-index:3}
-  #strip{position:absolute;left:0;top:50%;transform:translateY(-50%);display:flex;gap:10px;will-change:transform}
-  .cback{width:70px;aspect-ratio:909/1424;border-radius:8px;flex:0 0 auto;
+  #drumWrap{position:relative;width:100%;aspect-ratio:16/9;background:url('lila/drum.webp') center/contain no-repeat;display:flex;align-items:center;justify-content:center;overflow:visible}
+  #reel{position:absolute;left:50%;top:46.5%;transform:translate(-50%,-50%);width:15.5%;height:52%;overflow:hidden;border-radius:7px;z-index:3;box-shadow:inset 0 0 22px rgba(255,200,90,.35)}
+  #strip{position:absolute;left:0;top:0;width:100%;display:flex;flex-direction:column;gap:6px;will-change:transform}
+  .cback{width:100%;aspect-ratio:909/1424;border-radius:6px;flex:0 0 auto;
     background:repeating-linear-gradient(45deg,#2a1c40,#2a1c40 6px,#34234f 6px,#34234f 12px);border:1px solid var(--gold2);box-shadow:inset 0 0 0 2px rgba(232,197,106,.25)}
   /* a rendered card */
   .card{position:relative;aspect-ratio:909/1424;background:url('lila/card-frame.webp') center/100% 100% no-repeat}
@@ -62,9 +64,10 @@
   .card .nm{position:absolute;left:12%;top:62%;width:76%;height:9%;display:flex;align-items:center;justify-content:center;text-align:center;color:#3a2a10;font-size:34%;line-height:1.05;font-weight:bold}
   .card .pr{position:absolute;left:13%;top:72%;width:74%;height:24%;overflow:hidden;text-align:center;color:#4a371a;font-size:26%;line-height:1.25}
   /* card stage reveal */
-  #cardStage{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%) scale(.2);opacity:0;width:20%;z-index:4;transition:transform .5s cubic-bezier(.3,1.3,.4,1),opacity .4s;cursor:pointer}
+  #cardStage{position:absolute;left:50%;top:47%;transform:translate(-50%,-50%) scale(.2);opacity:0;width:15.5%;z-index:4;transition:transform .5s cubic-bezier(.3,1.3,.4,1),opacity .4s;cursor:pointer}
   #cardStage.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-  #cardStage .hint{position:absolute;left:0;right:0;bottom:-26px;text-align:center;color:var(--gold);font-size:12px;letter-spacing:.04em;animation:pulse 1.4s ease-in-out infinite}
+  #cardStage.show:hover{transform:translate(-50%,-50%) scale(2);z-index:20}
+  #cardStage .hint{position:absolute;left:0;right:0;bottom:-24px;text-align:center;color:var(--gold);font-size:11px;letter-spacing:.04em;animation:pulse 1.4s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
   /* top plaque after accept */
   #plaque{position:fixed;left:50%;top:14px;transform:translateX(-50%) translateY(-120%);z-index:31;transition:transform .5s cubic-bezier(.4,0,.2,1);
@@ -72,12 +75,12 @@
   #plaque.on{transform:translateX(-50%) translateY(0)}
   #plaque .n{color:var(--gold);font-size:16px}#plaque .p{font-size:12.5px;opacity:.85;margin-top:3px;line-height:1.3}
   /* choices fan */
-  #fan{position:fixed;left:0;right:0;bottom:-46vh;z-index:31;display:flex;gap:clamp(10px,2vw,26px);justify-content:center;align-items:flex-end;padding:0 4vw 26px;transition:bottom .55s cubic-bezier(.4,0,.2,1)}
-  #fan.on{bottom:0}
-  .choice{position:relative;width:min(27%,260px);aspect-ratio:909/1424;cursor:pointer;transition:transform .25s;background:url('lila/card-frame.webp') center/100% 100% no-repeat;transform-origin:bottom center}
-  .choice:nth-child(1){transform:rotate(-7deg) translateY(16px)}
-  .choice:nth-child(3){transform:rotate(7deg) translateY(16px)}
-  .choice:hover{transform:translateY(-16px) scale(1.05) rotate(0)!important;z-index:3}
+  #fan{position:fixed;left:0;right:0;bottom:-80vh;z-index:31;display:flex;gap:clamp(10px,2vw,30px);justify-content:center;align-items:center;padding:0 4vw;transition:bottom .55s cubic-bezier(.4,0,.2,1)}
+  #fan.on{bottom:13vh}
+  .choice{position:relative;width:auto;height:min(60vh,440px);aspect-ratio:909/1424;cursor:pointer;transition:transform .25s;background:url('lila/card-frame.webp') center/100% 100% no-repeat;transform-origin:center}
+  .choice:nth-child(1){transform:rotate(-6deg) translateY(10px)}
+  .choice:nth-child(3){transform:rotate(6deg) translateY(10px)}
+  .choice:hover{transform:translateY(-14px) scale(1.06) rotate(0)!important;z-index:3}
   .choice .tag{position:absolute;left:8%;top:8.1%;width:84%;height:51.9%;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6%}
   .choice .tag .ic{font-size:min(5vw,52px)}
   .choice .tag .k{font-size:min(1.5vw,15px);letter-spacing:.08em;text-transform:uppercase;color:#ffe9b0;text-shadow:0 1px 6px rgba(0,0,0,.7)}
@@ -100,20 +103,18 @@
 <button id="play">▶ Войти в игру</button>
 
 <div id="scrim">
-  <div id="modal">
+  <div id="drumPanel">
     <button id="close">✕</button>
     <p class="mtitle" id="minstr">Зажми чашу с камнями — отпусти — и прими судьбу</p>
-    <div id="stage">
-      <div id="bowlWrap" title="Зажми и отпусти">
-        <div id="dice"></div>
-        <div id="rollno"></div>
-        <div id="charge">зажми чашу…</div>
-      </div>
-      <div id="drumWrap">
-        <div id="strip"></div>
-        <div id="cardStage"></div>
-      </div>
+    <div id="drumWrap">
+      <div id="reel"><div id="strip"></div></div>
+      <div id="cardStage"></div>
     </div>
+  </div>
+  <div id="bowlWrap" title="Зажми и отпусти">
+    <div id="dice"></div>
+    <div id="rollno"></div>
+    <div id="charge">зажми чашу…</div>
   </div>
 </div>
 
@@ -163,7 +164,7 @@ function renderCard(c){ const hue=PLAN_HUE[c.plan-1];
 // ---- throw flow ----
 let charging=false, chargeT=0;
 function openModal(){ $('scrim').classList.add('on'); resetThrow(); }
-function resetThrow(){ $('modal').classList.remove('lift'); $('cardStage').classList.remove('show'); $('cardStage').innerHTML='';
+function resetThrow(){ $('scrim').classList.remove('choosing'); $('drumPanel').classList.remove('lift'); $('cardStage').classList.remove('show'); $('cardStage').innerHTML='';
   $('rollno').classList.remove('show'); $('charge').textContent=started?'зажми чашу…':'нужна 6, чтобы воплотиться — зажми чашу…';
   $('minstr').textContent='Зажми чашу с камнями — отпусти — и прими судьбу'; }
 function closeAll(){ $('scrim').classList.remove('on'); $('plaque').classList.remove('on'); $('fan').classList.remove('on'); }
@@ -190,24 +191,24 @@ function resolveMove(r){
 
 // ---- drum spin → reveal card of sector S ----
 function spinTo(S){
-  const strip=$('strip'); strip.innerHTML=''; const N=22; for(let i=0;i<N;i++){const b=document.createElement('div');b.className='cback';strip.appendChild(b);}
-  strip.style.transition='none'; strip.style.transform='translateY(-50%) translateX(0)';
-  const drumW=$('drumWrap').clientWidth; strip.offsetHeight;
-  tone(140,'sawtooth',1.4,.03);
-  strip.style.transition='transform 1.5s cubic-bezier(.12,.6,.1,1)';
-  strip.style.transform=`translateY(-50%) translateX(${-(N-4)*80}px)`;
+  const strip=$('strip'); strip.innerHTML=''; const N=20; for(let i=0;i<N;i++){const b=document.createElement('div');b.className='cback';strip.appendChild(b);}
+  strip.style.transition='none'; strip.style.transform='translateY(0)'; strip.offsetHeight;
+  const itemH=(strip.firstChild.offsetHeight||40)+6;
+  tone(140,'sawtooth',1.5,.03);
+  strip.style.transition='transform 1.55s cubic-bezier(.1,.62,.08,1)';
+  strip.style.transform=`translateY(${-(N-2)*itemH}px)`;
   setTimeout(()=>{ strip.innerHTML='';
-    const cs=$('cardStage'); cs.innerHTML=renderCard(byId(S))+'<div class="hint">нажми карту — принять вызов</div>';
+    const cs=$('cardStage'); cs.innerHTML=renderCard(byId(S))+'<div class="hint">наведи — увеличить · нажми — принять</div>';
     cs.classList.add('show'); tone(660,'sine',.5,.07);
     cs.onclick=()=>acceptCard(S);
-  }, 1550);
+  }, 1600);
 }
 
 // ---- accept → plaque + 3 choices ----
 const ICON={ego:'🜨',stagnation:'∞',awareness:'✦'}, KLABEL={ego:'Эго',stagnation:'Застой',awareness:'Осознание'};
 function acceptCard(S){ const c=byId(S); cur=S; hud();
   if(c.type==='win'){ winGame(); return; }
-  $('modal').classList.add('lift');
+  $('drumPanel').classList.add('lift'); $('scrim').classList.add('choosing');
   $('pqN').textContent=c.id+'. '+c.name; $('pqP').textContent=c.prompt; $('plaque').classList.add('on');
   const fan=$('fan'); fan.innerHTML='';
   const CBG={ego:'radial-gradient(circle at 50% 38%,#c0453f,#611616 62%,#2c0a0a)',stagnation:'radial-gradient(circle at 50% 38%,#7b828f,#333843 62%,#1a1d24)',awareness:'radial-gradient(circle at 50% 38%,#f0d079,#9c7320 60%,#3f2d0a)'};
