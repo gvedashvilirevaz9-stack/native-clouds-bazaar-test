@@ -34,6 +34,7 @@
   <div class="sec"><b>Доставка (кто несёт)</b>
     <div class="seg" id="quick"><button data-w="clock">Часы</button><button data-q="погода">Погода</button><button data-q="курс биткоина">Биткоин</button></div>
     <div class="row"><span>Несёт</span><div class="seg" id="by"><button data-v="airship">Корабль</button><button data-v="eagle">Попугай</button></div></div>
+    <div class="row"><span>Скорость</span><div class="seg" id="speed"><button data-v="instant">Мгновенно (без ожидания)</button></div></div>
   </div>
 </div>
 <button class="fab" id="show">☰</button>
@@ -64,6 +65,7 @@ let spk=true,blk=true; $('spark').onclick=e=>{const v=e.target.dataset.v;
   $('spark').querySelector('[data-v=toggle]').setAttribute('aria-pressed',String(spk));
   $('spark').querySelector('[data-v=blink]').setAttribute('aria-pressed',String(blk));};
 $('quick').onclick=e=>{const b=e.target.closest('button');if(!b)return;b.dataset.w?bg.deliver(b.dataset.w,{by,size:'M'}):bg.deliver('agent',{by,size:'M',data:{q:b.dataset.q}});};
+let inst=false; $('speed').onclick=e=>{if(e.target.dataset.v!=='instant')return; inst=bg.setInstant(); e.target.setAttribute('aria-pressed',String(inst));};
 $('hide').onclick=()=>$('panel').classList.add('min'); $('show').onclick=()=>$('panel').classList.remove('min');
 
 // ---- clickable marker cubes: left-click runs, right-click configures (ribbon + All catalog by category) ----

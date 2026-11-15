@@ -560,10 +560,12 @@ export function createVoxelIsland(canvas, opts = {}) {
 
   // ---------- courier delivery (ships dock at the pier, parrots fly in) ----------
   const MAP = { airship: 'ship', balloon: 'ship', eagle: 'parrot', ship: 'ship', parrot: 'parrot' };
+  let instantMode = false;                                                           // skip the courier flight and pop the window in place
   function deliver(widget, o = {}) {
     const kind = MAP[o.by] || 'ship';
     const at = [clamp(+(o.at?.[0] ?? 0.5), 0.05, 0.95), clamp(+(o.at?.[1] ?? 0.4), 0.1, 0.9)];
     const size = ['S', 'M', 'L'].includes(o.size) ? o.size : 'M';
+    if (instantMode) { const id = S.seq++, to = [at[0] * S.W, at[1] * S.H]; emit('drop', { id, widget: String(widget).slice(0, 40), data: o.data || null, size, tag: o.tag ?? null, from: to, to }); return Promise.resolve(id); }
     const g = kind === 'ship' ? buildShip(PAL.yellow) : buildParrot(PAL.red, PAL.green);
     if (kind === 'parrot') g.scale.multiplyScalar(size === 'L' ? 1.6 : size === 'S' ? 1 : 1.3);
     scene.add(g);
@@ -724,6 +726,7 @@ export function createVoxelIsland(canvas, opts = {}) {
     setInput() {}, calibrate() {}, setStrength() {}, setEffects() {}, getInput: () => 'off',
     setInfinite(on) { applyMode((on == null ? mode !== 'flat' : !!on) ? 'flat' : 'normal'); return mode === 'flat'; },
     setInfiniteSea(on) { applyMode((on == null ? mode !== 'sea' : !!on) ? 'sea' : 'normal'); return mode === 'sea'; },
+    setInstant(on) { instantMode = on == null ? !instantMode : !!on; return instantMode; },
     setSpecks(on) { specksOn = on == null ? !specksOn : !!on; needSpark = true; seaFoam.visible = mode === 'sea' && specksOn; return specksOn; },
     setBlink(on) { blinkOn = on == null ? !blinkOn : !!on; needSpark = true; return blinkOn; },
     getScene: () => ({ name: 'Воксельный остров', is3D: true, voxels: land.m.size, water: water.length }),
