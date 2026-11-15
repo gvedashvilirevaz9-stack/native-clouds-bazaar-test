@@ -12,14 +12,15 @@
   #board::after{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 60%,transparent 55%,rgba(3,4,10,.55) 100%)}
   /* path + nodes */
   #layer{position:absolute;inset:0;pointer-events:none}
-  .node{position:absolute;width:1.7%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);
+  .node{position:absolute;width:1.7%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);pointer-events:auto;cursor:help;
     background:radial-gradient(circle,rgba(255,240,190,.95),rgba(255,200,90,.35) 60%,transparent 72%);box-shadow:0 0 10px rgba(255,210,120,.6)}
+  .node:hover{box-shadow:0 0 16px 4px rgba(255,230,150,.9);z-index:6}
   .node.arrow{background:radial-gradient(circle,#fff2c0,rgba(255,196,64,.5) 60%,transparent 72%);box-shadow:0 0 16px 3px rgba(255,196,64,.8)}
   .node.snake{background:radial-gradient(circle,#bfe0ff,rgba(90,150,255,.45) 60%,transparent 72%);box-shadow:0 0 14px 2px rgba(90,150,255,.7)}
   .node.win{background:radial-gradient(circle,#fff,rgba(255,236,150,.7) 55%,transparent 72%);box-shadow:0 0 22px 5px rgba(255,236,150,.9)}
   #token{position:absolute;width:2.7%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;z-index:5;
     background:radial-gradient(circle at 38% 34%,#ffffff,#ffe9a8 30%,#f4a93a 62%,#b5661d 100%);
-    box-shadow:0 0 18px 6px rgba(255,200,110,.75),0 0 46px 14px rgba(255,170,80,.35);transition:left 1s cubic-bezier(.5,0,.3,1),top 1s cubic-bezier(.5,0,.3,1)}
+    box-shadow:0 0 18px 6px rgba(255,200,110,.75),0 0 46px 14px rgba(255,170,80,.35);transition:left .5s cubic-bezier(.4,0,.3,1),top .5s cubic-bezier(.4,0,.3,1),opacity .4s}
   #token::after{content:'';position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle at 60% 65%,transparent 40%,rgba(255,255,255,.5) 70%,transparent)}
   /* HUD + play */
   #hud{position:fixed;left:18px;top:16px;z-index:20;background:var(--glass);backdrop-filter:blur(12px);border:1px solid rgba(232,197,106,.3);border-radius:14px;padding:9px 14px;font-size:13px;letter-spacing:.02em;box-shadow:0 8px 30px rgba(0,0,0,.4)}
@@ -46,6 +47,7 @@
   #scrim.carding::after{content:'';position:fixed;inset:0;background:rgba(2,3,10,.58);z-index:40;pointer-events:none}
   #dice{display:flex;gap:5px;margin-top:-28%;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
   .die{width:clamp(26px,3.4vw,42px);aspect-ratio:1;border-radius:22%;background:linear-gradient(150deg,#f7e7ad,#c89b3e);border:1px solid #7c5a1e;position:relative;box-shadow:inset 0 2px 4px rgba(255,255,255,.5),inset 0 -3px 6px rgba(90,60,10,.5)}
+  .die.big{width:clamp(46px,5.6vw,74px)}
   .die i{position:absolute;width:19%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 35%,#3a2a08,#120c02);transform:translate(-50%,-50%)}
   .die.shake{animation:shk .28s linear infinite}
   @keyframes shk{0%{transform:translateY(0) rotate(0)}25%{transform:translateY(-14%) rotate(-12deg)}50%{transform:translateY(4%) rotate(9deg)}75%{transform:translateY(-8%) rotate(-6deg)}100%{transform:translateY(0) rotate(0)}}
@@ -69,7 +71,7 @@
   .card .txt .pr{font-size:4.3cqw;color:#463314;line-height:1.26}
   /* card stage reveal */
   /* drawn card opens near full-screen, above the bottom dock */
-  #cardStage{position:fixed;left:50%;top:2.2vh;transform:translateX(-50%) scale(.25);transform-origin:top center;opacity:0;height:min(87vh,calc(100vh - 10vh));width:auto;aspect-ratio:909/1424;z-index:45;transition:transform .55s cubic-bezier(.28,1.2,.4,1),opacity .4s;cursor:pointer;pointer-events:none}
+  #cardStage{position:fixed;left:50%;top:5vh;transform:translateX(-50%) scale(.25);transform-origin:top center;opacity:0;height:min(60vh,calc(100vh - 34vh));width:auto;aspect-ratio:909/1424;z-index:45;transition:transform .55s cubic-bezier(.28,1.2,.4,1),opacity .4s;pointer-events:none}
   #cardStage.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
   #cardStage .hint{position:absolute;left:0;right:0;bottom:-3vh;text-align:center;color:var(--gold);font-size:13px;letter-spacing:.04em;animation:pulse 1.4s ease-in-out infinite}
   #cardStage .spk{position:absolute;right:6%;top:3%;width:7%;aspect-ratio:1;border-radius:50%;border:1px solid rgba(232,197,106,.6);background:rgba(20,14,8,.7);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:3cqw;cursor:pointer;z-index:3}
@@ -101,23 +103,59 @@
   #win{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(circle at 50% 40%,rgba(30,20,60,.6),rgba(2,3,10,.92));backdrop-filter:blur(8px)}
   #win.on{display:flex}#win h1{color:var(--gold);font-size:40px;letter-spacing:.1em;margin:0 0 10px;text-shadow:0 0 30px rgba(255,220,130,.6)}
   #win p{max-width:520px;opacity:.9;line-height:1.5}#win button{margin-top:22px;cursor:pointer;background:linear-gradient(180deg,rgba(40,30,16,.9),rgba(18,13,6,.95));border:1px solid var(--gold2);color:var(--gold);padding:12px 28px;border-radius:40px;font-size:16px;letter-spacing:.05em}
+  /* request anchor + modal */
+  #reqAnchor{position:fixed;left:50%;top:1vh;transform:translateX(-50%);z-index:47;max-width:72vw;display:none;background:rgba(10,13,24,.82);backdrop-filter:blur(12px);border:1px solid rgba(232,197,106,.34);border-radius:12px;padding:6px 18px;font-size:13.5px;color:#f3ecd8;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  #reqAnchor.on{display:block}#reqAnchor b{color:var(--gold)}
+  #reqScrim{position:fixed;inset:0;z-index:48;display:none;align-items:center;justify-content:center;background:rgba(2,3,10,.62);backdrop-filter:blur(7px)}
+  #reqScrim.on{display:flex}
+  #reqModal{width:min(560px,92vw);background:linear-gradient(160deg,rgba(18,22,38,.92),rgba(8,10,20,.95));border:1px solid rgba(232,197,106,.42);border-radius:22px;padding:28px 30px;text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.65)}
+  #reqModal h2{color:var(--gold);margin:0 0 8px;font-size:22px}#reqModal p{opacity:.82;font-size:14px;margin:0 0 16px;line-height:1.45}
+  #reqInput,#noteInput{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(232,197,106,.3);border-radius:12px;color:#f3ecd8;font:inherit;font-size:15px;padding:11px 14px;resize:none}
+  #reqGo,#noteGo{margin-top:14px;cursor:pointer;background:linear-gradient(180deg,rgba(60,44,20,.95),rgba(26,18,8,.98));border:1px solid var(--gold2);color:var(--gold);padding:12px 26px;border-radius:40px;font-size:16px;letter-spacing:.02em}
+  #reqGo:hover,#noteGo:hover{box-shadow:0 0 20px rgba(232,197,106,.4)}
+  /* awareness note bar under the card */
+  #noteBar{position:fixed;left:50%;bottom:8.5vh;transform:translateX(-50%) translateY(30px);opacity:0;pointer-events:none;z-index:46;width:min(720px,92vw);background:linear-gradient(160deg,rgba(16,20,34,.74),rgba(8,10,20,.82));backdrop-filter:blur(20px);border:1px solid rgba(232,197,106,.34);border-radius:18px;padding:13px 18px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.55);transition:opacity .4s,transform .4s}
+  #noteBar.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  #noteBar .q{color:var(--gold);font-size:14px;margin-bottom:8px;line-height:1.3}
+  /* node hover tooltip */
+  #tooltip{position:fixed;z-index:60;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .15s;max-width:260px;background:rgba(10,13,24,.93);border:1px solid rgba(232,197,106,.4);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.32;color:#f3ecd8;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  #tooltip.on{opacity:1;transform:translateY(0)}#tooltip b{color:var(--gold)}#tooltip .ar{color:#ffd56a}#tooltip .sn{color:#7fb0ff}
+  #journal{max-width:560px;max-height:40vh;overflow:auto;margin:14px auto 0;text-align:left;font-size:13px}
+  #journal .j{border-left:2px solid rgba(232,197,106,.4);padding:3px 0 3px 10px;margin:6px 0}#journal .j b{color:var(--gold)}#journal .j i{opacity:.72}
+  #token.hidden{opacity:0}
 </style>
 </head>
 <body>
 <div id="board"></div>
-<div id="layer"><div id="token"></div></div>
-<div id="hud">Клетка <b id="hcell">1</b> · <span id="hplan">Физический план</span></div>
+<div id="layer"><div id="token" class="hidden"></div></div>
+<div id="hud">Клетка <b id="hcell">—</b> · <span id="hplan">перед входом</span></div>
+<div id="reqAnchor"></div>
+<div id="tooltip"></div>
 <button id="play">▶ Войти в игру</button>
+
+<div id="reqScrim">
+  <div id="reqModal">
+    <h2>Сформулируй свой запрос</h2>
+    <p>Главный вопрос, с которым ты входишь в Лилу. Он останется с тобой всю партию — клетки будут зеркалом для него.</p>
+    <textarea id="reqInput" rows="3" placeholder="Например: почему я буксую в развитии своего проекта?"></textarea>
+    <button id="reqGo">Войти в игру →</button>
+  </div>
+</div>
 
 <div id="scrim">
   <div id="drumPanel">
     <button id="close">✕</button>
-    <p class="mtitle" id="minstr">Зажми чашу с камнями — отпусти — и прими судьбу</p>
+    <p class="mtitle" id="minstr">Зажми чашу — отпусти — брось кубик судьбы</p>
     <div id="drumWrap">
       <div id="reel"><div id="strip"></div></div>
     </div>
   </div>
   <div id="cardStage"></div>
+  <div id="noteBar">
+    <div class="q" id="noteQ"></div>
+    <textarea id="noteInput" rows="2" placeholder="Твой инсайт: где это проявляется в твоём запросе? (1–2 фразы, можно пропустить)"></textarea>
+    <button id="noteGo">Осознал — бросить кубик дальше →</button>
+  </div>
   <div id="bowlWrap" title="Зажми и отпусти">
     <div id="dice"></div>
     <div id="rollno"></div>
@@ -125,10 +163,8 @@
   </div>
 </div>
 
-<div id="plaque"><div class="n" id="pqN"></div><div class="p" id="pqP"></div></div>
-<div id="fan"></div>
 <div id="toast"></div>
-<div id="win"><h1>☀ Космическое сознание</h1><p id="winTxt">Круг Сансары завершён. Фишка растворяется в Млечном Пути.</p><button id="winBtn">Начать новый цикл</button></div>
+<div id="win"><h1>☀ Космическое сознание</h1><p id="winTxt">Ты попал ровно на клетку 68. Круг Сансары завершён — вот карта твоих осознаний:</p><div id="journal"></div><button id="winBtn">Новый запрос</button></div>
 
 <script src="lila-board.js"></script>
 <script>
@@ -141,21 +177,32 @@ const PLAN_HUE=[18,275,122,340,42,205,52,286]; // цвет внутренней 
 const NODES=[];
 for(let i=0;i<72;i++){ const row=Math.floor(i/9), col=i%9; const c=(row%2===0)?col:(8-col);
   const x=7+c*(86/8), y=86-row*(74/7); NODES.push({x,y}); }
+const TT=document.getElementById('tooltip');
+function nodeInfo(c){ let s=`<b>№${c.id}. ${c.name}</b>`;
+  if(c.arrow_to){ const t=byId(c.arrow_to); s+=`<br><span class="ar">↑ Стрела — возносит на №${c.arrow_to} «${t.name}»</span>`; }
+  else if(c.snake_to){ const t=byId(c.snake_to); s+=`<br><span class="sn">↓ Змея — утягивает вниз на №${c.snake_to} «${t.name}»</span>`; }
+  else if(c.id===68){ s+=`<br><span class="ar">★ Финал — попади сюда ровно</span>`; }
+  else s+='<br>обычная клетка';
+  return s; }
 (function drawNodes(){ const L=$('layer');
   BOARD.forEach((c,i)=>{ const d=document.createElement('div'); d.className='node'+(c.type==='arrow'?' arrow':c.type==='snake'?' snake':c.id===68?' win':'');
-    d.style.left=NODES[i].x+'%'; d.style.top=NODES[i].y+'%'; d.title=c.id+'. '+c.name; L.appendChild(d); }); })();
+    d.style.left=NODES[i].x+'%'; d.style.top=NODES[i].y+'%'; d.dataset.id=c.id;
+    d.addEventListener('mouseenter',()=>{ TT.innerHTML=nodeInfo(c); TT.classList.add('on'); });
+    d.addEventListener('mousemove',ev=>{ TT.style.left=Math.min(ev.clientX+14,innerWidth-270)+'px'; TT.style.top=(ev.clientY+14)+'px'; });
+    d.addEventListener('mouseleave',()=>TT.classList.remove('on'));
+    L.appendChild(d); }); })();
 
 // ---- state ----
-let cur=1, started=false, busy=false;
-function hud(){ $('hcell').textContent=cur; $('hplan').textContent=byId(cur).name; }
-function place(){ const n=NODES[cur-1]; $('token').style.left=n.x+'%'; $('token').style.top=n.y+'%'; }
-place(); hud();
+let cur=0, started=false, busy=false, request='', journal=[];
+function hud(){ $('hcell').textContent=started?cur:'—'; $('hplan').textContent=started?byId(cur).name:'перед входом'; }
+function placeAt(id){ const n=NODES[id-1]; if(!n)return; const t=$('token'); t.classList.remove('hidden'); t.style.left=n.x+'%'; t.style.top=n.y+'%'; }
+hud();
 
 // ---- dice faces ----
 const PIP={1:[[50,50]],2:[[30,30],[70,70]],3:[[30,30],[50,50],[70,70]],4:[[30,30],[70,30],[30,70],[70,70]],5:[[30,30],[70,30],[50,50],[30,70],[70,70]],6:[[30,30],[70,30],[30,50],[70,50],[30,70],[70,70]]};
 function face(el,n){ el.innerHTML=''; PIP[n].forEach(p=>{const i=document.createElement('i');i.style.left=p[0]+'%';i.style.top=p[1]+'%';el.appendChild(i);}); }
 const DICE=[];
-(function(){ const box=$('dice'); for(let k=0;k<5;k++){ const d=document.createElement('div'); d.className='die'; box.appendChild(d); DICE.push(d); face(d,(k%6)+1); } })();
+(function(){ const box=$('dice'); const d=document.createElement('div'); d.className='die big'; box.appendChild(d); DICE.push(d); face(d,6); })();
 
 // ---- audio (мягкие сигналы) ----
 let AC; function tone(f,t,dur,g){ try{AC=AC||new (window.AudioContext||window.webkitAudioContext)(); const o=AC.createOscillator(),a=AC.createGain(); o.type=t||'sine'; o.frequency.value=f; a.gain.value=0; o.connect(a); a.connect(AC.destination); const n=AC.currentTime; a.gain.linearRampToValueAtTime(g||.06,n+.02); a.gain.exponentialRampToValueAtTime(.0001,n+(dur||.3)); o.start(n); o.stop(n+(dur||.3)); }catch(e){} }
@@ -180,90 +227,82 @@ function renderCard(c){ const hue=PLAN_HUE[c.plan-1];
     <div class="txt"><div class="nm">${c.name}</div><div class="pr">${c.prompt}</div></div>
   </div>`; }
 
-// ---- throw flow ----
-let charging=false, chargeT=0;
-function openModal(){ $('scrim').classList.add('on'); resetThrow(); }
-function resetThrow(){ stopSpeak(); $('scrim').classList.remove('choosing'); $('scrim').classList.remove('carding'); $('drumPanel').classList.remove('lift'); $('cardStage').classList.remove('show'); $('cardStage').innerHTML='';
-  $('rollno').classList.remove('show'); $('charge').textContent=started?'зажми чашу…':'нужна 6, чтобы воплотиться — зажми чашу…';
-  $('minstr').textContent='Зажми чашу с камнями — отпусти — и прими судьбу'; }
-function closeAll(){ stopSpeak(); $('cardStage').classList.remove('show'); $('scrim').classList.remove('carding'); $('scrim').classList.remove('carding'); $('scrim').classList.remove('on'); $('plaque').classList.remove('on'); $('fan').classList.remove('on'); }
+// ---- request / start ----
+function openRequest(){ $('reqScrim').classList.add('on'); setTimeout(()=>$('reqInput').focus(),60); }
+function openThrow(){ $('scrim').classList.add('on'); resetThrow(); }
+function resetThrow(){ stopSpeak(); $('scrim').classList.remove('carding'); $('drumPanel').classList.remove('lift'); $('cardStage').classList.remove('show'); $('cardStage').innerHTML=''; $('noteBar').classList.remove('on');
+  $('rollno').classList.remove('show'); $('bowlWrap').style.display='flex';
+  $('charge').textContent=started?'зажми чашу и брось кубик…':'нужна 6, чтобы родиться — зажми чашу…';
+  $('minstr').textContent=started?('Клетка '+cur+' — бросай кубик'):'Запрос дан — брось 6, чтобы войти в игру'; busy=false; }
+function closeAll(){ stopSpeak(); $('scrim').classList.remove('on'); $('scrim').classList.remove('carding'); $('cardStage').classList.remove('show'); $('noteBar').classList.remove('on'); }
 
-$('play').onclick=openModal; $('close').onclick=closeAll;
-$('scrim').onclick=e=>{ if(e.target===$('scrim')) closeAll(); };
+$('play').onclick=()=>{ if(!request) openRequest(); else openThrow(); };
+$('close').onclick=closeAll;
+$('reqGo').onclick=()=>{ const v=$('reqInput').value.trim(); request=v||'(свободная игра)'; $('reqAnchor').innerHTML='Запрос: <b>'+esc(request)+'</b>'; $('reqAnchor').classList.add('on'); $('reqScrim').classList.remove('on'); saveState(); openThrow(); };
 
-const bowl=$('bowlWrap');
-const startCharge=e=>{ if(busy)return; e.preventDefault(); charging=true; chargeT=performance.now(); DICE.forEach(d=>d.classList.add('shake')); $('charge').textContent='…бросай!'; tone(90,'triangle',.2,.05); };
-const endCharge=e=>{ if(!charging||busy)return; charging=false; DICE.forEach(d=>d.classList.remove('shake')); doRoll(); };
-bowl.addEventListener('pointerdown',startCharge); window.addEventListener('pointerup',endCharge);
+const bowl=$('bowlWrap'); let charging=false;
+bowl.addEventListener('pointerdown',e=>{ if(busy)return; e.preventDefault(); charging=true; DICE[0].classList.add('shake'); $('charge').textContent='…бросай!'; tone(90,'triangle',.2,.05); });
+window.addEventListener('pointerup',()=>{ if(!charging||busy)return; charging=false; DICE[0].classList.remove('shake'); doRoll(); });
 
+// ---- one die throw ----
 function doRoll(){ busy=true; const r=1+Math.floor(Math.random()*6);
-  DICE.forEach((d,k)=>face(d, k===2?r:1+Math.floor(Math.random()*6)));
-  const rn=$('rollno'); rn.textContent=r; rn.classList.add('show'); tone(520,'sine',.25,.07); setTimeout(()=>tone(380,'sine',.3,.05),90);
+  face(DICE[0],r); const rn=$('rollno'); rn.textContent=r; rn.classList.add('show'); tone(520,'sine',.25,.07); setTimeout(()=>tone(380,'sine',.3,.05),90);
   $('charge').textContent='выпало: '+r;
-  setTimeout(()=>{ rn.classList.remove('show'); resolveMove(r); }, 850); }
+  setTimeout(()=>{ rn.classList.remove('show'); resolveMove(r); }, 800); }
 
+// ---- movement: dice steps, then auto arrow/snake ----
 function resolveMove(r){
-  if(!started){ if(r===6){ started=true; spinTo(6); } else { toast('Выпало '+r+'. Нужна 6, чтобы сойти с клетки Рождения.'); busy=false; $('charge').textContent='ещё бросок…'; } return; }
-  let t=cur+r; if(t>72) t=72-(t-72); // отскок от 72
-  spinTo(t);
+  if(!started){ if(r===6){ started=true; cur=0; walk(0,1,170,()=>afterLand(1)); }
+    else { toast('Выпало '+r+'. Нужна 6, чтобы родиться — переосмысли запрос и брось снова.'); busy=false; $('charge').textContent='ещё бросок…'; } return; }
+  let land=cur+r;
+  if(land>72){ toast('Перелёт за 72 — ход сгорает, остаёшься на клетке '+cur+'.'); busy=false; $('charge').textContent='ещё бросок…'; return; }
+  walk(cur,land,160,()=>afterLand(land));
+}
+function afterLand(land){ cur=land; placeAt(cur); hud(); const c=byId(land); const tgt=c.arrow_to||c.snake_to||null;
+  if(tgt){ const up=!!c.arrow_to; toast(up?'↑ Золотая стрела возносит тебя вверх!':'↓ Змея утягивает вниз — урок не пройден.');
+    const sl=up?[520,660,790]:[320,250,190]; sl.forEach((f,i)=>setTimeout(()=>tone(f,'sine',.5,.05),i*120));
+    setTimeout(()=>{ placeAt(tgt); setTimeout(()=>{ cur=tgt; hud(); reveal(tgt); },700); }, 480);
+  } else reveal(land);
+}
+function walk(from,to,step,done){ let p=from; const dir=to>=from?1:-1;
+  const tick=()=>{ if(p===to){ done&&done(); return; } p+=dir; placeAt(p); tone(560+p*3,'sine',.1,.035); setTimeout(tick,step); }; tick(); }
+
+// ---- mirror card of the landed cell ----
+function reveal(S){ const c=byId(S); cur=S; hud();
+  const strip=$('strip'); strip.innerHTML=''; const N=16; for(let i=0;i<N;i++){const b=document.createElement('div');b.className='cback';strip.appendChild(b);}
+  strip.style.transition='none'; strip.style.transform='translateY(0)'; strip.offsetHeight; const itemH=(strip.firstChild.offsetHeight||40)+6;
+  tone(150,'sawtooth',1.2,.03); strip.style.transition='transform 1.2s cubic-bezier(.1,.62,.08,1)'; strip.style.transform=`translateY(${-(N-2)*itemH}px)`;
+  setTimeout(()=>{ strip.innerHTML=''; const cs=$('cardStage'); cs.innerHTML=renderCard(c);
+    cs.classList.add('show'); $('scrim').classList.add('carding'); $('bowlWrap').style.display='none'; tone(660,'sine',.5,.07);
+    if(c.id===68){ $('noteInput').style.display='none'; $('noteQ').textContent='Ты дошёл до цели своего пути.'; $('noteGo').textContent='Завершить и открыть журнал ✦'; }
+    else { $('noteInput').style.display=''; $('noteInput').value=''; $('noteQ').textContent='Соотнеси это состояние со своим запросом — что ты увидел?'; $('noteGo').textContent='Осознал — бросить кубик дальше →'; }
+    $('noteBar').classList.add('on');
+  }, 1250);
 }
 
-// ---- drum spin → reveal card of sector S ----
-function spinTo(S){
-  const strip=$('strip'); strip.innerHTML=''; const N=20; for(let i=0;i<N;i++){const b=document.createElement('div');b.className='cback';strip.appendChild(b);}
-  strip.style.transition='none'; strip.style.transform='translateY(0)'; strip.offsetHeight;
-  const itemH=(strip.firstChild.offsetHeight||40)+6;
-  tone(140,'sawtooth',1.5,.03);
-  strip.style.transition='transform 1.55s cubic-bezier(.1,.62,.08,1)';
-  strip.style.transform=`translateY(${-(N-2)*itemH}px)`;
-  setTimeout(()=>{ strip.innerHTML='';
-    const cs=$('cardStage'); cs.innerHTML=renderCard(byId(S))+'<div class="hint">🔊 послушать · нажми карту — принять вызов</div>';
-    cs.classList.add('show'); $('scrim').classList.add('carding'); tone(660,'sine',.5,.07);
-    cs.onclick=()=>acceptCard(S);
-  }, 1600);
-}
+// ---- awareness note → journal → next throw ----
+$('noteGo').onclick=()=>{ const c=byId(cur); const note=($('noteInput').value||'').trim();
+  journal.push({id:c.id,name:c.name,note}); saveState();
+  stopSpeak(); $('cardStage').classList.remove('show'); $('scrim').classList.remove('carding'); $('noteBar').classList.remove('on');
+  if(c.id===68){ setTimeout(winGame,250); return; }
+  setTimeout(resetThrow, 320);
+};
 
-// ---- accept → plaque + 3 choices ----
-const ICON={ego:'🜨',stagnation:'∞',awareness:'✦'}, KLABEL={ego:'Эго',stagnation:'Застой',awareness:'Осознание'};
-function acceptCard(S){ const c=byId(S); cur=S; hud();
-  stopSpeak(); $('cardStage').classList.remove('show'); $('scrim').classList.remove('carding');
-  if(c.type==='win'){ winGame(); return; }
-  $('drumPanel').classList.add('lift'); $('scrim').classList.add('choosing');
-  $('pqN').textContent=c.id+'. '+c.name; $('pqP').textContent=c.prompt; $('plaque').classList.add('on');
-  const fan=$('fan'); fan.innerHTML='';
-  const CBG={ego:'radial-gradient(circle at 50% 38%,#c0453f,#611616 62%,#2c0a0a)',stagnation:'radial-gradient(circle at 50% 38%,#7b828f,#333843 62%,#1a1d24)',awareness:'radial-gradient(circle at 50% 38%,#f0d079,#9c7320 60%,#3f2d0a)'};
-  c.choices.forEach(ch=>{ const el=document.createElement('div'); el.className='choice';
-    el.innerHTML=`<button class="spk" title="Озвучить" data-say="${esc(ch.label)}">🔊</button><div class="tag" style="background:${CBG[ch.id]}"><div class="ic">${ICON[ch.id]}</div><div class="k">${KLABEL[ch.id]}</div></div><div class="lbl">${ch.label}</div>`;
-    el.onclick=()=>chooseFate(ch); fan.appendChild(el); });
-  setTimeout(()=>fan.classList.add('on'),80); tone(440,'sine',.3,.05);
-}
-
-function chooseFate(ch){ if(busy&&!$('fan').classList.contains('on'))return;
-  $('fan').classList.remove('on'); $('plaque').classList.remove('on'); closeAll();
-  const target=ch.effect==='stay'?cur:ch.target;
-  const up=target>cur; tone(up?300:200,'sine',.1,.05);
-  setTimeout(()=>{ cur=target; place(); hud();
-    const slide=up? [520,660,790] : [300,240,190]; slide.forEach((f,i)=>setTimeout(()=>tone(f,'sine',.5,.05),i*140));
-    setTimeout(()=>{ toast(ch.feedback);
-      if(cur===68){ setTimeout(winGame,700); } else { busy=false; } }, 900);
-  }, 420);
-}
-
-function winGame(){ closeAll(); $('win').classList.add('on'); tone(523,'sine',1.2,.08); setTimeout(()=>tone(659,'sine',1.2,.08),180); setTimeout(()=>tone(784,'sine',1.6,.08),360); }
-$('winBtn').onclick=()=>{ $('win').classList.remove('on'); cur=1; started=false; busy=false; place(); hud(); save(); };
+function winGame(){ closeAll(); const j=$('journal'); j.innerHTML=journal.map(e=>`<div class="j"><b>№${e.id} ${e.name}</b>${e.note?' — <i>'+esc(e.note)+'</i>':''}</div>`).join('')||'<div class="j"><i>Заметок не осталось</i></div>';
+  $('win').classList.add('on'); tone(523,'sine',1.2,.08); setTimeout(()=>tone(659,'sine',1.2,.08),180); setTimeout(()=>tone(784,'sine',1.6,.08),360); }
+$('winBtn').onclick=()=>{ $('win').classList.remove('on'); cur=0; started=false; busy=false; journal=[]; request=''; $('reqAnchor').classList.remove('on'); $('token').classList.add('hidden'); hud(); saveState(); openRequest(); };
 
 // ---- toast ----
 let tt; function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),3600); }
 
 // ---- persist ----
-const SK='lila.save.v1';
-function save(){ try{localStorage.setItem(SK,JSON.stringify({cur,started}));}catch(e){} }
-(function load(){ try{const s=JSON.parse(localStorage.getItem(SK)||'null'); if(s&&s.cur){ cur=s.cur; started=!!s.started; place(); hud(); }}catch(e){} })();
-const _af=chooseFate, _wg=winGame; // hook saves
-window.addEventListener('beforeunload',save);
-
-// embed: hide nothing — board is the wallpaper, play button invites in
-if(new URLSearchParams(location.search).has('embed')){ /* reserved for channel wiring later */ }
+const SK='lila.save.v2';
+function saveState(){ try{localStorage.setItem(SK,JSON.stringify({cur,started,request,journal}));}catch(e){} }
+(function load(){ try{const s=JSON.parse(localStorage.getItem(SK)||'null'); if(s){ cur=s.cur||0; started=!!s.started; request=s.request||''; journal=s.journal||[];
+  if(started&&cur) placeAt(cur);
+  if(request){ $('reqAnchor').innerHTML='Запрос: <b>'+esc(request)+'</b>'; $('reqAnchor').classList.add('on'); }
+  hud(); }}catch(e){} })();
+window.addEventListener('beforeunload',saveState);
 </script>
 </body>
 </html>
