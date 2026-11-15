@@ -406,21 +406,20 @@ export function createVoxelIsland(canvas, opts = {}) {
     g.globalAlpha = 1; }
   const seaTex = new THREE.CanvasTexture(seaCv); seaTex.colorSpace = THREE.SRGBColorSpace; seaTex.magFilter = THREE.NearestFilter;
 
-  // a giant 3D sea plane for the "endless sea" mode: real water that rotates in perspective and runs past the screen
-  const SEA = 1600, scv = document.createElement('canvas'); scv.width = scv.height = 64;
-  { const g = scv.getContext('2d');
-    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) { const n = (vnoise(x * 0.3, y * 0.3) + 1) / 2; g.fillStyle = n < 0.5 ? '#1f68b4' : '#2479c4'; g.fillRect(x, y, 1, 1); }
-    for (let i = 0; i < 70; i++) { const x = rng() * 64 | 0, y = rng() * 64 | 0, w = 1 + (rng() * 3 | 0); g.globalAlpha = 0.5; g.fillStyle = '#2a98d6'; g.fillRect(x, y, w, 1); }
-    for (let i = 0; i < 44; i++) { const x = rng() * 64 | 0, y = rng() * 64 | 0; g.globalAlpha = 0.5 + rng() * 0.4; g.fillStyle = rng() < 0.5 ? '#8fd0f0' : '#bfe8ff'; g.fillRect(x, y, 1, 1); }
-    g.globalAlpha = 1; }
-  const seaMap = new THREE.CanvasTexture(scv); seaMap.wrapS = seaMap.wrapT = THREE.RepeatWrapping; seaMap.magFilter = THREE.NearestFilter; seaMap.minFilter = THREE.NearestFilter; seaMap.colorSpace = THREE.SRGBColorSpace; seaMap.repeat.set(SEA / 64, SEA / 64);
-  const seaPlane = new THREE.Mesh(new THREE.PlaneGeometry(SEA, SEA), new THREE.MeshLambertMaterial({ map: seaMap }));
-  seaPlane.rotation.x = -Math.PI / 2; seaPlane.position.y = 0.49; seaPlane.receiveShadow = false; seaPlane.visible = false; scene.add(seaPlane);
+  // a giant 3D sea plane for the "endless sea" mode: light turquoise, same gradient as the island's water so there is no seam
+  const seaA = new THREE.Color(0x45b4da), seaB = new THREE.Color(0x72d9ee), _tc = new THREE.Color(), seaFarCol = seaB.clone();
+  const gcol = (r) => { const t = clamp((r - 40) / 150, 0, 1); return _tc.copy(seaA).lerp(seaB, t); };
+  const SEA = 6000, SEG = 72, seaGeo = new THREE.PlaneGeometry(SEA, SEA, SEG, SEG);
+  { const pos = seaGeo.attributes.position, col = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) { const c = gcol(Math.hypot(pos.getX(i), pos.getY(i))); col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+    seaGeo.setAttribute('color', new THREE.BufferAttribute(col, 3)); }
+  const seaPlane = new THREE.Mesh(seaGeo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  seaPlane.rotation.x = -Math.PI / 2; seaPlane.position.y = 0.44; seaPlane.receiveShadow = false; seaPlane.visible = false; scene.add(seaPlane);
 
   let mode = 'normal';
   const applyMode = (m) => { mode = m; const nrm = m === 'normal';
     earthMesh.visible = nrm; textMesh.visible = nrm; mistPts.visible = nrm; for (const f of wfFalls) f.visible = nrm;
-    seaPlane.visible = m === 'sea'; scene.background = m === 'flat' || m === 'sea' ? seaTex : bgTex; };
+    seaPlane.visible = m === 'sea'; scene.background = m === 'flat' ? seaTex : (m === 'sea' ? seaFarCol : bgTex); };
 
   // ---------- ship model ----------
   function buildShip(flagCol = PAL.red) {
@@ -571,7 +570,7 @@ export function createVoxelIsland(canvas, opts = {}) {
         c.g.position.copy(p); c.g.lookAt(c.out.x, p.y, c.out.z); if (c.kind === 'ship') c.g.rotateY(-Math.PI / 2);
         if (u >= 1) c.done = true;
       }
-      if (c.kind === 'ship') c.g.position.y = 0.45 + Math.sin(S.t * 1.6 + c.id) * 0.12; else flap(c.g, S.t + c.id);
+      if (c.kind === 'ship') c.g.position.y = 0.55 + Math.sin(S.t * 1.6 + c.id) * 0.06; else flap(c.g, S.t + c.id);
     }
     S.couriers = S.couriers.filter((c) => { if (c.done) { scene.remove(c.g); return false; } return true; });
   }
@@ -623,7 +622,7 @@ export function createVoxelIsland(canvas, opts = {}) {
       waterMesh.instanceColor.needsUpdate = true;
     }
 
-    for (const o of ships) { o.a += o.sp * dt; const x = Math.cos(o.a) * o.rx, z = Math.sin(o.a) * o.rz; o.g.position.set(x, 0.45 + Math.sin(S.t * 1.5 + o.a) * 0.12, z); const nx = Math.cos(o.a + Math.sign(o.sp) * 0.05) * o.rx, nz = Math.sin(o.a + Math.sign(o.sp) * 0.05) * o.rz; o.g.lookAt(nx, o.g.position.y, nz); o.g.rotateY(-Math.PI / 2); o.g.rotation.z = Math.sin(S.t * 1.2 + o.a) * 0.04; }
+    for (const o of ships) { o.a += o.sp * dt; const x = Math.cos(o.a) * o.rx, z = Math.sin(o.a) * o.rz; o.g.position.set(x, 0.55 + Math.sin(S.t * 1.5 + o.a) * 0.06, z); const nx = Math.cos(o.a + Math.sign(o.sp) * 0.05) * o.rx, nz = Math.sin(o.a + Math.sign(o.sp) * 0.05) * o.rz; o.g.lookAt(nx, o.g.position.y, nz); o.g.rotateY(-Math.PI / 2); o.g.rotation.z = Math.sin(S.t * 1.2 + o.a) * 0.04; }
     for (const o of parrots) { o.a += o.sp * dt; const x = o.cx + Math.cos(o.a) * o.r, z = o.cz + Math.sin(o.a) * o.r, y = o.y + Math.sin(S.t * 0.8 + o.ph) * 1.2; o.g.position.set(x, y, z); const nx = o.cx + Math.cos(o.a + Math.sign(o.sp) * 0.1) * o.r, nz = o.cz + Math.sin(o.a + Math.sign(o.sp) * 0.1) * o.r; o.g.lookAt(nx, y, nz); flap(o.g, S.t + o.ph); }
 
     for (const o of gulls) { o.a += o.sp * dt; const x = Math.cos(o.a) * o.r, z = Math.sin(o.a) * o.r, y = o.y + Math.sin(S.t * 0.3 + o.ph) * 1.6; o.g.position.set(x, y, z); const nx = Math.cos(o.a + Math.sign(o.sp) * 0.12) * o.r, nz = Math.sin(o.a + Math.sign(o.sp) * 0.12) * o.r; o.g.lookAt(nx, y, nz); const f = Math.sin(S.t * 2.4 + o.ph) * 0.5; o.g.userData.wings[0].rotation.z = f; o.g.userData.wings[1].rotation.z = -f; }
@@ -633,7 +632,6 @@ export function createVoxelIsland(canvas, opts = {}) {
       p.needsUpdate = true;
     }
     wfMap.offset.y = (wfMap.offset.y + dt * 1.15) % 1;
-    if (seaPlane.visible) { seaMap.offset.x = (seaMap.offset.x + dt * 0.006) % 1; seaMap.offset.y = (seaMap.offset.y + dt * 0.009) % 1; }
     for (let i = 0; i < MIST; i++) { mistPos[i * 3 + 1] -= (7 + (i % 3)) * dt; if (mistPos[i * 3 + 1] < -20) mistSpawn(i); }
     mistGeo.attributes.position.needsUpdate = true;
     stepCouriers();
