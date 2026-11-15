@@ -26,8 +26,8 @@
     <div class="row"><input type="text" id="islandName" placeholder="Название острова"><button class="btn" id="nameGo">OK</button></div>
     <div class="row"><input type="text" id="bgUrl" placeholder="Фон — ссылка на картинку"><button class="btn" id="bgGo">OK</button></div></div>
   <div class="sec"><b>Блики на воде</b><div class="seg" id="spark"><button data-v="toggle" aria-pressed="true">Блики</button><button data-v="blink" aria-pressed="true">Моргание</button></div></div>
-  <div class="sec"><b>Перестрой город</b><div class="sub">Меняется всё, кроме башни, указателя, 5 внешних пальм и травы. Можно через MCP.</div>
-    <textarea id="cityJson" rows="4" placeholder='{"items":[{"t":"house","x":-8,"z":-6,"w":6,"d":5,"roof":"roofB"}]}' style="width:100%;box-sizing:border-box;border:1px solid rgba(15,23,42,.1);border-radius:10px;padding:6px 9px;font:inherit;font-size:12px;resize:vertical;margin-top:4px"></textarea>
+  <div class="sec"><b>Перестрой остров</b><div class="sub">Строй из блоков (voxel, box, pyramid, cyl) что угодно. Предел: контур острова и высота чайки (19). Башня, указатель, 5 пальм, трава остаются. Это же умеет бот через MCP.</div>
+    <textarea id="cityJson" rows="4" placeholder='{"items":[{"t":"pyramid","x":0,"z":0,"size":15,"step":1,"c":"#c3b592"},{"t":"box","x":-2,"z":-2,"y":8,"w":5,"d":5,"h":3,"c":"#8a7d62","hollow":true}]}' style="width:100%;box-sizing:border-box;border:1px solid rgba(15,23,42,.1);border-radius:10px;padding:6px 9px;font:inherit;font-size:12px;resize:vertical;margin-top:4px"></textarea>
     <div class="row"><div class="seg"><button id="cityApply">Применить</button><button id="cityReset">Сброс</button></div></div>
     <div class="note" id="cityNote"></div></div>
   <div class="sec"><b>Погода</b><div class="seg" id="weather">
