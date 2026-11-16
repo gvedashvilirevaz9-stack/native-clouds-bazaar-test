@@ -125,11 +125,17 @@
   #journal{max-width:560px;max-height:40vh;overflow:auto;margin:14px auto 0;text-align:left;font-size:13px}
   #journal .j{border-left:2px solid rgba(232,197,106,.4);padding:3px 0 3px 10px;margin:6px 0}#journal .j b{color:var(--gold)}#journal .j i{opacity:.72}
   #token.hidden{opacity:0}
+  /* travelled-path trail */
+  #trail{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:4}
+  #trail line{fill:none;stroke-width:3;vector-effect:non-scaling-stroke;stroke-linecap:round;opacity:.92}
+  #trail line.step{stroke:#ffd98a;filter:drop-shadow(0 0 3px rgba(255,210,120,.85))}
+  #trail line.arrow{stroke:#ffe657;stroke-width:4;filter:drop-shadow(0 0 5px rgba(255,220,80,.95))}
+  #trail line.snake{stroke:#7fb0ff;filter:drop-shadow(0 0 4px rgba(120,160,255,.9))}
 </style>
 </head>
 <body>
 <div id="board"></div>
-<div id="layer"><div id="token" class="hidden"></div></div>
+<div id="layer"><svg id="trail" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div id="token" class="hidden"></div></div>
 <div id="hud">Клетка <b id="hcell">—</b> · <span id="hplan">перед входом</span></div>
 <div id="reqAnchor"></div>
 <div id="tooltip"></div>
@@ -176,9 +182,11 @@ const byId=id=>BOARD.find(c=>c.id===id);
 const PLAN_HUE=[18,275,122,340,42,205,52,286]; // цвет внутренней картинки по плану
 
 // ---- узлы: змейка 8 рядов по 9, план 1 снизу ----
+// 8 рядов по 9, змейкой снизу вверх, строго по воде: нижние ряды широкие,
+// верхние сдвинуты правее (чтобы не заходить на храм слева и на небо).
 const NODES=[];
 for(let i=0;i<72;i++){ const row=Math.floor(i/9), col=i%9; const c=(row%2===0)?col:(8-col);
-  const x=7+c*(86/8), y=86-row*(74/7); NODES.push({x,y}); }
+  const xL=8+row*4, xR=92, x=xL + c*(xR-xL)/8, y=90-row*10; NODES.push({x,y}); }
 const TT=document.getElementById('tooltip');
 function nodeInfo(c){ let s=`<b>№${c.id}. ${c.name}</b>`;
   if(c.arrow_to){ const t=byId(c.arrow_to); s+=`<br><span class="ar">↑ Стрела — возносит на №${c.arrow_to} «${t.name}»</span>`; }
@@ -198,6 +206,14 @@ function nodeInfo(c){ let s=`<b>№${c.id}. ${c.name}</b>`;
 let cur=0, started=false, busy=false, request='', journal=[];
 function hud(){ $('hcell').textContent=started?cur:'—'; $('hplan').textContent=started?byId(cur).name:'перед входом'; }
 function placeAt(id){ const n=NODES[id-1]; if(!n)return; const t=$('token'); t.classList.remove('hidden'); t.style.left=n.x+'%'; t.style.top=n.y+'%'; }
+// --- travelled-path trail ---
+const TRAIL=$('trail'); let lastPt=null;
+function trailPoint(id,kind){ const n=NODES[id-1]; if(!n)return;
+  if(lastPt && (lastPt.x!==n.x||lastPt.y!==n.y)){ const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+    ln.setAttribute('x1',lastPt.x); ln.setAttribute('y1',lastPt.y); ln.setAttribute('x2',n.x); ln.setAttribute('y2',n.y);
+    ln.setAttribute('class',kind||'step'); TRAIL.appendChild(ln); }
+  lastPt={x:n.x,y:n.y}; }
+function trailReset(){ while(TRAIL.firstChild) TRAIL.removeChild(TRAIL.firstChild); lastPt=null; }
 hud();
 
 // ---- dice faces ----
@@ -263,7 +279,7 @@ function doRoll(){ busy=true; const r=1+Math.floor(Math.random()*6);
 
 // ---- movement: dice steps, then auto arrow/snake ----
 function resolveMove(r){
-  if(!started){ if(r===6){ started=true; cur=0; toast('✦ Выпала 6 — душа входит в игру.'); setTimeout(()=>walk(0,1,200,()=>afterLand(1)), 900); }
+  if(!started){ if(r===6){ started=true; cur=0; trailReset(); toast('✦ Выпала 6 — душа входит в игру.'); setTimeout(()=>walk(0,1,200,()=>afterLand(1)), 900); }
     else { toast('Выпало '+r+'. Шестёрка не пришла.'); $('scrim').classList.remove('on'); setTimeout(()=>{ busy=false; openRequest(true); }, 1100); } return; }
   let land=cur+r;
   if(land>72){ toast('Перелёт за 72 — ход сгорает, остаёшься на клетке '+cur+'.'); busy=false; $('charge').textContent='ещё бросок…'; return; }
@@ -274,7 +290,7 @@ function afterLand(land){ cur=land; placeAt(cur); hud(); const c=byId(land); con
     toast('Клетка '+land+' · '+c.name);                                   // 1) куда встал
     setTimeout(()=>{ toast(up?'↑ Золотая стрела возносит тебя вверх!':'↓ Змея утягивает вниз — урок не пройден.');
       const sl=up?[520,660,790]:[320,250,190]; sl.forEach((f,i)=>setTimeout(()=>tone(f,'sine',.5,.05),i*120));
-      setTimeout(()=>{ placeAt(tgt);                                        // 3) перелёт по стреле/змее
+      setTimeout(()=>{ placeAt(tgt); trailPoint(tgt, up?'arrow':'snake');     // 3) перелёт по стреле/змее
         setTimeout(()=>{ cur=tgt; hud(); const t=byId(tgt); toast('Клетка '+tgt+' · '+t.name);
           setTimeout(()=>reveal(tgt), 1200);                                // 4) пауза → барабан → карта
         }, 900);
@@ -286,7 +302,7 @@ function afterLand(land){ cur=land; placeAt(cur); hud(); const c=byId(land); con
   }
 }
 function walk(from,to,step,done){ let p=from; const dir=to>=from?1:-1;
-  const tick=()=>{ if(p===to){ done&&done(); return; } p+=dir; placeAt(p); tone(560+p*3,'sine',.1,.035); setTimeout(tick,step); }; tick(); }
+  const tick=()=>{ if(p===to){ done&&done(); return; } p+=dir; placeAt(p); trailPoint(p,'step'); tone(560+p*3,'sine',.1,.035); setTimeout(tick,step); }; tick(); }
 
 // ---- mirror card of the landed cell ----
 function reveal(S){ const c=byId(S); cur=S; hud();
@@ -312,7 +328,7 @@ $('noteGo').onclick=()=>{ const c=byId(cur); const note=($('noteInput').value||'
 
 function winGame(){ closeAll(); const j=$('journal'); j.innerHTML=journal.map(e=>`<div class="j"><b>№${e.id} ${e.name}</b>${e.note?' — <i>'+esc(e.note)+'</i>':''}</div>`).join('')||'<div class="j"><i>Заметок не осталось</i></div>';
   $('win').classList.add('on'); tone(523,'sine',1.2,.08); setTimeout(()=>tone(659,'sine',1.2,.08),180); setTimeout(()=>tone(784,'sine',1.6,.08),360); }
-$('winBtn').onclick=()=>{ $('win').classList.remove('on'); cur=0; started=false; busy=false; journal=[]; request=''; $('reqAnchor').classList.remove('on'); $('token').classList.add('hidden'); hud(); saveState(); openRequest(); };
+$('winBtn').onclick=()=>{ $('win').classList.remove('on'); cur=0; started=false; busy=false; journal=[]; request=''; trailReset(); $('reqAnchor').classList.remove('on'); $('token').classList.add('hidden'); hud(); saveState(); openRequest(); };
 
 // ---- toast ----
 let tt; function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),3600); }
@@ -321,7 +337,7 @@ let tt; function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.
 const SK='lila.save.v2';
 function saveState(){ try{localStorage.setItem(SK,JSON.stringify({cur,started,request,journal}));}catch(e){} }
 (function load(){ try{const s=JSON.parse(localStorage.getItem(SK)||'null'); if(s){ cur=s.cur||0; started=!!s.started; request=s.request||''; journal=s.journal||[];
-  if(started&&cur) placeAt(cur);
+  if(started&&cur){ placeAt(cur); trailReset(); for(const e of journal) trailPoint(e.id,'step'); if(!journal.length) trailPoint(cur,'step'); }
   if(request){ $('reqAnchor').innerHTML='Запрос: <b>'+esc(request)+'</b>'; $('reqAnchor').classList.add('on'); }
   hud(); }}catch(e){} })();
 window.addEventListener('beforeunload',saveState);
