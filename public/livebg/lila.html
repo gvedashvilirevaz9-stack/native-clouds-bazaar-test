@@ -43,8 +43,8 @@
   #drumPanel{position:absolute;top:3vh;left:50%;transform:translateX(-50%);width:min(900px,74vw);border-radius:24px;padding:10px clamp(12px,2vw,26px) 4px;
     background:linear-gradient(160deg,rgba(14,18,32,.6),rgba(7,9,18,.72));backdrop-filter:blur(26px) saturate(1.25);-webkit-backdrop-filter:blur(26px) saturate(1.25);
     border:1px solid rgba(232,197,106,.32);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 0 60px rgba(120,90,40,.12),0 30px 90px rgba(0,0,0,.6);
-    transition:transform .5s cubic-bezier(.5,0,.2,1),opacity .4s}
-  #drumPanel.lift{transform:translateX(-50%) translateY(-26vh) scale(.85);opacity:0;pointer-events:none}
+    opacity:0;pointer-events:none;transition:transform .5s cubic-bezier(.5,0,.2,1),opacity .4s}
+  #drumPanel.on{opacity:1;pointer-events:auto}
   #close{position:absolute;right:16px;top:12px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(232,197,106,.4);background:rgba(20,14,8,.7);color:var(--gold);font-size:17px;cursor:pointer;z-index:4}
   .mtitle{text-align:center;color:var(--gold);letter-spacing:.14em;font-size:13px;text-transform:uppercase;opacity:.8;margin:0 0 10px}
   /* bottom screen: bowl standing on the board's blue lotus */
@@ -129,6 +129,24 @@
   /* node hover tooltip */
   #tooltip{position:fixed;z-index:60;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .15s;max-width:260px;background:rgba(10,13,24,.93);border:1px solid rgba(232,197,106,.4);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.32;color:#f3ecd8;box-shadow:0 10px 30px rgba(0,0,0,.5)}
   #tooltip.on{opacity:1;transform:translateY(0)}#tooltip b{color:var(--gold)}#tooltip .ar{color:#ffd56a}#tooltip .sn{color:#7fb0ff}
+  #tooltip .q{color:#ffd98a;font-style:italic}#tooltip .a{color:#eafff0}
+  /* visited cell marker */
+  .node.done{width:2.3%;background:radial-gradient(circle,#fff6de,rgba(255,215,120,.6) 55%,transparent 72%);box-shadow:0 0 14px 3px rgba(255,210,120,.9)}
+  .node.done::after{content:'';position:absolute;inset:-55%;border-radius:50%;border:1px solid rgba(255,220,140,.5)}
+  /* diary */
+  #diaryBtn{position:fixed;top:1vh;right:2.2vw;z-index:47;display:none;cursor:pointer;background:rgba(10,13,24,.82);backdrop-filter:blur(12px);border:1px solid rgba(232,197,106,.4);color:var(--gold);padding:7px 15px;border-radius:12px;font-size:13.5px;letter-spacing:.03em;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  #diaryBtn:hover{background:rgba(26,18,8,.9)}
+  #diaryPanel{position:fixed;top:0;right:-440px;width:min(420px,88vw);height:100%;z-index:55;transition:right .45s cubic-bezier(.4,0,.2,1);overflow:auto;
+    background:linear-gradient(160deg,rgba(14,18,32,.86),rgba(7,9,18,.92));backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-left:1px solid rgba(232,197,106,.3);box-shadow:-20px 0 60px rgba(0,0,0,.5)}
+  #diaryPanel.on{right:0}
+  #diaryPanel .dh{position:sticky;top:0;background:rgba(10,13,24,.9);padding:16px 20px;color:var(--gold);font-size:17px;letter-spacing:.04em;border-bottom:1px solid rgba(232,197,106,.25);display:flex;justify-content:space-between;align-items:center}
+  #diaryPanel .dh #diaryClose{cursor:pointer;opacity:.8}
+  #diaryList{padding:12px 18px 40px}
+  #diaryList .d{border-left:2px solid rgba(232,197,106,.4);padding:4px 0 10px 12px;margin:0 0 12px}
+  #diaryList .dn{color:var(--gold);font-size:14px;font-weight:bold}
+  #diaryList .dn .via{font-weight:400;font-size:11.5px;opacity:.7;border:1px solid rgba(232,197,106,.4);border-radius:8px;padding:1px 7px;margin-left:6px}
+  #diaryList .dq{color:#d9c7a6;font-style:italic;font-size:12.5px;margin:3px 0}
+  #diaryList .da{color:#eafff0;font-size:13px;line-height:1.35}#diaryList .da.em{color:#8a8470;font-style:italic}
   #journal{max-width:560px;max-height:40vh;overflow:auto;margin:14px auto 0;text-align:left;font-size:13px}
   #journal .j{border-left:2px solid rgba(232,197,106,.4);padding:3px 0 3px 10px;margin:6px 0}#journal .j b{color:var(--gold)}#journal .j i{opacity:.72}
   #token.hidden{opacity:0}
@@ -147,6 +165,8 @@
 <div id="hud">Клетка <b id="hcell">—</b> · <span id="hplan">перед входом</span></div>
 <div id="reqAnchor"></div>
 <div id="tooltip"></div>
+<button id="diaryBtn">📜 Дневник</button>
+<div id="diaryPanel"><div class="dh">Дневник пути<span id="diaryClose">✕</span></div><div id="diaryList"></div></div>
 <button id="play">▶ Войти в игру</button>
 
 <div id="reqScrim">
@@ -190,13 +210,16 @@ const byId=id=>BOARD.find(c=>c.id===id);
 const PLAN_HUE=[18,275,122,340,42,205,52,286]; // цвет внутренней картинки по плану
 
 // ---- узлы: змейка 8 рядов по 9, план 1 снизу ----
-// 8 рядов по 9, змейкой снизу вверх, строго по воде: нижние ряды широкие,
-// верхние сдвинуты правее (чтобы не заходить на храм слева и на небо).
+// 8 рядов по 9, змейкой снизу вверх, центрированный квадрат с лёгкой перспективой
+// (верхние ряды чуть уже — уходят в глубину к барабану в центре).
 const NODES=[];
 for(let i=0;i<72;i++){ const row=Math.floor(i/9), col=i%9; const c=(row%2===0)?col:(8-col);
-  const xL=8+row*4, xR=92, x=xL + c*(xR-xL)/8, y=90-row*10; NODES.push({x,y}); }
-const TT=document.getElementById('tooltip');
-function nodeInfo(c){ let s=`<b>№${c.id}. ${c.name}</b>`;
+  const hw=42-row*0.9, x=50+((c-4)/4)*hw, y=88-row*10; NODES.push({x,y}); }
+const TT=document.getElementById('tooltip'); const nodeEls={};
+function nodeInfo(c){ const v=visitedMap[c.id];
+  if(v){ let s=`<b>№${c.id}. ${c.name}</b><br><span class="q">${v.question||''}</span>`;
+    s+= v.note ? `<br><span class="a">Твой ответ: ${esc(v.note)}</span>` : '<br><i>без заметки</i>'; return s; }
+  let s=`<b>№${c.id}. ${c.name}</b>`;
   if(c.arrow_to){ const t=byId(c.arrow_to); s+=`<br><span class="ar">↑ Стрела — возносит на №${c.arrow_to} «${t.name}»</span>`; }
   else if(c.snake_to){ const t=byId(c.snake_to); s+=`<br><span class="sn">↓ Змея — утягивает вниз на №${c.snake_to} «${t.name}»</span>`; }
   else if(c.id===68){ s+=`<br><span class="ar">★ Финал — попади сюда ровно</span>`; }
@@ -204,14 +227,18 @@ function nodeInfo(c){ let s=`<b>№${c.id}. ${c.name}</b>`;
   return s; }
 (function drawNodes(){ const L=$('layer');
   BOARD.forEach((c,i)=>{ const d=document.createElement('div'); d.className='node'+(c.type==='arrow'?' arrow':c.type==='snake'?' snake':c.id===68?' win':'');
-    d.style.left=NODES[i].x+'%'; d.style.top=NODES[i].y+'%'; d.dataset.id=c.id;
+    d.style.left=NODES[i].x+'%'; d.style.top=NODES[i].y+'%'; d.dataset.id=c.id; nodeEls[c.id]=d;
     d.addEventListener('mouseenter',()=>{ TT.innerHTML=nodeInfo(c); TT.classList.add('on'); });
-    d.addEventListener('mousemove',ev=>{ TT.style.left=Math.min(ev.clientX+14,innerWidth-270)+'px'; TT.style.top=(ev.clientY+14)+'px'; });
+    d.addEventListener('mousemove',ev=>{ TT.style.left=Math.min(ev.clientX+14,innerWidth-290)+'px'; TT.style.top=Math.min(ev.clientY+14,innerHeight-130)+'px'; });
     d.addEventListener('mouseleave',()=>TT.classList.remove('on'));
     L.appendChild(d); }); })();
+function markVisited(id){ const d=nodeEls[id]; if(d) d.classList.add('done'); }
+function renderDiary(){ const el=$('diaryList'); if(!el) return;
+  el.innerHTML = journal.length ? journal.map((e,i)=>`<div class="d"><div class="dn">${i+1}. №${e.id} ${e.name}${e.via?` <span class="via">${e.via}</span>`:''}</div>${e.question?`<div class="dq">${e.question}</div>`:''}<div class="da${e.note?'':' em'}">${e.note?esc(e.note):'— без заметки'}</div></div>`).join('') : '<div class="da em">Путь ещё пуст</div>';
+  $('diaryBtn').style.display = journal.length ? 'block' : 'none'; }
 
 // ---- state ----
-let cur=0, started=false, busy=false, request='', journal=[];
+let cur=0, started=false, busy=false, request='', journal=[], curVia='ход', visitedMap={};
 function hud(){ $('hcell').textContent=started?cur:'—'; $('hplan').textContent=started?byId(cur).name:'перед входом'; }
 function placeAt(id){ const n=NODES[id-1]; if(!n)return; const t=$('token'); t.classList.remove('hidden'); t.style.left=n.x+'%'; t.style.top=n.y+'%'; }
 // --- travelled-path trail ---
@@ -265,14 +292,16 @@ function openRequest(refine){
   $('reqScrim').classList.add('on'); setTimeout(()=>$('reqInput').focus(),60);
 }
 function openThrow(){ document.body.classList.add('playing'); $('scrim').classList.add('on'); resetThrow(); }
-function resetThrow(){ stopSpeak(); $('scrim').classList.remove('carding'); $('drumPanel').classList.remove('lift'); $('cardStage').classList.remove('show'); $('cardStage').innerHTML=''; $('noteBar').classList.remove('on');
+function resetThrow(){ stopSpeak(); $('scrim').classList.remove('carding'); $('drumPanel').classList.remove('on'); $('cardStage').classList.remove('show'); $('cardStage').innerHTML=''; $('noteBar').classList.remove('on');
   $('rollno').classList.remove('show'); $('bowlWrap').style.display='flex';
   $('charge').textContent=started?'зажми чашу и брось кубик…':'нужна 6, чтобы родиться — зажми чашу…';
   $('minstr').textContent=started?('Клетка '+cur+' — бросай кубик'):'Запрос дан — брось 6, чтобы войти в игру'; busy=false; }
-function closeAll(){ stopSpeak(); document.body.classList.remove('playing'); $('scrim').classList.remove('on'); $('scrim').classList.remove('carding'); $('cardStage').classList.remove('show'); $('noteBar').classList.remove('on'); }
+function closeAll(){ stopSpeak(); document.body.classList.remove('playing'); $('scrim').classList.remove('on'); $('scrim').classList.remove('carding'); $('drumPanel').classList.remove('on'); $('cardStage').classList.remove('show'); $('noteBar').classList.remove('on'); $('diaryPanel').classList.remove('on'); }
 
 $('play').onclick=()=>{ if(!request) openRequest(); else openThrow(); };
 $('close').onclick=closeAll;
+$('diaryBtn').onclick=()=>$('diaryPanel').classList.toggle('on');
+$('diaryClose').onclick=()=>$('diaryPanel').classList.remove('on');
 $('reqGo').onclick=()=>{ const v=$('reqInput').value.trim(); request=v||'(свободная игра)'; $('reqAnchor').innerHTML='Запрос: <b>'+esc(request)+'</b>'; $('reqAnchor').classList.add('on'); $('reqScrim').classList.remove('on'); saveState(); openThrow(); };
 
 const bowl=$('bowlWrap'); let charging=false;
@@ -287,11 +316,11 @@ function doRoll(){ busy=true; const r=1+Math.floor(Math.random()*6);
 
 // ---- movement: dice steps, then auto arrow/snake ----
 function resolveMove(r){
-  if(!started){ if(r===6){ started=true; cur=0; trailReset(); toast('✦ Выпала 6 — душа входит в игру.'); setTimeout(()=>walk(0,1,200,()=>afterLand(1)), 900); }
+  if(!started){ if(r===6){ started=true; cur=0; curVia='вход'; trailReset(); toast('✦ Выпала 6 — душа входит в игру.'); setTimeout(()=>walk(0,1,200,()=>afterLand(1)), 900); }
     else { toast('Выпало '+r+'. Шестёрка не пришла.'); $('scrim').classList.remove('on'); setTimeout(()=>{ busy=false; openRequest(true); }, 1100); } return; }
   let land=cur+r;
   if(land>72){ toast('Перелёт за 72 — ход сгорает, остаёшься на клетке '+cur+'.'); busy=false; $('charge').textContent='ещё бросок…'; return; }
-  walk(cur,land,160,()=>afterLand(land));
+  curVia='ход'; walk(cur,land,160,()=>afterLand(land));
 }
 function afterLand(land){ cur=land; placeAt(cur); hud(); const c=byId(land); const tgt=c.arrow_to||c.snake_to||null;
   if(tgt){ const up=!!c.arrow_to;
@@ -299,7 +328,7 @@ function afterLand(land){ cur=land; placeAt(cur); hud(); const c=byId(land); con
     setTimeout(()=>{ toast(up?'↑ Золотая стрела возносит тебя вверх!':'↓ Змея утягивает вниз — урок не пройден.');
       const sl=up?[520,660,790]:[320,250,190]; sl.forEach((f,i)=>setTimeout(()=>tone(f,'sine',.5,.05),i*120));
       setTimeout(()=>{ placeAt(tgt); trailPoint(tgt, up?'arrow':'snake');     // 3) перелёт по стреле/змее
-        setTimeout(()=>{ cur=tgt; hud(); const t=byId(tgt); toast('Клетка '+tgt+' · '+t.name);
+        setTimeout(()=>{ cur=tgt; hud(); curVia=up?'стрела':'змея'; const t=byId(tgt); toast('Клетка '+tgt+' · '+t.name);
           setTimeout(()=>reveal(tgt), 1200);                                // 4) пауза → барабан → карта
         }, 900);
       }, 1200);                                                             // 2) прочитать про стрелу/змею
@@ -315,6 +344,7 @@ function walk(from,to,step,done){ let p=from; const dir=to>=from?1:-1;
 // ---- mirror card of the landed cell ----
 function reveal(S){ const c=byId(S); cur=S; hud();
   if(c.variants&&c.variants.length){ const v=c.variants[Math.floor(Math.random()*c.variants.length)]; c.mirror=v[0]; c.question=v[1]; }
+  $('drumPanel').classList.add('on');   // барабан-окно появляется поверх поля только сейчас
   const strip=$('strip'); strip.innerHTML=''; const N=16; for(let i=0;i<N;i++){const b=document.createElement('div');b.className='cback';strip.appendChild(b);}
   strip.style.transition='none'; strip.style.transform='translateY(0)'; strip.offsetHeight; const itemH=(strip.firstChild.offsetHeight||40)+6;
   tone(150,'sawtooth',1.2,.03); strip.style.transition='transform 1.2s cubic-bezier(.1,.62,.08,1)'; strip.style.transform=`translateY(${-(N-2)*itemH}px)`;
@@ -328,15 +358,16 @@ function reveal(S){ const c=byId(S); cur=S; hud();
 
 // ---- awareness note → journal → next throw ----
 $('noteGo').onclick=()=>{ const c=byId(cur); const note=($('noteInput').value||'').trim();
-  journal.push({id:c.id,name:c.name,note}); saveState();
-  stopSpeak(); $('cardStage').classList.remove('show'); $('scrim').classList.remove('carding'); $('noteBar').classList.remove('on');
+  journal.push({id:c.id,name:c.name,question:c.question,note,via:curVia});
+  visitedMap[c.id]={question:c.question,note}; markVisited(c.id); renderDiary(); saveState();
+  stopSpeak(); $('cardStage').classList.remove('show'); $('scrim').classList.remove('carding'); $('drumPanel').classList.remove('on'); $('noteBar').classList.remove('on');
   if(c.id===68){ setTimeout(winGame,250); return; }
   setTimeout(resetThrow, 320);
 };
 
 function winGame(){ closeAll(); const j=$('journal'); j.innerHTML=journal.map(e=>`<div class="j"><b>№${e.id} ${e.name}</b>${e.note?' — <i>'+esc(e.note)+'</i>':''}</div>`).join('')||'<div class="j"><i>Заметок не осталось</i></div>';
   $('win').classList.add('on'); tone(523,'sine',1.2,.08); setTimeout(()=>tone(659,'sine',1.2,.08),180); setTimeout(()=>tone(784,'sine',1.6,.08),360); }
-$('winBtn').onclick=()=>{ $('win').classList.remove('on'); cur=0; started=false; busy=false; journal=[]; request=''; trailReset(); $('reqAnchor').classList.remove('on'); $('token').classList.add('hidden'); hud(); saveState(); openRequest(); };
+$('winBtn').onclick=()=>{ $('win').classList.remove('on'); cur=0; started=false; busy=false; journal=[]; request=''; visitedMap={}; for(const id in nodeEls) nodeEls[id].classList.remove('done'); renderDiary(); trailReset(); $('reqAnchor').classList.remove('on'); $('token').classList.add('hidden'); hud(); saveState(); openRequest(); };
 
 // ---- toast ----
 let tt; function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),3600); }
@@ -346,6 +377,7 @@ const SK='lila.save.v2';
 function saveState(){ try{localStorage.setItem(SK,JSON.stringify({cur,started,request,journal}));}catch(e){} }
 (function load(){ try{const s=JSON.parse(localStorage.getItem(SK)||'null'); if(s){ cur=s.cur||0; started=!!s.started; request=s.request||''; journal=s.journal||[];
   if(started&&cur){ placeAt(cur); trailReset(); for(const e of journal) trailPoint(e.id,'step'); if(!journal.length) trailPoint(cur,'step'); }
+  for(const e of journal){ visitedMap[e.id]={question:e.question,note:e.note}; markVisited(e.id); } renderDiary();
   if(request){ $('reqAnchor').innerHTML='Запрос: <b>'+esc(request)+'</b>'; $('reqAnchor').classList.add('on'); }
   hud(); }}catch(e){} })();
 window.addEventListener('beforeunload',saveState);
