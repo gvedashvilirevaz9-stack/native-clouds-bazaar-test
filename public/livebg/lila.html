@@ -68,9 +68,9 @@
   /* rubber text container: scales with the card, padded off the ornament */
   /* text lives strictly inside the parchment panel (≈66–92% of the card), padded */
   .card .txt{position:absolute;left:11%;top:66.5%;width:78%;height:25.5%;padding:1.4cqh 4cqw;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;overflow:hidden}
-  .card .txt .nm{font-size:4.7cqw;font-weight:700;color:#33250e;line-height:1.08}
-  .card .txt .mr{font-size:3.7cqw;font-weight:400;color:#4a371a;line-height:1.16}
-  .card .txt .qs{font-size:3.9cqw;font-weight:700;color:#5a3410;line-height:1.14}
+  .card .txt .nm{font-size:4.5cqw;font-weight:700;color:#241905;line-height:1.08}
+  .card .txt .mr{font-size:4.5cqw;font-weight:700;color:#ffffff;line-height:1.12;text-shadow:0 1px 3px rgba(40,22,4,.75),0 0 2px rgba(40,22,4,.6)}
+  .card .txt .qs{font-size:3.8cqw;font-weight:700;color:#5a3410;line-height:1.14}
   /* card stage reveal */
   /* drawn card opens near full-screen, above the bottom dock */
   #cardStage{position:fixed;left:50%;top:5vh;transform:translateX(-50%) scale(.25);transform-origin:top center;opacity:0;height:min(60vh,calc(100vh - 34vh));width:auto;aspect-ratio:909/1424;z-index:45;transition:transform .55s cubic-bezier(.28,1.2,.4,1),opacity .4s;pointer-events:none}
@@ -290,6 +290,7 @@ function walk(from,to,step,done){ let p=from; const dir=to>=from?1:-1;
 
 // ---- mirror card of the landed cell ----
 function reveal(S){ const c=byId(S); cur=S; hud();
+  if(c.variants&&c.variants.length){ const v=c.variants[Math.floor(Math.random()*c.variants.length)]; c.mirror=v[0]; c.question=v[1]; }
   const strip=$('strip'); strip.innerHTML=''; const N=16; for(let i=0;i<N;i++){const b=document.createElement('div');b.className='cback';strip.appendChild(b);}
   strip.style.transition='none'; strip.style.transform='translateY(0)'; strip.offsetHeight; const itemH=(strip.firstChild.offsetHeight||40)+6;
   tone(150,'sawtooth',1.2,.03); strip.style.transition='transform 1.2s cubic-bezier(.1,.62,.08,1)'; strip.style.transform=`translateY(${-(N-2)*itemH}px)`;
