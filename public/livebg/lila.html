@@ -37,10 +37,10 @@
     padding:13px 30px;border-radius:40px;font-size:17px;letter-spacing:.06em;box-shadow:0 0 0 1px rgba(232,197,106,.25),0 10px 40px rgba(0,0,0,.5);transition:transform .2s,box-shadow .2s}
   #play:hover{transform:translateX(-50%) translateY(-2px);box-shadow:0 0 24px rgba(232,197,106,.4),0 14px 46px rgba(0,0,0,.6)}
   /* modal: dark frosted casino glass */
-  #scrim{position:fixed;inset:0;z-index:30;display:none;background:radial-gradient(130% 90% at 50% 40%,transparent 60%,rgba(2,3,10,.4))}
+  #scrim{position:fixed;inset:0;z-index:30;display:none;pointer-events:none;background:radial-gradient(130% 90% at 50% 40%,transparent 60%,rgba(2,3,10,.4))}
   #scrim.on{display:block}
   /* top screen: big wide drum in frosted casino glass */
-  #drumPanel{position:absolute;top:3vh;left:50%;transform:translateX(-50%);width:min(900px,74vw);border-radius:24px;padding:10px clamp(12px,2vw,26px) 4px;
+  #drumPanel{position:absolute;top:3vh;left:50%;transform:translateX(-50%);width:min(1125px,92vw);border-radius:24px;padding:10px clamp(12px,2vw,26px) 4px;
     background:linear-gradient(160deg,rgba(14,18,32,.6),rgba(7,9,18,.72));backdrop-filter:blur(26px) saturate(1.25);-webkit-backdrop-filter:blur(26px) saturate(1.25);
     border:1px solid rgba(232,197,106,.32);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 0 60px rgba(120,90,40,.12),0 30px 90px rgba(0,0,0,.6);
     opacity:0;pointer-events:none;transition:transform .5s cubic-bezier(.5,0,.2,1),opacity .4s}
@@ -48,7 +48,7 @@
   #close{position:absolute;right:16px;top:12px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(232,197,106,.4);background:rgba(20,14,8,.7);color:var(--gold);font-size:17px;cursor:pointer;z-index:4}
   .mtitle{text-align:center;color:var(--gold);letter-spacing:.14em;font-size:13px;text-transform:uppercase;opacity:.8;margin:0 0 10px}
   /* bottom screen: bowl standing on the board's blue lotus */
-  #bowlWrap{position:absolute;left:50%;bottom:6.5vh;transform:translateX(-50%);width:min(330px,26vw);aspect-ratio:16/9;background:url('lila/bowl.webp') center bottom/contain no-repeat;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;filter:drop-shadow(0 14px 26px rgba(0,0,0,.55))}
+  #bowlWrap{position:absolute;left:50%;bottom:6.5vh;transform:translateX(-50%);width:min(330px,26vw);aspect-ratio:16/9;pointer-events:auto;background:url('lila/bowl.webp') center bottom/contain no-repeat;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;filter:drop-shadow(0 14px 26px rgba(0,0,0,.55))}
   #bowlWrap::before{content:'';position:absolute;left:50%;bottom:4%;transform:translateX(-50%);width:62%;height:24%;border-radius:50%;background:radial-gradient(ellipse,rgba(120,210,255,.5),transparent 70%);filter:blur(6px);z-index:-1}
   #scrim.choosing #bowlWrap{opacity:0;pointer-events:none;transition:opacity .3s}
   #scrim.carding::after{content:'';position:fixed;inset:0;background:rgba(2,3,10,.58);z-index:40;pointer-events:none}
@@ -147,7 +147,12 @@
   #diaryList .dn .via{font-weight:400;font-size:11.5px;opacity:.7;border:1px solid rgba(232,197,106,.4);border-radius:8px;padding:1px 7px;margin-left:6px}
   #diaryList .dq{color:#d9c7a6;font-style:italic;font-size:12.5px;margin:3px 0}
   #diaryList .da{color:#eafff0;font-size:13px;line-height:1.35}#diaryList .da.em{color:#8a8470;font-style:italic}
-  #journal{max-width:560px;max-height:40vh;overflow:auto;margin:14px auto 0;text-align:left;font-size:13px}
+  #journal{max-width:560px;max-height:46vh;overflow-y:auto;margin:14px auto 0;padding-right:8px;text-align:left;font-size:13px;scrollbar-width:thin;scrollbar-color:rgba(232,197,106,.45) transparent}
+  #journal::-webkit-scrollbar{width:7px}#journal::-webkit-scrollbar-track{background:transparent}
+  #journal::-webkit-scrollbar-thumb{background:rgba(232,197,106,.4);border-radius:4px}#journal::-webkit-scrollbar-thumb:hover{background:rgba(232,197,106,.6)}
+  .winbtns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+  #saveBtn{cursor:pointer;background:linear-gradient(180deg,rgba(30,44,30,.9),rgba(12,22,12,.95));border:1px solid rgba(130,200,140,.5);color:#bfe6c6;padding:12px 24px;border-radius:40px;font-size:15px;letter-spacing:.03em}
+  #saveBtn:hover{box-shadow:0 0 20px rgba(130,200,140,.35)}
   #journal .j{border-left:2px solid rgba(232,197,106,.4);padding:3px 0 3px 10px;margin:6px 0}#journal .j b{color:var(--gold)}#journal .j i{opacity:.72}
   #token.hidden{opacity:0}
   /* travelled-path trail */
@@ -156,12 +161,18 @@
   #trail line.step{stroke:#ffd98a;filter:drop-shadow(0 0 3px rgba(255,210,120,.85))}
   #trail line.arrow{stroke:#ffe657;stroke-width:4;filter:drop-shadow(0 0 5px rgba(255,220,80,.95))}
   #trail line.snake{stroke:#7fb0ff;filter:drop-shadow(0 0 4px rgba(120,160,255,.9))}
+  /* board decorations: arrows (gold, up) and snakes (blue, down) on the glass */
+  #deco{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:3;opacity:0;transition:opacity .45s}
+  body.playing #deco{opacity:.42}
+  #deco line{fill:none;stroke-width:1.5;vector-effect:non-scaling-stroke;stroke-linecap:round}
+  #deco line.arrowdeco{stroke:#ffd45a;filter:drop-shadow(0 0 3px rgba(255,210,90,.75))}
+  #deco line.snakedeco{stroke:#6fa8ff;stroke-dasharray:3 4;filter:drop-shadow(0 0 3px rgba(110,160,255,.75))}
 </style>
 </head>
 <body>
 <div id="board"></div>
 <div id="glass"></div>
-<div id="layer"><svg id="trail" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div id="token" class="hidden"></div></div>
+<div id="layer"><svg id="deco" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><svg id="trail" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div id="token" class="hidden"></div></div>
 <div id="hud">Клетка <b id="hcell">—</b> · <span id="hplan">перед входом</span></div>
 <div id="reqAnchor"></div>
 <div id="tooltip"></div>
@@ -200,7 +211,7 @@
 </div>
 
 <div id="toast"></div>
-<div id="win"><h1>☀ Космическое сознание</h1><p id="winTxt">Ты попал ровно на клетку 68. Круг Сансары завершён — вот карта твоих осознаний:</p><div id="journal"></div><button id="winBtn">Новый запрос</button></div>
+<div id="win"><h1>☀ Космическое сознание</h1><p id="winTxt">Ты попал ровно на клетку 68. Круг Сансары завершён — вот карта твоих осознаний:</p><div id="journal"></div><div class="winbtns"><button id="saveBtn">📄 Сохранить на Google Drive</button><button id="winBtn">Новый запрос</button></div></div>
 
 <script src="lila-board.js"></script>
 <script>
@@ -236,6 +247,12 @@ function markVisited(id){ const d=nodeEls[id]; if(d) d.classList.add('done'); }
 function renderDiary(){ const el=$('diaryList'); if(!el) return;
   el.innerHTML = journal.length ? journal.map((e,i)=>`<div class="d"><div class="dn">${i+1}. №${e.id} ${e.name}${e.via?` <span class="via">${e.via}</span>`:''}</div>${e.question?`<div class="dq">${e.question}</div>`:''}<div class="da${e.note?'':' em'}">${e.note?esc(e.note):'— без заметки'}</div></div>`).join('') : '<div class="da em">Путь ещё пуст</div>';
   $('diaryBtn').style.display = journal.length ? 'block' : 'none'; }
+// board decorations: a gold line up for each arrow, a dashed blue line down for each snake
+function drawDeco(){ const D=$('deco'); if(!D) return; D.innerHTML='';
+  BOARD.forEach(c=>{ const tgt=c.arrow_to||c.snake_to; if(!tgt) return; const a=NODES[c.id-1], b=NODES[tgt-1]; if(!a||!b) return;
+    const ln=document.createElementNS('http://www.w3.org/2000/svg','line'); ln.setAttribute('x1',a.x);ln.setAttribute('y1',a.y);ln.setAttribute('x2',b.x);ln.setAttribute('y2',b.y);
+    ln.setAttribute('class',c.arrow_to?'arrowdeco':'snakedeco'); D.appendChild(ln); }); }
+drawDeco();
 
 // ---- state ----
 let cur=0, started=false, busy=false, request='', journal=[], curVia='ход', visitedMap={};
@@ -368,6 +385,16 @@ $('noteGo').onclick=()=>{ const c=byId(cur); const note=($('noteInput').value||'
 function winGame(){ closeAll(); const j=$('journal'); j.innerHTML=journal.map(e=>`<div class="j"><b>№${e.id} ${e.name}</b>${e.note?' — <i>'+esc(e.note)+'</i>':''}</div>`).join('')||'<div class="j"><i>Заметок не осталось</i></div>';
   $('win').classList.add('on'); tone(523,'sine',1.2,.08); setTimeout(()=>tone(659,'sine',1.2,.08),180); setTimeout(()=>tone(784,'sine',1.6,.08),360); }
 $('winBtn').onclick=()=>{ $('win').classList.remove('on'); cur=0; started=false; busy=false; journal=[]; request=''; visitedMap={}; for(const id in nodeEls) nodeEls[id].classList.remove('done'); renderDiary(); trailReset(); $('reqAnchor').classList.remove('on'); $('token').classList.add('hidden'); hud(); saveState(); openRequest(); };
+
+// export the diary as text and save to Google Drive (new Google Doc) + a .txt copy
+function journalText(){ let t='Лила — дневник пути\nЗапрос: '+request+'\n\n';
+  journal.forEach((e,i)=>{ t+=(i+1)+'. №'+e.id+' '+e.name+' ['+(e.via||'')+']\n'; if(e.question)t+='   Вопрос: '+e.question+'\n'; t+='   Ответ: '+(e.note||'—')+'\n\n'; });
+  return t; }
+$('saveBtn').onclick=async()=>{ const t=journalText();
+  try{ await navigator.clipboard.writeText(t); }catch(e){}
+  try{ const blob=new Blob([t],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='lila-dnevnik.txt'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),2000); }catch(e){}
+  try{ window.open('https://docs.new','_blank','noopener'); }catch(e){}
+  $('saveBtn').textContent='✓ Скопировано — вставь в Google-док (Ctrl+V)'; };
 
 // ---- toast ----
 let tt; function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),3600); }
