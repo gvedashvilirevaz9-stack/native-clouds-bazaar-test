@@ -10,10 +10,17 @@
   html,body{margin:0;height:100%;overflow:hidden;background:#05060c;font-family:'Georgia','Times New Roman',serif;color:#f3ecd8;-webkit-font-smoothing:antialiased}
   #board{position:fixed;inset:0;background:#05060c center/cover no-repeat;background-image:url('lila/board.jpg')}
   #board::after{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 60%,transparent 55%,rgba(3,4,10,.55) 100%)}
-  /* path + nodes */
-  #layer{position:absolute;inset:0;pointer-events:none}
-  .node{position:absolute;width:1.7%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);pointer-events:auto;cursor:help;
+  /* frosted-glass board: appears only while playing; the background stays a plain wallpaper */
+  #glass{position:fixed;left:3vw;right:3vw;top:8vh;bottom:3vh;border-radius:26px;z-index:1;opacity:0;pointer-events:none;transition:opacity .45s;
+    background:linear-gradient(160deg,rgba(12,16,30,.42),rgba(6,8,16,.52));backdrop-filter:blur(16px) saturate(1.15);-webkit-backdrop-filter:blur(16px) saturate(1.15);
+    border:1px solid rgba(232,197,106,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),inset 0 0 80px rgba(80,60,30,.12),0 30px 90px rgba(0,0,0,.5)}
+  body.playing #glass{opacity:1}
+  /* path + nodes (drawn on the glass board — shown only while playing) */
+  #layer{position:absolute;inset:0;pointer-events:none;z-index:2}
+  body.playing #trail{opacity:1}
+  .node{position:absolute;width:1.7%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);pointer-events:auto;cursor:help;opacity:0;transition:opacity .45s,box-shadow .2s;
     background:radial-gradient(circle,rgba(255,240,190,.95),rgba(255,200,90,.35) 60%,transparent 72%);box-shadow:0 0 10px rgba(255,210,120,.6)}
+  body.playing .node{opacity:1}
   .node:hover{box-shadow:0 0 16px 4px rgba(255,230,150,.9);z-index:6}
   .node.arrow{background:radial-gradient(circle,#fff2c0,rgba(255,196,64,.5) 60%,transparent 72%);box-shadow:0 0 16px 3px rgba(255,196,64,.8)}
   .node.snake{background:radial-gradient(circle,#bfe0ff,rgba(90,150,255,.45) 60%,transparent 72%);box-shadow:0 0 14px 2px rgba(90,150,255,.7)}
@@ -126,7 +133,7 @@
   #journal .j{border-left:2px solid rgba(232,197,106,.4);padding:3px 0 3px 10px;margin:6px 0}#journal .j b{color:var(--gold)}#journal .j i{opacity:.72}
   #token.hidden{opacity:0}
   /* travelled-path trail */
-  #trail{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:4}
+  #trail{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:4;opacity:0;transition:opacity .45s}
   #trail line{fill:none;stroke-width:3;vector-effect:non-scaling-stroke;stroke-linecap:round;opacity:.92}
   #trail line.step{stroke:#ffd98a;filter:drop-shadow(0 0 3px rgba(255,210,120,.85))}
   #trail line.arrow{stroke:#ffe657;stroke-width:4;filter:drop-shadow(0 0 5px rgba(255,220,80,.95))}
@@ -135,6 +142,7 @@
 </head>
 <body>
 <div id="board"></div>
+<div id="glass"></div>
 <div id="layer"><svg id="trail" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div id="token" class="hidden"></div></div>
 <div id="hud">Клетка <b id="hcell">—</b> · <span id="hplan">перед входом</span></div>
 <div id="reqAnchor"></div>
@@ -256,12 +264,12 @@ function openRequest(refine){
   $('reqInput').value = refine ? (request==='(свободная игра)'?'':request) : '';
   $('reqScrim').classList.add('on'); setTimeout(()=>$('reqInput').focus(),60);
 }
-function openThrow(){ $('scrim').classList.add('on'); resetThrow(); }
+function openThrow(){ document.body.classList.add('playing'); $('scrim').classList.add('on'); resetThrow(); }
 function resetThrow(){ stopSpeak(); $('scrim').classList.remove('carding'); $('drumPanel').classList.remove('lift'); $('cardStage').classList.remove('show'); $('cardStage').innerHTML=''; $('noteBar').classList.remove('on');
   $('rollno').classList.remove('show'); $('bowlWrap').style.display='flex';
   $('charge').textContent=started?'зажми чашу и брось кубик…':'нужна 6, чтобы родиться — зажми чашу…';
   $('minstr').textContent=started?('Клетка '+cur+' — бросай кубик'):'Запрос дан — брось 6, чтобы войти в игру'; busy=false; }
-function closeAll(){ stopSpeak(); $('scrim').classList.remove('on'); $('scrim').classList.remove('carding'); $('cardStage').classList.remove('show'); $('noteBar').classList.remove('on'); }
+function closeAll(){ stopSpeak(); document.body.classList.remove('playing'); $('scrim').classList.remove('on'); $('scrim').classList.remove('carding'); $('cardStage').classList.remove('show'); $('noteBar').classList.remove('on'); }
 
 $('play').onclick=()=>{ if(!request) openRequest(); else openThrow(); };
 $('close').onclick=closeAll;
